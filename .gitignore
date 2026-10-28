@@ -1,6 +1,48 @@
+# --- Dependencias ---
 **/node_modules/
+**/.venv/
+**/venv/
+__pycache__/
+*.pyc
+**/.pytest_cache/
+
+# --- Variables de entorno ---
+# El .env real NUNCA se sube. Solo se versiona el .env.example
 **/.env
 **/.env.*
 !**/.env.example
+
+# --- Bases de datos locales ---
 **/database.sqlite
-**/uploads/requests/*
+**/*.sqlite3
+**/*.db
+
+# --- Artefactos de build ---
+**/dist/
+**/build/
+**/out/
+**/.angular/
+**/coverage/
+**/.nyc_output/
+
+# --- Archivos subidos ---
+**/uploads/
+**/media/
+
+# --- Logs ---
+**/*.log
+**/npm-debug.log*
+
+# --- Sistema y editores ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# --- Seguridad ---
+# Duplicados de seguridad por si alguien renombra un .env
+**/*.env.local
+**/*.env.production

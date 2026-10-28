@@ -1,0 +1,241 @@
+# =============================================================================
+# Integración continua
+# =============================================================================
+# Ejecuta lint y pruebas en cada Pull Request hacia `develop` o `main`.
+#
+# El workflow detecta qué servicios cambiaron y solo ejecuta los que existen.
+# Así el CI funciona desde el primer día, aunque los servicios se vayan
+# creando gradualmente.
+#
+# IMPORTANTE: un PR no se merguea con el CI en rojo. `develop` debe mantenerse
+# funcional.
+# =============================================================================
+
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Estructura del monorepo y documentación
+  # ---------------------------------------------------------------------------
+  repo-structure:
+    name: Estructura y documentación
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar archivos obligatorios
+        shell: bash
+        run: |
+          set -e
+          required=(
+            "AGENTS.md"
+            "README.md"
+            "docker-compose.yml"
+            ".env.example"
+            "docs/convenciones.md"
+            "docs/arquitectura.md"
+            "docs/puertos.md"
+            "docs/eventos.md"
+            "docs/contratos-api.md"
+            "docs/flujo-principal.md"
+            "docs/distribucion-equipo.md"
+          )
+          missing=0
+          for f in "${required[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "::error file=$f::Falta el archivo obligatorio $f"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Verificar que no haya secretos commiteados
+        shell: bash
+        run: |
+          set -e
+          # Un .env real (que no sea .example) no debe estar versionado
+          if git ls-files | grep -E '(^|/)\.env(\..+)?$' | grep -v '\.env\.example$'; then
+            echo "::error::Se encontró un archivo .env versionado. Debe estar en .gitignore."
+            exit 1
+          fi
+          echo "Sin archivos .env versionados."
+
+      - name: Validar docker-compose
+        run: docker compose -f docker-compose.yml config --quiet
+
+      - name: Verificar que .env.example documenta todos los puertos
+        shell: bash
+        run: |
+          set -e
+          for port in 4000 4001 4002 4003 4004 4005 5000 4200; do
+            if ! grep -q "$port" .env.example; then
+              echo "::error::El puerto $port no está documentado en .env.example"
+              exit 1
+            fi
+          done
+          echo "Todos los puertos documentados."
+
+  # ---------------------------------------------------------------------------
+  # Servicios Express
+  # ---------------------------------------------------------------------------
+  express-services:
+    name: Express (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - api-gateway
+          - part-request-service
+          - offer-service
+          - order-service
+          - catalog-vehicle-service
+          - notification-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detectar si el servicio existe
+        id: check
+        shell: bash
+        run: |
+          if [ -f "apps/${{ matrix.service }}/package.json" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::El servicio ${{ matrix.service }} aún no existe. Se omite."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.exists == 'true'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.service }}/package-lock.json
+
+      - name: Instalar dependencias
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/${{ matrix.service }}
+        run: npm ci
+
+      - name: Lint
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/${{ matrix.service }}
+        run: |
+          if npm run | grep -q " lint"; then
+            npm run lint
+          else
+            echo "Sin script de lint. Omitido."
+          fi
+
+      - name: Pruebas
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/${{ matrix.service }}
+        run: |
+          if npm run | grep -q " test"; then
+            npm test
+          else
+            echo "::notice::Sin pruebas todavía en ${{ matrix.service }}. Agregarlas pronto."
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Identity Service (Django)
+  # ---------------------------------------------------------------------------
+  identity-service:
+    name: Identity (Django)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detectar si el servicio existe
+        id: check
+        shell: bash
+        run: |
+          if [ -f "apps/identity-service/manage.py" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::identity-service aún no existe. Se omite."
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.check.outputs.exists == 'true'
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: apps/identity-service/requirements.txt
+
+      - name: Instalar dependencias
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/identity-service
+        run: pip install -r requirements.txt
+
+      - name: Verificar configuración
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/identity-service
+        run: python manage.py check
+
+      - name: Pruebas
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/identity-service
+        env:
+          # Base de datos en memoria para las pruebas
+          DB_IDENTITY_NAME: identity_test
+          DB_IDENTITY_USER: identity_user
+          DB_IDENTITY_PASSWORD: identity_pass
+          DB_IDENTITY_HOST: localhost
+          DB_IDENTITY_PORT: 5432
+          DJANGO_SECRET_KEY: ci-test-secret-key-no-usar-en-produccion
+        run: python manage.py test --verbosity 2
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Angular)
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detectar si el frontend existe
+        id: check
+        shell: bash
+        run: |
+          if [ -f "apps/frontend/angular.json" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::El frontend aún no existe. Se omite."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.exists == 'true'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/frontend/package-lock.json
+
+      - name: Instalar dependencias
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/frontend
+        run: npm ci
+
+      - name: Build
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/frontend
+        run: npx ng build --configuration production
+
+      - name: Pruebas
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/frontend
+        run: npx ng test --watch=false --browsers=ChromeHeadless

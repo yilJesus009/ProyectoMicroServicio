@@ -1,0 +1,11 @@
+{
+  "name": "@repuestos/shared",
+  "version": "0.1.0",
+  "description": "Tipos, enums y contratos compartidos entre los microservicios del marketplace de repuestos",
+  "main": "src/index.js",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "test": "node --test src/"
+  }
+}

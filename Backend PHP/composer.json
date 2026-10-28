@@ -1,9 +1,0 @@
-{
-  "name": "web3/identity-service",
-  "description": "Identity Service para Marketplace de Repuestos",
-  "autoload": {
-    "psr-4": {
-      "App\\": "src/"
-    }
-  }
-}

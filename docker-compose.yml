@@ -1,0 +1,167 @@
+# =============================================================================
+# Marketplace de Repuestos Automotrices - Infraestructura compartida
+# =============================================================================
+# Este archivo levanta SOLO la infraestructura (mensajeria y bases de datos).
+# Los microservicios se levantan aparte, cada uno en su propio terminal.
+#
+#   docker compose up -d          -> levanta todo lo de abajo
+#   docker compose ps             -> verifica que este corriendo
+#   docker compose down -v        -> para y borra los datos
+#
+# Los servicios de aplicacion (apps/) NO estan definidos aqui a proposito:
+# cada integrante debe poder levantar SOLO el servicio en el que trabaja.
+# =============================================================================
+
+name: repuestos-marketplace
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # MENSAJERIA - Comunicacion asincrona entre microservicios (eventos)
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: marketplace-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"     # AMQP - produccion/consumo de eventos
+      - "15672:15672"   # Management UI -> http://localhost:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # BASES DE DATOS - Persistencia independiente por microservicio
+  # Cada servicio es DUENO EXCLUSIVO de su base de datos.
+  # NINGUN servicio puede tocar la base de otro. Eso es un requisito del PDF.
+  # ---------------------------------------------------------------------------
+
+  # Identity Service (Django) - puerto host 5433
+  db-identity:
+    image: postgres:16-alpine
+    container_name: marketplace-db-identity
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${DB_IDENTITY_NAME:-identity_db}
+      POSTGRES_USER: ${DB_IDENTITY_USER:-identity_user}
+      POSTGRES_PASSWORD: ${DB_IDENTITY_PASSWORD:-identity_pass}
+    volumes:
+      - db_identity_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_IDENTITY_USER:-identity_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Part Request Service - puerto host 5434
+  db-part-request:
+    image: postgres:16-alpine
+    container_name: marketplace-db-part-request
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: ${DB_PART_REQUEST_NAME:-part_request_db}
+      POSTGRES_USER: ${DB_PART_REQUEST_USER:-part_request_user}
+      POSTGRES_PASSWORD: ${DB_PART_REQUEST_PASSWORD:-part_request_pass}
+    volumes:
+      - db_part_request_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_PART_REQUEST_USER:-part_request_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Offer Service - puerto host 5435
+  db-offer:
+    image: postgres:16-alpine
+    container_name: marketplace-db-offer
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: ${DB_OFFER_NAME:-offer_db}
+      POSTGRES_USER: ${DB_OFFER_USER:-offer_user}
+      POSTGRES_PASSWORD: ${DB_OFFER_PASSWORD:-offer_pass}
+    volumes:
+      - db_offer_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_OFFER_USER:-offer_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Order Service - puerto host 5436
+  db-order:
+    image: postgres:16-alpine
+    container_name: marketplace-db-order
+    restart: unless-stopped
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: ${DB_ORDER_NAME:-order_db}
+      POSTGRES_USER: ${DB_ORDER_USER:-order_user}
+      POSTGRES_PASSWORD: ${DB_ORDER_PASSWORD:-order_pass}
+    volumes:
+      - db_order_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_ORDER_USER:-order_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Catalog / Vehicle Service - puerto host 5437
+  db-catalog:
+    image: postgres:16-alpine
+    container_name: marketplace-db-catalog
+    restart: unless-stopped
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_DB: ${DB_CATALOG_NAME:-catalog_db}
+      POSTGRES_USER: ${DB_CATALOG_USER:-catalog_user}
+      POSTGRES_PASSWORD: ${DB_CATALOG_PASSWORD:-catalog_pass}
+    volumes:
+      - db_catalog_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_CATALOG_USER:-catalog_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Notification Service - puerto host 5438
+  db-notification:
+    image: postgres:16-alpine
+    container_name: marketplace-db-notification
+    restart: unless-stopped
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_DB: ${DB_NOTIFICATION_NAME:-notification_db}
+      POSTGRES_USER: ${DB_NOTIFICATION_USER:-notification_user}
+      POSTGRES_PASSWORD: ${DB_NOTIFICATION_PASSWORD:-notification_pass}
+    volumes:
+      - db_notification_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_NOTIFICATION_USER:-notification_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rabbitmq_data:
+  db_identity_data:
+  db_part_request_data:
+  db_offer_data:
+  db_order_data:
+  db_catalog_data:
+  db_notification_data:
