@@ -4,9 +4,22 @@
 > los documenta y los mantiene. Ningún integrante arregla el código de otro
 > sin acordarlo primero.
 
+## Integrantes
+
+| Integrante | GitHub | Servicios |
+|---|---|---|
+| **Jesús** | `@yilJesus009` | identity-service |
+| **Dylan** | `@dylan-alvarez` | part-request-service, catalog-vehicle-service |
+| **Alexis** | `@alexphxmton` | offer-service, order-service |
+| **Latife** | `@hendykg` | api-gateway, notification-service, frontend |
+
+Los dueños de cada área están declarados en [`.github/CODEOWNERS`](../.github/CODEOWNERS).
+
+---
+
 ## Asignación
 
-### Integrante 1 — Identidad y acceso
+### Jesús — Identidad y acceso
 **Servicio:** `identity-service` (Django, puerto `5000`)
 
 - Registro, login, JWT y roles (`COMPRADOR`, `PROVEEDOR`, `ADMIN`).
@@ -19,7 +32,7 @@ lo antes posible y documentarlo en `docs/contratos-api.md`.
 
 ---
 
-### Integrante 2 — Solicitudes y catálogo
+### Dylan — Solicitudes y catálogo
 **Servicios:** `part-request-service` (puerto `4001`) y `catalog-vehicle-service` (puerto `4004`)
 
 - CRUD de solicitudes de repuestos y sus estados.
@@ -33,7 +46,7 @@ migrarlo de SQLite/MySQL a PostgreSQL.
 
 ---
 
-### Integrante 3 — Ofertas y pedidos
+### Alexis — Ofertas y pedidos
 **Servicios:** `offer-service` (puerto `4002`) y `order-service` (puerto `4003`)
 
 - Gestión de ofertas y comparación de condiciones.
@@ -44,12 +57,12 @@ migrarlo de SQLite/MySQL a PostgreSQL.
   `ORDER_CREATED`, `ORDER_STATUS_CHANGED`.
 
 **Punto crítico:** este integrante es el que hace que el flujo principal
-cierra. Conviene coordinar con el Integrante 2 el `request_id` y con el
-Integrante 4 el consumo de eventos.
+cierra. Conviene coordinar con Dylan el `request_id` y con
+Latife el consumo de eventos.
 
 ---
 
-### Integrante 4 — Gateway, notificaciones e integración
+### Latife — Gateway, notificaciones e integración
 **Servicios:** `api-gateway` (puerto `4000`), `notification-service` (puerto `4005`) y `frontend` (Angular, puerto `4200`)
 
 - Punto de entrada único, validación JWT y reparto de headers.
@@ -74,24 +87,25 @@ afecta a más de un integrante y se discute en el equipo.
 ### Dependencias entre integrantes
 
 ```
-Integrante 1 (Identity/JWT)
+Jesús (Identity/JWT)
         │  define el token
         ▼
-Integrante 4 (Gateway) ──── rutea ────► todos los demás
+Latife (Gateway) ──── rutea ────► todos los demás
         │
         ▼
-Integrante 2 (Part Request) ── request_id ──► Integrante 3 (Offer/Order)
-                                                     │
-                                                     │ OFFER_ACCEPTED
-                                                     ▼
-                                             Integrante 4 (Notification)
+Dylan (Part Request) ── request_id ──► Alexis (Offer/Order)
+                                             │
+                                             │ OFFER_ACCEPTED
+                                             ▼
+                                      Latife (Notification)
 ```
 
 **Secuencia sugerida:**
-1. Identity + Gateway primero (los demás los necesitan para autenticar).
-2. Part Request en paralelo con Offer.
-3. Order cuando Offer ya publique `OFFER_ACCEPTED`.
-4. Notification y frontend en paralelo con todo lo anterior.
+1. Identity (Jesús) + Gateway (Latife) primero: los demás los necesitan para
+   autenticar.
+2. Part Request (Dylan) en paralelo con Offer (Alexis).
+3. Order (Alexis) cuando Offer ya publique `OFFER_ACCEPTED`.
+4. Notification y frontend (Latife) en paralelo con todo lo anterior.
 
 ### Ramas
 
@@ -99,10 +113,10 @@ Cada rama nace de `develop` y vuelve a `develop` mediante Pull Request.
 
 | Integrante | Ramas |
 |---|---|
-| 1 | `feature/identity-auth`, `feature/identity-roles` |
-| 2 | `feature/part-request-crud`, `feature/catalog-vehicles` |
-| 3 | `feature/offer-management`, `feature/order-lifecycle` |
-| 4 | `feature/api-gateway`, `feature/notification`, `feature/frontend-angular` |
+| Jesús | `feature/identity-auth`, `feature/identity-roles` |
+| Dylan | `feature/part-request-crud`, `feature/catalog-vehicles` |
+| Alexis | `feature/offer-management`, `feature/order-lifecycle` |
+| Latife | `feature/api-gateway`, `feature/notification`, `feature/frontend-angular` |
 
 ## Reglas del equipo
 
