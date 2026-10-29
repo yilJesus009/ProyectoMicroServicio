@@ -171,7 +171,7 @@ agente**. Pégale la sección relevante:
 | Problema | Pega esto |
 |---|---|
 | Quiere importar código de otro servicio | `AGENTS.md` sección 4.2 (persistencia independiente) |
-| Crea un endpoint sin documentarlo | `AGENTS.md` sección 7.2 |
+| Crea un endpoint sin documentarlo | `AGENTS.md` §7 punto 2 + `docs/contratos-api.md` |
 | Simplifica la validación de ofertas | `AGENTS.md` sección 4.1 (regla crítica) |
 | Mete lógica de negocio en el controller | `.agents/skills/clean-architecture-ddd/SKILL.md` |
 | Escribe commits largos | `docs/convenciones.md` sección 5 |
