@@ -72,15 +72,22 @@ base el formato que ya usaba el backend PHP (antes de migrarlo a Django).
 - `fix/<área>-<descripción>` — `fix/order-status-transition`
 - `hotfix/<descripción>` — nace de `main`, se sincroniza con `develop`
 
-**Commits (Conventional Commits):**
+**Commits — cortos, con palabras clave:**
+
+Formato: `tipo(área): palabras clave`
+
 ```
-feat(order): agregar cambio de estado PREPARANDO a ENVIADO
-fix(offer): impedir aceptar dos ofertas para la misma solicitud
-test(identity): cubrir login con credenciales invalidas
-docs(contracts): documentar payload de ORDER_CREATED
-refactor(part-request): extraer creacion a caso de uso
-chore(infra): agregar healthcheck a db-offer
+feat(offer): validación oferta única
+fix(order): transición estado inválida
+test(identity): login credenciales inválidas
+docs(contracts): payload ORDER_CREATED
+refactor(part-request): creación a caso de uso
+chore(infra): healthcheck db-offer
 ```
+
+Sin verbos de relleno (`agregar`, `implementar`, `corregir`) ni frases
+completas: **el tipo de commit ya dice qué se hizo**. Máximo 4 palabras
+después de los dos puntos.
 
 Alcance entre paréntesis: `identity`, `part-request`, `offer`, `order`,
 `catalog`, `notification`, `gateway`, `frontend`, `infra`, `contracts`, `docs`.

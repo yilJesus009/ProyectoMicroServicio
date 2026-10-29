@@ -134,6 +134,11 @@ Toda la documentación vive en [`docs/`](docs/):
 | [Contratos API](docs/contratos-api.md) | Endpoints y sus payloads |
 | [Flujo principal](docs/flujo-principal.md) | El ciclo completo del negocio |
 | [Distribución del equipo](docs/distribucion-equipo.md) | Quién hace qué |
+| **[Arranque del equipo](docs/arranque-equipo.md)** | **Primer mensaje para tu agente de IA** |
+
+> 🚀 **¿Recién clonaste el repo?** Ve a **[docs/arranque-equipo.md](docs/arranque-equipo.md)**
+> y pega el bloque de tu integrante en tu agente de IA. Sin eso, el agente
+> no sabe qué reglas seguir.
 
 Para agentes de IA: leer [`AGENTS.md`](AGENTS.md) primero.
 
@@ -186,11 +191,19 @@ git switch develop
 git pull origin develop
 git switch -c feature/offer-create-offer
 # ... trabajar
-git commit -m "feat(offer): agregar validación de oferta única"
+git commit -m "feat(offer): validación oferta única"
 git push -u origin feature/offer-create-offer
 ```
 
-Los commits siguen [Conventional Commits](https://www.conventionalcommits.org/).
+Los commits son cortos y con palabras clave:
+
+```
+tipo(área): palabras clave
+
+feat(offer): validación oferta única
+fix(order): transición estado inválida
+docs(api-gateway): rutas por prefijo
+```
 
 ---
 

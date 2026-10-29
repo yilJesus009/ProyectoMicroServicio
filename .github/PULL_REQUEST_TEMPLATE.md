@@ -66,7 +66,7 @@
 - [ ] Nada de secretos en el código; `.env.example` actualizado si aplica.
 - [ ] Ningún servicio consulta la base de otro.
 - [ ] Ninguna llamada directa a un microservicio desde el frontend.
-- [ ] Los commits siguen Conventional Commits.
+- [ ] Los commits son cortos: `tipo(área): palabras clave`.
 
 ## Limitaciones y notas
 

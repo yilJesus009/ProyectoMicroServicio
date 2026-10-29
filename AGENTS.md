@@ -62,6 +62,24 @@ Lee estos documentos antes de tocar el código que aplique:
 | `docs/contratos-api.md` | **Antes de crear o modificar un endpoint.** |
 | `docs/distribucion-equipo.md` | Para saber qué le pertenece a quién. |
 | `docs/flujo-principal.md` | Para entender el ciclo completo de negocio. |
+| `docs/arranque-equipo.md` | **Primer mensaje de arranque por integrante.** |
+
+---
+
+## 3.1 Quién es quién
+
+Este repositorio lo trabajan **4 integrantes**, cada uno dueño de sus
+servicios:
+
+| Integrante | GitHub | Servicios |
+|---|---|---|
+| Jesús | `@yilJesus009` | `identity-service` (Django) |
+| Dylan | `@dylan-alvarez` | `part-request-service`, `catalog-vehicle-service` |
+| Alexis | `@alexphxmton` | `offer-service`, `order-service` |
+| Latife | `@hendykg` | `api-gateway`, `notification-service`, `frontend` |
+
+**Antes de modificar cualquier archivo, confirma con el usuario de quién es
+ese servicio.** Si el usuario no te indicó cuál es su integrante, pregúntalo.
 
 ---
 
@@ -198,12 +216,21 @@ git push -u origin feature/offer-create-offer
 
 Abrir un Pull Request hacia **`develop`**, no hacia `main`.
 
-Los commits siguen [Conventional Commits](https://www.conventionalcommits.org/):
+Los commits son **cortos y con palabras clave**:
+
 ```
-feat(offer): agregar validación de oferta única por solicitud
-fix(order): impedir transición de estado inválida
-test(identity): cubrir login con credenciales inválidas
+tipo(área): palabras clave
 ```
+
+```
+feat(offer): validación oferta única
+fix(order): transición estado inválida
+test(identity): login credenciales inválidas
+docs(contracts): payload ORDER_CREATED
+```
+
+Sin verbos de relleno ni frases completas: el tipo ya dice qué se hizo.
+Ver `docs/convenciones.md` sección 5 para la lista de áreas válidas.
 
 ---
 

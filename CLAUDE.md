@@ -10,11 +10,13 @@
 
 ## Orden de lectura antes de tocar código
 
-1. `AGENTS.md` — reglas del proyecto y del equipo.
-2. `docs/convenciones.md` — nombres, respuestas HTTP, estructura de capas.
-3. `docs/contratos-api.md` — si vas a crear o modificar un endpoint.
-4. `docs/eventos.md` — si vas a publicar o consumir un evento.
-5. El skill que corresponda, en `.agents/skills/`.
+1. `docs/arranque-equipo.md` — **el mensaje de arranque de este integrante**,
+   con sus servicios, sus límites y sus skills.
+2. `AGENTS.md` — reglas del proyecto y del equipo.
+3. `docs/convenciones.md` — nombres, respuestas HTTP, estructura de capas.
+4. `docs/contratos-api.md` — si vas a crear o modificar un endpoint.
+5. `docs/eventos.md` — si vas a publicar o consumir un evento.
+6. El skill que corresponda, en `.agents/skills/`.
 
 ---
 
