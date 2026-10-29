@@ -17,32 +17,29 @@ description: Implementar y mantener los microservicios de negocio en Express con
 4. Leer `docs/eventos.md` si vas a publicar o consumir eventos.
 5. Leer `clean-architecture-ddd` para la teoría de capas.
 
-## Estado actual y deuda técnica
+## Estado actual: part-request-service ya está reestructurado
 
-El `part-request-service` tiene código base que hay que reestructurar.
-**Problemas conocidos que hay que corregir:**
+`part-request-service` es la **plantilla de referencia** de los servicios
+Express: ya tiene las 4 capas, PostgreSQL, publicación de eventos RabbitMQ y
+pruebas (`npm test`). **Copia su estructura** al crear offer, order,
+catalog-vehicle o notification.
 
-1. **El modelo y el servicio no coinciden.** El modelo define campos en
-   camelCase con enums en inglés (`userId`, `vehicleBrand`, `PUBLISHED`), pero
-   el servicio usa snake_case en español (`user_id`, `marca_vehiculo`,
-   `PUBLICADA`). Elegir uno y unificar.
+Decisiones ya aplicadas que debe respetar cualquier servicio nuevo:
 
-   > Decisión: **`snake_case` en la base de datos, `camelCase` en la API.**
-   > Sequelize permite mapear con `field:`. Los enums quedan en inglés
-   > (`PUBLISHED`, `ORDERED`) como están en `docs/`.
+1. **`snake_case` en la base de datos, `camelCase` en la API.**
+   Sequelize mapea con `field:`. Los enums quedan en inglés
+   (`PUBLISHED`, `ORDERED`) como están en `docs/`.
+2. **PostgreSQL propio** por servicio, con sus variables `DB_<SERVICIO>_*`
+   (ver `.env.example`). Nada de SQLite/MySQL.
+3. **4 capas** bajo `src/`: domain, application, infrastructure, presentation.
+4. **Publica eventos** según `docs/eventos.md`, con el publish como
+   fire-and-forget (un fallo del bus no rompe la operación).
 
-2. **Usa SQLite/MySQL.** Hay que migrar a **PostgreSQL** con la variable de
-   entorno correspondiente (ver `.env.example`).
-
-3. **No tiene las 4 capas.** Controllers, services y models están en la raíz.
-   Hay que moverlos a `src/domain/`, `src/application/`, `src/infrastructure/`
-   y `src/presentation/`.
-
-4. **No publica eventos.** Debe publicar `PART_REQUEST_CREATED`.
-
-**Refactorizar gradualmente, no reescribir desde cero.** El código existente
-funciona en lo básico; muévelo a la estructura correcta sin perder el
-comportamiento.
+> **Atención con los enums de urgencia:** el contrato
+> (`docs/contratos-api.md`) define `BAJA | MEDIA | ALTA`. Los valores
+> `LOW/MEDIUM/HIGH` que aparecían antes en este documento y en
+> `packages/shared` estaban desactualizados; se unificó a `BAJA/MEDIA/ALTA`.
+> El equipo lo confirma en la primera reunión técnica.
 
 ## Mapeo de columnas
 
@@ -56,7 +53,7 @@ module.exports = (sequelize) => sequelize.define("PartRequest", {
   vehicleYear:   { type: DataTypes.INTEGER, allowNull: false, field: "vehicle_year" },
   description:   { type: DataTypes.TEXT,    allowNull: false, field: "description" },
   city:          { type: DataTypes.STRING,  allowNull: false, field: "city" },
-  urgency:       { type: DataTypes.ENUM("LOW", "MEDIUM", "HIGH"), defaultValue: "MEDIUM", field: "urgency" },
+  urgency:       { type: DataTypes.ENUM("BAJA", "MEDIA", "ALTA"), defaultValue: "MEDIA", field: "urgency" },
   status:        { type: DataTypes.ENUM("PUBLISHED", "ORDERED", "COMPLETED", "CANCELLED"), defaultValue: "PUBLISHED", field: "status" },
   photo:         { type: DataTypes.STRING,  allowNull: true,  field: "photo" },
 }, { tableName: "part_requests", timestamps: true, underscored: true });

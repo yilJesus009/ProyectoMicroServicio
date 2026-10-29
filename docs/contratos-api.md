@@ -142,6 +142,16 @@ Cambia el estado. Requiere ser el dueño de la solicitud.
 { "status": "ORDERED" }
 ```
 
+**Máquina de transiciones** (lo demás devuelve `422`):
+
+```
+PUBLISHED ──► ORDERED    (oferta aceptada, pedido generado)
+PUBLISHED ──► CANCELLED  (el dueño cancela antes de aceptar oferta)
+ORDERED   ──► COMPLETED  (pedido finalizado)
+
+COMPLETED y CANCELLED son estados terminales.
+```
+
 **Efecto:** publica `PART_REQUEST_STATUS_CHANGED`.
 
 ### `GET /api/v1/part-requests/:id/check-status`
