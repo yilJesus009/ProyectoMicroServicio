@@ -196,6 +196,9 @@ jobs:
           DB_IDENTITY_HOST: localhost
           DB_IDENTITY_PORT: 5432
           DJANGO_SECRET_KEY: ci-test-secret-key-no-usar-en-produccion
+          # Los JWT se firman con JWT_SECRET (AGENTS.md 4.5), no con
+          # DJANGO_SECRET_KEY; sin esto SimpleJWT caería al fallback.
+          JWT_SECRET: ci-jwt-secret-para-pruebas-no-usar-en-produccion
         run: python manage.py test --verbosity 2
 
   # ---------------------------------------------------------------------------
