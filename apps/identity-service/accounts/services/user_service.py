@@ -11,7 +11,7 @@ from accounts.exceptions import InvalidRoleException
 from accounts.models import Role, User
 
 
-def publish_role_changed(user: User, previous_role: str) -> None:
+def publish_role_changed(user: User, previous_role: str, correlation_id=None) -> None:
     """Publica USER_ROLE_CHANGED (fire-and-forget: jamás lanza)."""
     try:
         publisher.publish(
@@ -22,14 +22,14 @@ def publish_role_changed(user: User, previous_role: str) -> None:
                 "previous_role": previous_role,
                 "new_role": user.rol,
             },
-            correlation_id=getattr(user, "_correlation_id", None),
+            correlation_id=correlation_id,
         )
     except Exception:  # noqa: BLE001 - el cambio de rol ya persistió;
         # el bus caído no puede invalidarlo (eventos.md regla 3).
         pass
 
 
-def change_role(user: User, new_role: str) -> User:
+def change_role(user: User, new_role: str, correlation_id=None) -> User:
     if new_role not in Role.values:
         raise InvalidRoleException(new_role)
 
@@ -40,5 +40,5 @@ def change_role(user: User, new_role: str) -> User:
     user.rol = new_role
     user.save(update_fields=["rol", "updated_at"])
 
-    publish_role_changed(user, previous_role)
+    publish_role_changed(user, previous_role, correlation_id=correlation_id)
     return user

@@ -14,6 +14,7 @@ import os
 import sys
 import warnings
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,17 +25,32 @@ load_dotenv(BASE_DIR.parent.parent / ".env")
 load_dotenv(BASE_DIR / ".env")
 
 # --- Secretos ---------------------------------------------------------------
-# En CI y en desarrollo local viene de .env; el fallback solo existe para
-# que `manage.py check` funcione en una recién clonada. NUNCA usar en prod.
+# AGENTS.md 4.6 y la skill code-review-security: NINGÚN secreto hardcodeado.
+# Fuera de las pruebas el servicio FALLA si falta uno, en vez de arrancar con
+# una clave conocida que permita falsificar tokens (hallazgo P1/P2 del review).
+TESTING = "test" in sys.argv
+
+# Mensaje único: dice exactamente qué hacer en una recién clonada.
+_ENV_HELP = (
+    "Falta {name} en el entorno. Copia .env.example a .env en la raíz del "
+    "monorepo y rellénalo (AGENTS.md 4.6: ningún secreto en el código)."
+)
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
-    SECRET_KEY = "django-insecure-solo-desarrollo-local-cambiar"
-    warnings.warn("DJANGO_SECRET_KEY no definido: usando clave de desarrollo.")
+    if TESTING:
+        SECRET_KEY = "clave-de-pruebas-no-usable-fuera-del-test-runner"
+        warnings.warn("DJANGO_SECRET_KEY no definido: modo pruebas.")
+    else:
+        raise ImproperlyConfigured(_ENV_HELP.format(name="DJANGO_SECRET_KEY"))
 
 JWT_SECRET = os.environ.get("JWT_SECRET")
 if not JWT_SECRET:
-    JWT_SECRET = "jwt-insecure-solo-desarrollo-local-cambiar"
-    warnings.warn("JWT_SECRET no definido: usando clave de desarrollo.")
+    if TESTING:
+        JWT_SECRET = "jwt-de-pruebas-no-usable-fuera-del-test-runner"
+        warnings.warn("JWT_SECRET no definido: modo pruebas.")
+    else:
+        raise ImproperlyConfigured(_ENV_HELP.format(name="JWT_SECRET"))
 
 JWT_EXPIRES_IN = int(os.environ.get("JWT_EXPIRES_IN", "3600"))
 
@@ -91,8 +107,7 @@ WSGI_APPLICATION = "identity_service.wsgi.application"
 # En las pruebas (`manage.py test`) se usa SQLite en memoria: el CI no
 # levanta Postgres y así los tests corren en cualquier máquina. En
 # desarrollo y producción, siempre PostgreSQL con `DB_IDENTITY_*`.
-TESTING = "test" in sys.argv
-
+# (TESTING se define arriba, junto a los secretos.)
 if TESTING:
     DATABASES = {
         "default": {
@@ -119,6 +134,15 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+# Hash de contraseñas: **bcrypt** según docs/contratos-api.md L43.
+# Se usa la variante `bcrypt_sha256` de Django: prehashea con SHA256 para
+# evitar el truncado de 72 bytes de bcrypt (Django #20138) — con bcrypt>=4
+# un password largo lanzaría ValueError en lugar de hashear.
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
 
 # --- Internacionalización ---------------------------------------------------

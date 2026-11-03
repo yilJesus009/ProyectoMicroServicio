@@ -55,4 +55,8 @@ class UserAdmin(BaseUserAdmin):
 
         if previous_role and previous_role != obj.rol:
             # El publisher ya es fire-and-forget: no puede romper el admin.
-            user_service.publish_role_changed(obj, previous_role)
+            user_service.publish_role_changed(
+                obj,
+                previous_role,
+                correlation_id=getattr(request, "correlation_id", None),
+            )

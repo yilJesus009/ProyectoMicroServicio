@@ -21,7 +21,12 @@ class RegisterView(APIView):
         serializer = serializers.RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = auth_service.create_user(**serializer.validated_data)
+        user = auth_service.create_user(
+            **serializer.validated_data,
+            # X-Correlation-Id (middleware) → evento: permite rastrear el
+            # registro entre microservicios (hallazgo P2 del review).
+            correlation_id=getattr(request, "correlation_id", None),
+        )
 
         return success(
             serializers.UserSerializer(user).data,

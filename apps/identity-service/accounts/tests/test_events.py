@@ -55,3 +55,11 @@ class ChangeRoleTests(TestCase):
 
         self.user.refresh_from_db()
         self.assertEqual(self.user.rol, "PROVEEDOR")
+
+    @patch("accounts.events.publisher.publish")
+    def test_evento_lleva_el_correlation_id_recibido(self, mock_publish):
+        user_service.change_role(self.user, "PROVEEDOR", correlation_id="corr-77")
+
+        self.assertEqual(
+            mock_publish.call_args.kwargs["correlation_id"], "corr-77"
+        )

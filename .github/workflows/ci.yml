@@ -183,6 +183,11 @@ jobs:
       - name: Verificar configuración
         if: steps.check.outputs.exists == 'true'
         working-directory: apps/identity-service
+        env:
+          # settings.py falla al arrancar sin secretos (AGENTS.md 4.6):
+          # fuera de `manage.py test` no hay valores por defecto.
+          DJANGO_SECRET_KEY: ci-test-secret-key-no-usar-en-produccion
+          JWT_SECRET: ci-jwt-secret-para-pruebas-no-usar-en-produccion
         run: python manage.py check
 
       - name: Pruebas

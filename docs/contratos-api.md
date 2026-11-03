@@ -40,10 +40,10 @@ Crea un usuario. Público.
 |---|---|---|---|
 | `nombre` | string | ✅ | |
 | `email` | string | ✅ | Único. Devuelve `409` si ya existe |
-| `contrasena` | string | ✅ | Se hashea con bcrypt, nunca se guarda en claro |
+| `contrasena` | string | ✅ | Se hashea con bcrypt, nunca se guarda en claro. Se validan los `AUTH_PASSWORD_VALIDATORS` (mín. 8, no común, no solo numérica) → `400` si es débil |
 | `telefono` | string | ❌ | |
 | `ciudad` | string | ❌ | |
-| `rol` | enum | ✅ | `COMPRADOR` \| `PROVEEDOR` \| `ADMIN` |
+| `rol` | enum | ✅ | `COMPRADOR` \| `PROVEEDOR`. `ADMIN` → `400`: rol reservado al panel de administración (no se autoasigna) |
 
 **Respuesta `201`**
 ```json
