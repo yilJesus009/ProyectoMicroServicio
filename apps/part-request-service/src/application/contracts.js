@@ -21,4 +21,17 @@ const PartRequestEvent = Object.freeze({
   STATUS_CHANGED: 'PART_REQUEST_STATUS_CHANGED',
 });
 
-module.exports = { Topic, PartRequestEvent };
+/**
+ * Estados que este servicio NO acepta desde una petición HTTP: los asigna
+ * un consumidor de eventos.
+ *
+ *   ORDERED ← OFFER_ACCEPTED (docs/arquitectura.md §3.4)
+ *
+ * El dueño no puede declarar por su cuenta que ya tiene oferta aceptada:
+ * lo dice quien acepta la oferta. Quien lo pida por PATCH recibe 422.
+ */
+const EVENT_DRIVEN_STATUS = Object.freeze({
+  ORDERED: 'OFFER_ACCEPTED',
+});
+
+module.exports = { Topic, PartRequestEvent, EVENT_DRIVEN_STATUS };

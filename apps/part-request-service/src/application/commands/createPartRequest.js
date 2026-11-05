@@ -2,12 +2,14 @@
 
 const { PartRequest } = require('../../domain/entities/partRequest');
 const { Topic, PartRequestEvent } = require('../contracts');
+const { publishFireAndForget } = require('../publishFireAndForget');
 
 /**
  * Caso de uso: crear una solicitud de repuesto.
  *
  * Orquesta: entidad (regla) → repositorio (persistencia) → publica evento.
- * El publish NUNCA rompe la operación (docs/eventos.md regla 3).
+ * El publish NUNCA rompe la operación (docs/eventos.md regla 3) y NUNCA
+ * bloquea la respuesta esperando al broker.
  */
 class CreatePartRequest {
   constructor({ partRequestRepository, eventPublisher }) {
@@ -39,25 +41,25 @@ class CreatePartRequest {
 
     const saved = await this.partRequestRepository.save(request);
 
-    try {
-      await this.eventPublisher.publish(
-        Topic.PART_REQUEST,
-        PartRequestEvent.CREATED,
-        {
-          request_id: saved.id,
-          user_id: saved.userId,
-          user_email: saved.userEmail,
-          vehicle_brand: saved.vehicleBrand,
-          vehicle_model: saved.vehicleModel,
-          vehicle_year: saved.vehicleYear,
-          city: saved.city,
-          urgency: saved.urgency,
-        },
-        correlationId
-      );
-    } catch (error) {
-      console.error('[CreatePartRequest] no se pudo publicar PART_REQUEST_CREATED:', error.message);
-    }
+    // Fire-and-forget (eventos.md regla 3): NO se espera al broker antes
+    // de responder; el dato ya está persistido.
+    publishFireAndForget(
+      this.eventPublisher,
+      'CreatePartRequest',
+      Topic.PART_REQUEST,
+      PartRequestEvent.CREATED,
+      {
+        request_id: saved.id,
+        user_id: saved.userId,
+        user_email: saved.userEmail,
+        vehicle_brand: saved.vehicleBrand,
+        vehicle_model: saved.vehicleModel,
+        vehicle_year: saved.vehicleYear,
+        city: saved.city,
+        urgency: saved.urgency,
+      },
+      correlationId
+    );
 
     return saved;
   }

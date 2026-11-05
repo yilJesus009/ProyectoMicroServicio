@@ -16,6 +16,8 @@
 
 const PartRequestStatus = Object.freeze({
   PUBLISHED: 'PUBLISHED', // Visible para proveedores. Acepta ofertas.
+  // Lo asigna el consumidor de OFFER_ACCEPTED, no el cliente: un PATCH
+  // con este estado responde 422 (EventDrivenStatusException).
   ORDERED: 'ORDERED', // Oferta aceptada y pedido generado.
   COMPLETED: 'COMPLETED', // El pedido se finalizó.
   CANCELLED: 'CANCELLED', // Cancelada (antes de aceptar una oferta).
@@ -30,13 +32,18 @@ const Urgency = Object.freeze({
 /**
  * Máquina de transiciones legales. Clave: estado actual.
  *
- *   PUBLISHED ──► ORDERED   (oferta aceptada)
+ *   PUBLISHED ──► ORDERED   (oferta aceptada)   ← solo vía evento
  *   PUBLISHED ──► CANCELLED (el dueño cancela antes de aceptar oferta)
  *   ORDERED   ──► COMPLETED (pedido finalizado)
  *   COMPLETED y CANCELLED son estados terminales.
  *
  * Una transición no listada se rechaza con HTTP 422.
  * Documentada en docs/contratos-api.md (PATCH .../status).
+ *
+ * `PUBLISHED ──► ORDERED` queda en la máquina porque es legal EN EL
+ * DOMINIO: la ejecuta el consumidor de OFFER_ACCEPTED, no un cliente.
+ * El caso de uso la bloquea antes de llegar aquí (422) mientras no
+ * exista ese consumidor en este servicio.
  */
 const PART_REQUEST_TRANSITIONS = Object.freeze({
   [PartRequestStatus.PUBLISHED]: [PartRequestStatus.ORDERED, PartRequestStatus.CANCELLED],

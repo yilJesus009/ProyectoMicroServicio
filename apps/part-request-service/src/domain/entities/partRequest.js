@@ -48,12 +48,26 @@ class PartRequest {
    * @throws {InvalidPartRequestTransitionException} si la transición no es legal
    */
   changeStatus(newStatus) {
-    if (!canTransition(this.status, newStatus)) {
-      throw new InvalidPartRequestTransitionException(this.status, newStatus);
-    }
+    this.assertCanTransition(newStatus);
     const previous = this.status;
     this.status = newStatus;
     return previous;
+  }
+
+  /**
+   * Valida la transición SIN cambiar el estado.
+   *
+   * Se usa antes del compare-and-swap del repositorio: primero se gana la
+   * escritura en la base, después se muta la entidad. Si la validación
+   * falla, no quedó nada escrito.
+   *
+   * @param {string} newStatus Estado deseado
+   * @throws {InvalidPartRequestTransitionException} si la transición no es legal
+   */
+  assertCanTransition(newStatus) {
+    if (!canTransition(this.status, newStatus)) {
+      throw new InvalidPartRequestTransitionException(this.status, newStatus);
+    }
   }
 }
 

@@ -13,6 +13,8 @@
  */
 const PartRequestStatus = Object.freeze({
   PUBLISHED: 'PUBLISHED',   // Visible para proveedores. Acepta ofertas.
+  // ORDERED lo asigna part-request-service al consumir OFFER_ACCEPTED
+  // (docs/arquitectura.md §3.4): el cliente no puede pedirlo por HTTP (422).
   ORDERED:   'ORDERED',     // Ya tiene oferta aceptada y pedido generado.
   COMPLETED: 'COMPLETED',   // El pedido se finalizó.
   CANCELLED: 'CANCELLED',   // Cancelada antes de aceptar una oferta.
@@ -38,6 +40,10 @@ const Urgency = Object.freeze({
  *
  * Clave: estado actual. Valor: estados a los que se puede avanzar.
  * COMPLETED y CANCELLED son terminales. Una transición no listada → 422.
+ *
+ * `PUBLISHED ──► ORDERED` es legal en el dominio pero NO sale de una
+ * petición HTTP: la ejecuta el consumidor de OFFER_ACCEPTED
+ * (part-request-service responde 422 si el cliente la pide).
  */
 const PART_REQUEST_TRANSITIONS = Object.freeze({
   [PartRequestStatus.PUBLISHED]: [PartRequestStatus.ORDERED, PartRequestStatus.CANCELLED],

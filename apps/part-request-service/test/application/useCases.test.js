@@ -36,6 +36,14 @@ class InMemoryRepository {
     }
     return entity;
   }
+
+  /** Igual que el real: solo escribe si el estado sigue siendo el leído. */
+  async updateStatusIfCurrent(id, expectedStatus, newStatus) {
+    const row = this.rows.find((r) => r.id === id);
+    if (!row || row.status !== expectedStatus) return false;
+    row.status = newStatus;
+    return true;
+  }
 }
 
 /** Publisher que registra lo publicado y opcionalmente falla. */
@@ -128,14 +136,16 @@ test('cambio de estado exitoso publica PART_REQUEST_STATUS_CHANGED con el contra
     eventPublisher: publisher,
   });
 
+  // CANCELLED es la única transición que el cliente puede ejecutar hoy:
+  // PUBLISHED → ORDERED la asigna el evento OFFER_ACCEPTED.
   const result = await useCase.execute({
     requestId: 7,
-    newStatus: 'ORDERED',
+    newStatus: 'CANCELLED',
     actorId: OWNER_ID,
     correlationId: 'corr-123',
   });
 
-  assert.equal(result.status, 'ORDERED');
+  assert.equal(result.status, 'CANCELLED');
   assert.equal(publisher.published.length, 1);
 
   const evt = publisher.published[0];
@@ -145,8 +155,94 @@ test('cambio de estado exitoso publica PART_REQUEST_STATUS_CHANGED con el contra
   assert.deepEqual(evt.payload, {
     request_id: 7,
     previous_status: 'PUBLISHED',
-    new_status: 'ORDERED',
+    new_status: 'CANCELLED',
   });
+});
+
+test('ORDERED no sale de una petición → EventDrivenStatusException (422)', async () => {
+  const repository = new InMemoryRepository([seedRequest()]);
+  const publisher = new SpyPublisher();
+  const useCase = new ChangePartRequestStatus({
+    partRequestRepository: repository,
+    eventPublisher: publisher,
+  });
+
+  await assert.rejects(
+    useCase.execute({ requestId: 7, newStatus: 'ORDERED', actorId: OWNER_ID }),
+    (err) => {
+      assert.equal(err.name, 'EventDrivenStatusException');
+      assert.equal(err.eventName, 'OFFER_ACCEPTED');
+      return true;
+    }
+  );
+
+  assert.equal(publisher.published.length, 0, 'no se publica nada');
+  const current = await repository.findById(7);
+  assert.equal(current.status, 'PUBLISHED', 'el estado no cambió');
+});
+
+test('escritura concurrente: el que pierde recibe 409 y no publica', async () => {
+  const repository = new InMemoryRepository([seedRequest()]);
+  const publisher = new SpyPublisher();
+  const useCase = new ChangePartRequestStatus({
+    partRequestRepository: repository,
+    eventPublisher: publisher,
+  });
+
+  // El dueño lee PUBLISHED y, antes de escribir, OFFER_ACCEPTED deja la
+  // solicitud en ORDERED. Su CANCELLED ya no debe aplicarse ni publicarse.
+  const casReal = repository.updateStatusIfCurrent.bind(repository);
+  repository.updateStatusIfCurrent = async (id, expected, next) => {
+    repository.rows[0].status = 'ORDERED';
+    return casReal(id, expected, next);
+  };
+
+  await assert.rejects(
+    useCase.execute({ requestId: 7, newStatus: 'CANCELLED', actorId: OWNER_ID }),
+    (err) => {
+      assert.equal(err.name, 'PartRequestStatusConflictException');
+      return true;
+    }
+  );
+
+  assert.equal(publisher.published.length, 0, 'el perdedor no publica evento');
+  const current = await repository.findById(7);
+  assert.equal(current.status, 'ORDERED', 'no se pisa la escritura que ganó');
+});
+
+test('un broker que no responde NO retiene la respuesta (eventos.md regla 3)', async () => {
+  const repository = new InMemoryRepository([seedRequest()]);
+  let release = null;
+  const publisher = {
+    publish: () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  };
+  const useCase = new ChangePartRequestStatus({
+    partRequestRepository: repository,
+    eventPublisher: publisher,
+  });
+
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error('execute esperó al broker: el publish bloqueó la respuesta')),
+      1000
+    );
+  });
+
+  try {
+    const result = await Promise.race([
+      useCase.execute({ requestId: 7, newStatus: 'CANCELLED', actorId: OWNER_ID }),
+      timeout,
+    ]);
+    assert.equal(result.status, 'CANCELLED');
+    assert.equal(typeof release, 'function', 'el evento se lanzó sin esperarse');
+  } finally {
+    clearTimeout(timer);
+    if (release) release();
+  }
 });
 
 test('crear solicitud publica PART_REQUEST_CREATED con el payload del contrato', async () => {

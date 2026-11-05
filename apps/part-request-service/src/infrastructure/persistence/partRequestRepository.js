@@ -75,6 +75,24 @@ class SequelizePartRequestRepository extends IPartRequestRepository {
     await this.model.update(data, { where: { id: partRequest.id } });
     return this.findById(partRequest.id);
   }
+
+  /**
+   * Compare-and-swap de estado: `UPDATE ... SET status = newStatus
+   * WHERE id = ? AND status = expectedStatus`.
+   *
+   * Es atómico en la base (misma idea que el SELECT ... FOR UPDATE de la
+   * regla de una sola oferta aceptada): de dos PATCH simultáneos solo uno
+   * ve `true`, así el perdedor no publica un evento fantasma.
+   *
+   * @returns {Promise<boolean>} true si esta escritura ganó
+   */
+  async updateStatusIfCurrent(id, expectedStatus, newStatus) {
+    const [affected] = await this.model.update(
+      { status: newStatus },
+      { where: { id, status: expectedStatus } }
+    );
+    return affected > 0;
+  }
 }
 
 module.exports = { SequelizePartRequestRepository };

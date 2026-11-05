@@ -8,7 +8,9 @@
  *   ValidationException                    → 400
  *   ForbiddenException                     → 403
  *   PartRequestNotFoundException          → 404
+ *   PartRequestStatusConflictException    → 409
  *   InvalidPartRequestTransitionException → 422
+ *   EventDrivenStatusException            → 422
  *
  * Cualquier otro error → 500 sin exponer el stack trace.
  */
@@ -43,9 +45,38 @@ class ValidationException extends Error {
   }
 }
 
+/**
+ * Dos cambios de estado simultáneos para la misma solicitud: el
+ * compare-and-swap del repositorio deja pasar solo a uno. El que pierde
+ * recibe esto en vez de publicar un evento fantasma (409).
+ */
+class PartRequestStatusConflictException extends Error {
+  constructor(id) {
+    super(`La solicitud ${id} cambió de estado al mismo tiempo; vuelve a intentarlo`);
+    this.name = 'PartRequestStatusConflictException';
+    this.id = id;
+  }
+}
+
+/**
+ * Estado que este servicio NO acepta desde el cliente: lo asigna un
+ * consumidor de eventos (docs/arquitectura.md: part-request pasa a
+ * ORDERED al recibir OFFER_ACCEPTED).
+ */
+class EventDrivenStatusException extends Error {
+  constructor(status, eventName) {
+    super(`El estado ${status} lo asigna el evento ${eventName}, no una petición del cliente`);
+    this.name = 'EventDrivenStatusException';
+    this.status = status;
+    this.eventName = eventName;
+  }
+}
+
 module.exports = {
   PartRequestNotFoundException,
   InvalidPartRequestTransitionException,
+  PartRequestStatusConflictException,
+  EventDrivenStatusException,
   ForbiddenException,
   ValidationException,
 };
