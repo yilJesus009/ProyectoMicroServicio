@@ -27,7 +27,7 @@
 - `identity-service` es **Django**. Todo lo demás es **Express**.
 - `frontend` es **Angular**.
 - RabbitMQ para eventos, PostgreSQL independiente por servicio.
-
+**Orquestación:** Integrado con flujos de **Gentle** en entorno Windows.
 ---
 
 ## Reglas duras que no se negocian
@@ -75,3 +75,6 @@ Verifica que:
 - [ ] Documenta los cambios de contrato en `docs/contratos-api.md`.
 
 Resume al final: archivos modificados, pruebas realizadas y limitaciones.
+## Orquestación y Agentes (Gentle)
+- Este entorno se coordina mediante **Gentle** (`gentle-pi` / `gentle-orchestrator`).
+- Respeta los límites de ejecución de comandos definidos por el orquestador y mantén la sincronización con los scripts locales de automatización.
