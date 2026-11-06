@@ -5,8 +5,12 @@ from django.urls import include, path
 
 
 def health(_request):
-    """Health check igual que los servicios Express."""
-    return JsonResponse({"service": "identity-service", "status": "OK"})
+    """Health check: mismo contrato que los demás servicios.
+
+    docs/contratos-api.md: `GET /health` -> `{"status": "UP"}`. El Gateway
+    lo consulta en `GET /api/v1/health` para armar el estado de todos.
+    """
+    return JsonResponse({"status": "UP"})
 
 
 urlpatterns = [

@@ -6,7 +6,8 @@ Reglas del proyecto (AGENTS.md y .env.example):
   - `JWT_SECRET`: secreto con el que se FIRMAN los tokens JWT. Es el MISMO
     que usan los servicios Express para validar la firma (AGENTS.md 4.5),
     por eso NO se reutiliza el DJANGO_SECRET_KEY para firmar.
-  - Cada microservicio tiene su propia base: `DB_IDENTITY_*`.
+  - Base de datos: UN solo PostgreSQL (`DB_NAME`), esquema `identidad`
+    con su propio usuario `DB_IDENTIDAD_USER` (AGENTS.md 5, decisión D3).
 """
 from pathlib import Path
 from datetime import timedelta
@@ -106,7 +107,8 @@ WSGI_APPLICATION = "identity_service.wsgi.application"
 # --- Base de datos (PROPIA de este servicio) --------------------------------
 # En las pruebas (`manage.py test`) se usa SQLite en memoria: el CI no
 # levanta Postgres y así los tests corren en cualquier máquina. En
-# desarrollo y producción, siempre PostgreSQL con `DB_IDENTITY_*`.
+# desarrollo y producción, siempre PostgreSQL con las variables de
+# .env.example (`DB_*` y `DB_IDENTIDAD_*`).
 # (TESTING se define arriba, junto a los secretos.)
 if TESTING:
     DATABASES = {
@@ -119,11 +121,18 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("DB_IDENTITY_NAME", "identity_db"),
-            "USER": os.environ.get("DB_IDENTITY_USER", "identity_user"),
-            "PASSWORD": os.environ.get("DB_IDENTITY_PASSWORD", "identity_pass"),
-            "HOST": os.environ.get("DB_IDENTITY_HOST", "localhost"),
-            "PORT": os.environ.get("DB_IDENTITY_PORT", "5433"),
+            # Un solo PostgreSQL para todo el proyecto (AGENTS.md 5); la base
+            # se llama como dice .env.example.
+            "NAME": os.environ.get("DB_NAME", "repuestosya"),
+            # Este servicio solo entra con SU usuario, dueño del esquema.
+            "USER": os.environ.get("DB_IDENTIDAD_USER", "identidad_user"),
+            "PASSWORD": os.environ.get("DB_IDENTIDAD_PASSWORD", "identidad_pass"),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
+            # Aislamiento (decisiones.md D3): todas las tablas de este
+            # servicio viven en el esquema `identidad`. Si alguien olvida
+            # el esquema en una consulta, igual aterriza en el suyo.
+            "OPTIONS": {"options": "-c search_path=identidad"},
         }
     }
 
@@ -194,4 +203,8 @@ RABBITMQ_USER = os.environ.get("RABBITMQ_USER", "guest")
 RABBITMQ_PASS = os.environ.get("RABBITMQ_PASS", "guest")
 
 # --- Servicio ----------------------------------------------------------------
-IDENTITY_PORT = int(os.environ.get("IDENTITY_PORT", "5000"))
+# El nombre de la variable es el de .env.example (IDENTIDAD_PORT); se
+# acepta tambien IDENTITY_PORT por compatibilidad con configuraciones viejas.
+IDENTITY_PORT = int(
+    os.environ.get("IDENTIDAD_PORT") or os.environ.get("IDENTITY_PORT") or "5000"
+)
