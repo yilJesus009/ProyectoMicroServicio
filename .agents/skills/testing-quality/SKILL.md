@@ -1,206 +1,151 @@
 ---
 name: testing-quality
-description: Escribir y mantener pruebas unitarias, de integración y de contratos en los microservicios y el frontend. Cubrir reglas de negocio, en especial la regla de una sola oferta aceptada y las transiciones de estado del pedido. Usar al crear o revisar pruebas.
+description: Escribir y mantener pruebas unitarias, de integración y de contratos en los microservicios y el frontend. Cubrir reglas de negocio, en especial la regla de una sola oferta aceptada y las transiciones de estado de la solicitud, oferta y pedido. Usar al crear o revisar pruebas.
 ---
 
 # Testing y calidad
 
-> Un proyecto académico se defiende mostrando que las reglas de negocio
-> funcionan. **La regla de una sola oferta aceptada debe tener pruebas que la
-> cubran explícitamente**: es la que el docente va a probar.
+> La regla de una sola oferta aceptada debe tener pruebas que la cubran
+> explícitamente: es la que se prueba en la defensa.
 
 ## Antes de empezar
 
-1. Leer `AGENTS.md`.
-2. Leer `docs/flujo-principal.md` (las reglas que hay que probar).
-3. Verificar que el comando de pruebas corre antes de escribir nuevas.
+1. Leer `AGENTS.md` y `docs/flujo-principal.md` (estados y "Casos que
+   siempre deben probarse").
+2. Verificar que el comando de pruebas corre antes de escribir nuevas.
 
 ## Pirámide de pruebas
 
-| Nivel | Qué cubre | Velocidad | Cuántas |
-|---|---|---|---|
-| **Unitarias** | Reglas de negocio en `domain/` y `application/` | Rápidas | Muchas |
-| **De integración** | Casos de uso con BD real, adaptadores | Medianas | Las importantes |
-| **De contrato** | Formato de respuesta y payload de eventos | Rápidas | Las que cruzan servicios |
-| **End-to-end** | El flujo principal completo | Lentas | Pocas, las críticas |
+| Nivel | Qué cubre | Cuántas |
+|---|---|---|
+| **Unitarias** | Reglas de negocio en `domain/`/`application/`, sin BD | Muchas |
+| **De integración** | Casos de uso con Postgres real | Las importantes |
+| **De contrato** | Envelope de respuesta y payload de eventos | Las que cruzan servicios |
+| **End-to-end** | El flujo principal completo (`scripts/e2e-flujo.mjs`) | Pocas, las críticas |
 
-**Lo más valioso de probar está en `domain/`**, porque ahí vive la regla de
-negocio y no depende de Express ni de la base de datos. Se pueden probar sin
-levantar nada.
-
-## Prioridad absoluta: la regla de una sola oferta aceptada
+## Prioridad absoluta: una sola oferta aceptada (en `negociacion`)
 
 ```javascript
-describe('AcceptOfferCommandHandler', () => {
+describe('AcceptOfferCommand', () => {
   it('acepta una oferta y rechaza las demás en la misma transacción', async () => {
-    const offer    = makeOffer({ id: 78, requestId: 34, status: 'SUBMITTED' });
-    const rival    = makeOffer({ id: 79, requestId: 34, status: 'SUBMITTED' });
-    repo.findByRequestId.mockResolvedValue([offer, rival]);
-
     await handler.execute({ offerId: 78, actorId: 12 });
-
     expect(offer.status).toBe('ACCEPTED');
     expect(rival.status).toBe('REJECTED');
-    expect(publisher.publish).toHaveBeenCalledWith(
-      'offer_events', 'OFFER_ACCEPTED', expect.objectContaining({ offer_id: 78 })
-    );
+    expect(outbox.insert).toHaveBeenCalledWith(expect.objectContaining({ event_name: 'OFFER_ACCEPTED' }));
   });
 
-  it('lanza OfferAlreadyAcceptedException si la solicitud ya tiene oferta aceptada', async () => {
-    const offer = makeOffer({ id: 78, requestId: 34 });
-    repo.findAcceptedByRequestId.mockResolvedValue(
-      makeOffer({ id: 70, requestId: 34, status: 'ACCEPTED' })
-    );
-
+  it('lanza si la solicitud ya tiene oferta aceptada (409)', async () => {
     await expect(handler.execute({ offerId: 78, actorId: 12 }))
       .rejects.toThrow(OfferAlreadyAcceptedException);
   });
 
-  it('bloquea la fila de la solicitud antes de validar (evita condición de carrera)', async () => {
+  it('bloquea la fila de la solicitud antes de validar (SELECT ... FOR UPDATE)', async () => {
     await handler.execute({ offerId: 78, actorId: 12 });
     expect(repo.lockRequest).toHaveBeenCalledWith(34, expect.anything());
+  });
+
+  it('con dos aceptaciones simultáneas, solo una gana', async () => {
+    const results = await Promise.allSettled([accept(78), accept(79)]);
+    const fulfilled = results.filter(r => r.status === 'fulfilled');
+    expect(fulfilled).toHaveLength(1);
   });
 });
 ```
 
-Y la prueba de integración que confirma el índice en la base de datos, que es
-la defensa final:
+Y la prueba de integración que confirma el índice `UNIQUE` parcial contra
+Postgres real (la defensa final, no la validación de aplicación).
 
-```javascript
-it('falla con error de índice si dos ofertas intentan quedar ACCEPTED', async () => {
-  await Offer.create({ id: 1, requestId: 34, status: 'ACCEPTED' });
-  // la segunda debe rechazarse por el índice UNIQUE, no por la validación
-  await expect(
-    Offer.create({ id: 2, requestId: 34, status: 'ACCEPTED' })
-  ).rejects.toThrow(/unique/i);
-});
-```
-
-## Transiciones de estado del pedido
+## Transiciones de estado (`docs/flujo-principal.md`)
 
 ```javascript
 describe('ChangeOrderStatus', () => {
   const validas = [
-    ['PENDING',   'PREPARING'],
-    ['PREPARING', 'SHIPPED'],
-    ['SHIPPED',   'DELIVERED'],
+    ['PENDING_PAYMENT', 'PREPARING'],
+    ['PREPARING', 'IN_TRANSIT'],      // solo si delivery_type = DELIVERY
+    ['PREPARING', 'READY_FOR_PICKUP'],// solo si delivery_type = PICKUP
+    ['IN_TRANSIT', 'DELIVERED'],
     ['DELIVERED', 'COMPLETED'],
   ];
   const invalidas = [
-    ['PENDING',   'SHIPPED'],     // se salta PREPARING
-    ['COMPLETED', 'SHIPPED'],     // retrocede
-    ['CANCELLED', 'PREPARING'],   // ya está cancelado
+    ['PREPARING', 'DELIVERED'],       // se salta el tránsito
+    ['READY_FOR_PICKUP', 'IN_TRANSIT'], // mezcla delivery_type
   ];
 
   it.each(validas)('permite %s → %s', async (from, to) => {
     await expect(changeStatus(orderIn(from), to)).resolves.toBeTruthy();
   });
-
   it.each(invalidas)('rechaza %s → %s con 422', async (from, to) => {
-    await expect(changeStatus(orderIn(from), to)).rejects.toThrow(
-      InvalidOrderTransitionException
-    );
+    await expect(changeStatus(orderIn(from), to)).rejects.toThrow(InvalidOrderTransitionException);
   });
 });
 ```
 
-## Idempotencia de los consumidores
+Un pedido `PICKUP` que intenta pasar a `IN_TRANSIT` es **422**, no 403;
+si el rol no corresponde (comprador despachando), sí es **403**.
 
-RabbitMQ entrega **al menos una vez**. Probar que un evento repetido no
-duplica efectos:
+## Idempotencia de los consumidores
 
 ```javascript
 it('procesa el mismo OFFER_ACCEPTED dos veces sin crear dos pedidos', async () => {
-  const msg = buildEvent('OFFER_ACCEPTED', { offer_id: 78, request_id: 34 });
-
+  const msg = buildEvent('OFFER_ACCEPTED', { offer_id: 78, part_request_id: 34 });
   await consumer.handle(msg);
   await consumer.handle(msg);   // duplicado
-
   expect(await Order.count()).toBe(1);
+});
+```
+
+## Pruebas de contrato
+
+```javascript
+it('POST /api/v1/offers responde con el envelope correcto', async () => {
+  const res = await request(app).post('/api/v1/offers').send(offerData);
+  expect(res.body).toMatchObject({ status: 201, msg: expect.any(String) });
+  expect(res.body).toHaveProperty('data');
+});
+
+it('OFFER_ACCEPTED tiene event_id, version y el payload documentado', async () => {
+  const event = publisher.lastPublished('OFFER_ACCEPTED');
+  expect(event).toMatchObject({ event_name: 'OFFER_ACCEPTED', version: 1, producer: 'negociacion' });
+  expect(event.event_id).toBeDefined();
 });
 ```
 
 ## Pruebas de los guards del frontend
 
-```typescript
-it('bloquea el acceso a /ofertas para un COMPRADOR', () => {
-  auth.setRole('COMPRADOR');
-  expect(guard.canActivate(routeWithRoles(['PROVEEDOR']))).toBeFalse();
-});
-
-it('permite el acceso a /ofertas para un PROVEEDOR', () => {
-  auth.setRole('PROVEEDOR');
-  expect(guard.canActivate(routeWithRoles(['PROVEEDOR']))).toBeTrue();
-});
-```
-
-> Recordar que los guards son **comodidad visual**. La autorización real está
-> en el backend, y esa sí se prueba con una llamada HTTP sin permiso esperando
-> un `403`.
-
-## Pruebas de contrato
-
-Verificar que la respuesta tiene el envelope `{status, msg, data}` y que los
-campos del evento coinciden con `docs/eventos.md`:
-
-```javascript
-it('POST /api/v1/offers responde con el envelope correcto', async () => {
-  const res = await request(app).post('/api/v1/offers').send(offerData);
-  expect(res.status).toBe(201);
-  expect(res.body).toMatchObject({ status: 201, msg: expect.any(String) });
-  expect(res.body).toHaveProperty('data');
-});
-
-it('OFFER_ACCEPTED tiene el payload documentado', async () => {
-  const event = publisher.lastPublished('OFFER_ACCEPTED');
-  expect(event).toMatchObject({
-    event_name: 'OFFER_ACCEPTED',
-    producer:   'offer-service',
-    occurred_at: expect.any(String),
-    correlation_id: expect.any(String),
-  });
-  expect(Object.keys(event.payload).sort())
-    .toEqual(['buyer_id','currency','delivery_type','offer_id','price','provider_id','request_id']);
-});
-```
+Son **comodidad visual**; la autorización real está en el backend y esa sí
+se prueba con una llamada HTTP sin permiso esperando `403`.
 
 ## Casos que siempre hay que cubrir
 
-- [ ] Campo obligatorio ausente → `400`.
-- [ ] Email ya registrado → `409`.
-- [ ] Token inválido o expirado → `401`.
-- [ ] Rol incorrecto para la operación → `403`.
-- [ ] Recurso inexistente → `404`.
-- **[ ] Segunda oferta aceptada para la misma solicitud → `409`.**
-- **[ ] Transición de estado inválida → `422`.**
-- [ ] Consumidor idempotente ante evento duplicado.
+- [ ] Aceptar una oferta deja las demás `REJECTED`.
+- [ ] Segunda oferta aceptada de la misma solicitud → `409`.
+- [ ] Dos aceptaciones simultáneas: solo una gana.
+- [ ] Proveedor no aprobado no puede ofertar → `403`.
+- [ ] No se puede ofertar en solicitud cancelada o con oferta aceptada → `422`.
+- [ ] `OFFER_ACCEPTED` repetido crea **un** pedido.
+- [ ] Pedido `PICKUP` no puede pasar a `IN_TRANSIT` → `422`.
+- [ ] Al completarse el pedido, la solicitud queda `COMPLETED`.
 - [ ] Fallo de RabbitMQ no impide la operación principal.
-- [ ] Ningún `500` expone un stack trace.
+- [ ] Ningún `500` expone el stack trace.
 
 ## Ejecutar las pruebas
 
 ```bash
-# Express
-cd apps/part-request-service && npm test
-cd apps/offer-service       && npm test
-
-# Django
-cd apps/identity-service && python manage.py test
-
-# Angular
-cd apps/frontend && ng test
+cd apps/negociacion   && npm test
+cd apps/notificaciones && npm test
+cd apps/identidad      && python manage.py test
+cd apps/pedidos        && mvn test
+cd apps/catalogo       && npm test
+cd apps/frontend       && ng test
 ```
 
 ## Regla de honestidad
 
 **Nunca afirmes que una prueba pasó si no la ejecutaste.** Si no pudiste
-correrla, dilo explícitamente en el resumen. Es preferible reportar "escribí
-la prueba pero no pude ejecutarla porque falta levantar la BD" a descubrirlo
-después en la revisión.
+correrla, dilo explícitamente en el resumen.
 
 ## Al terminar
 
-- Todas las pruebas nuevas pasan, y las existentes no se rompieron.
-- La regla de una sola oferta aceptada tiene cobertura.
-- Las transiciones de estado tienen cobertura.
-- Resumir: qué se probó, qué no, y por qué.
+Todas las pruebas nuevas pasan y las existentes no se rompieron; la regla
+de una sola oferta aceptada y las transiciones tienen cobertura. Resumir
+qué se probó, qué no, y por qué.

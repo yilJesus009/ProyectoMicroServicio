@@ -1,247 +1,85 @@
-# Flujo principal del negocio
+# Flujo principal
 
-> Este documento describe el ciclo completo que evalúa el proyecto.
-> Si el flujo no funciona de punta a punta, el proyecto no está terminado,
-> sin importar cuántos microservicios existan.
+> Si este flujo no funciona de punta a punta dentro de Docker, el proyecto no
+> está terminado, sin importar cuántas pantallas existan.
 
----
+## Recorrido completo
 
-## El ciclo completo
+| # | Quién | Acción | Servicio | Resultado | Evento |
+|---|---|---|---|---|---|
+| 1 | Cualquiera | Se registra e inicia sesión | Identidad | Recibe su JWT | `USER_CREATED` |
+| 2 | Proveedor | Completa su perfil comercial | Identidad | Perfil `PENDING` | `SUPPLIER_PROFILE_SUBMITTED` |
+| 3 | Admin | Aprueba al proveedor | Identidad | Perfil `APPROVED` | `SUPPLIER_APPROVED` |
+| 4 | Comprador | (Opcional) registra su vehículo | Catálogo | Vehículo guardado | — |
+| 5 | Comprador | Publica una solicitud | Negociación | Solicitud `PUBLISHED` | `PART_REQUEST_CREATED` |
+| 6 | Proveedor | Ve solicitudes abiertas y envía una oferta | Negociación | Oferta `SUBMITTED`; solicitud `RECEIVING_OFFERS` | `OFFER_SUBMITTED` |
+| 7 | Comprador | Compara ofertas y **acepta una** | Negociación | Una `ACCEPTED`, las demás `REJECTED`; solicitud `OFFER_ACCEPTED` | `OFFER_ACCEPTED`, `OFFER_REJECTED` |
+| 8 | (automático) | Se crea el pedido | Pedidos | Pedido `PENDING_PAYMENT` | `ORDER_CREATED` |
+| 9 | Comprador | Paga con QR o tarjeta (simulado) | Pedidos | Pedido `PREPARING` | `ORDER_STATUS_CHANGED` |
+| 10 | Proveedor | Despacha o deja listo para retiro | Pedidos | `IN_TRANSIT` o `READY_FOR_PICKUP` | `ORDER_STATUS_CHANGED` |
+| 11 | Proveedor | Marca entregado | Pedidos | `DELIVERED` | `ORDER_STATUS_CHANGED` |
+| 12 | Comprador | Confirma la recepción | Pedidos | `COMPLETED` | `ORDER_STATUS_CHANGED` |
+| 13 | (automático) | Se completa la solicitud | Negociación | Solicitud `COMPLETED` | `PART_REQUEST_STATUS_CHANGED` |
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  1. PUBLICAR                                                    │
-│     El solicitante (propietario o taller) describe qué         │
-│     repuesto necesita: marca, modelo y año del vehículo,        │
-│     descripción, fotografía, ciudad y nivel de urgencia.        │
-└───────────────────────────┬─────────────────────────────────────┘
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  2. OFRECER                                                     │
-│     Los proveedores revisan las solicitudes disponibles        │
-│     y envían ofertas: precio, marca del repuesto, condición,   │
-│     disponibilidad, tiempo de entrega e indican si se retira   │
-│     o requiere entrega.                                        │
-└───────────────────────────┬─────────────────────────────────────┘
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  3. COMPARAR Y ACEPTAR  ←←← LA REGLA CRÍTICA                   │
-│     El solicitante compara las condiciones de las ofertas.     │
-│     Acepta UNA SOLA. Las demás quedan como historial.          │
-└───────────────────────────┬─────────────────────────────────────┘
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  4. GENERAR EL PEDIDO                                           │
-│     Al aceptarse la oferta, se crea el pedido correspondiente. │
-│     El solicitante pasa a ver su pedido en estado inicial.     │
-└───────────────────────────┬─────────────────────────────────────┘
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  5. SEGUIR HASTA LA FINALIZACIÓN                                │
-│     El proveedor actualiza: preparación → envío → entrega.     │
-│     El solicitante confirma la finalización.                    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Recorrido técnico paso a paso
-
-### Paso 1 — Publicar la solicitud
-
-```
-Frontend (Angular)
-  POST /api/v1/part-requests        (vía Gateway, con JWT)
-        │
-        ▼
-api-gateway (:4000)
-  valida el JWT → inyecta X-User-Id, X-User-Roles
-        │
-        ▼
-part-request-service (:4001)
-  valida que el rol sea COMPRADOR
-  persiste la solicitud en PUBLISHED
-  publica PART_REQUEST_CREATED en RabbitMQ
-        │
-        ├──► notification-service  (aviso: nueva solicitud)
-        └──► los proveedores la ven con GET /api/v1/part-requests
-```
-
-### Paso 2 — Enviar una oferta
-
-```
-Proveedor
-  GET  /api/v1/part-requests?status=PUBLISHED
-  POST /api/v1/offers               (con request_id y condiciones)
-        │
-        ▼
-offer-service (:4002)
-  valida que el rol sea PROVEEDOR
-  valida que la solicitud exista y esté PUBLISHED
-  persiste la oferta en SUBMITTED
-  publica OFFER_SUBMITTED
-        │
-        ├──► notification-service  (aviso al solicitante: nueva oferta)
-        └──► el solicitante la ve con GET /api/v1/offers?request_id=34
-```
-
-### Paso 3 — Aceptar una oferta (la operación más delicada)
-
-```
-Solicitante
-  POST /api/v1/offers/78/accept
-        │
-        ▼
-offer-service (:4002)
-  BEGIN TRANSACTION
-    SELECT ... FROM part_requests WHERE id = 34 FOR UPDATE   ← bloquea
-    ¿ya existe una oferta ACCEPTED para esta solicitud?
-        SÍ → ROLLBACK, devuelve 409
-        NO →
-            UPDATE offers SET status='ACCEPTED'  WHERE id = 78
-            UPDATE offers SET status='REJECTED'
-              WHERE request_id = 34 AND id <> 78
-  COMMIT
-  publica OFFER_ACCEPTED
-  publica OFFER_REJECTED por cada oferta descartada
-        │
-        ├──► part-request-service  (cambia la solicitud a ORDERED)
-        ├──► order-service         (crea el pedido ← paso 4)
-        └──► notification-service  (aviso al proveedor: oferta aceptada)
-```
-
-**La defensa en tres capas:**
-
-```sql
--- 1. Base de datos: la defensa final. Aunque dos peticiones concurrentes
---    pasen la validación, una falla aquí.
-CREATE UNIQUE INDEX uq_one_accepted_offer_per_request
-  ON offers (request_id) WHERE status = 'ACCEPTED';
-```
-
-```javascript
-// 2. Dominio: el agregado expone accept() y lanza su propia excepción.
-accept() {
-  if (this.status === 'ACCEPTED') throw new OfferAlreadyAcceptedException();
-  this.status = 'ACCEPTED';
-}
-```
-
-```javascript
-// 3. Aplicación: el handler bloquea la fila antes de decidir.
-async execute({ offerId }) {
-  return this.db.transaction(async (t) => {
-    const offer = await this.offers.findById(offerId, t);
-    await this.requests.lock(offer.requestId, t);   // SELECT ... FOR UPDATE
-    // ... validar y aceptar
-  });
-}
-```
-
-> El frontend **solo refleja** este estado. Si alguien llama al endpoint
-> directamente dos veces, la segunda recibe `409`. Ahí vive la regla.
-
-### Paso 4 — Generar el pedido
-
-```
-order-service (:4003) consume OFFER_ACCEPTED
-  crea el pedido en PENDING
-  publica ORDER_CREATED
-        │
-        ├──► notification-service  (aviso a ambas partes)
-        └──► el solicitante ve su pedido con GET /api/v1/orders/12
-```
-
-> `order-service` **no** expone un endpoint que cree pedidos. Su única fuente
-> es el evento `OFFER_ACCEPTED`. Esto impide pedidos "fantasma".
-
-### Paso 5 — Seguimiento hasta la finalización
-
-```
-proveedor:  PENDING ─► PREPARING ─► SHIPPED ─► DELIVERED
-                                    │
-solicitante confirma ───────────────┴────────► COMPLETED
-
-cualquiera de las dos partes, antes de SHIPPED ─► CANCELLED
-```
-
-```
-PATCH /api/v1/orders/12/status   { "status": "PREPARING" }
-        │
-        ▼
-order-service (:4003)
-  valida que la transición sea legal      → si no, devuelve 422
-  persiste el cambio
-  publica ORDER_STATUS_CHANGED
-        │
-        ├──► notification-service  (aviso del cambio de estado)
-        └──► el frontend consulta con GET /api/v1/part-requests/:id/check-status
-```
-
-El frontend puede consultar `check-status` periódicamente mientras espera,
-para mostrar al usuario que el pedido se está procesando.
-
----
+En cada evento, **Notificaciones** crea el aviso para quien corresponda.
 
 ## Estados
 
-### Solicitud (Part Request)
+### Solicitud (Negociación)
 
-| Estado | Significado |
-|---|---|
-| `PUBLISHED` | Visible para los proveedores. Acepta ofertas. |
-| `ORDERED` | Ya tiene una oferta aceptada y un pedido generado. |
-| `COMPLETED` | El pedido se finalizó. |
-| `CANCELLED` | El solicitante la canceló antes de aceptar oferta. |
+```
+PUBLISHED ──(primera oferta)──► RECEIVING_OFFERS ──(acepta una)──► OFFER_ACCEPTED ──(pedido COMPLETED)──► COMPLETED
+    │                                 │
+    └──────────(el dueño cancela)─────┴──► CANCELLED
+```
 
-### Oferta (Offer)
+| Desde | Hacia | Lo provoca |
+|---|---|---|
+| `PUBLISHED` | `RECEIVING_OFFERS` | Llega la primera oferta |
+| `PUBLISHED`, `RECEIVING_OFFERS` | `OFFER_ACCEPTED` | El dueño acepta una oferta |
+| `PUBLISHED`, `RECEIVING_OFFERS` | `CANCELLED` | El dueño cancela |
+| `OFFER_ACCEPTED` | `COMPLETED` | Evento `ORDER_STATUS_CHANGED` con `COMPLETED` |
 
-| Estado | Significado |
-|---|---|
-| `SUBMITTED` | Enviada, pendiente de decisión. |
-| `ACCEPTED` | La elegida. Genera el pedido. **Solo una por solicitud.** |
-| `REJECTED` | No seleccionada. Queda en el historial. |
+El comprador **nunca** puede poner `OFFER_ACCEPTED` ni `COMPLETED` a mano.
 
-### Pedido (Order)
+### Oferta (Negociación)
 
-| Estado | Quién lo cambia |
-|---|---|
-| `PENDING` | order-service, al crear el pedido |
-| `PREPARING` | Proveedor |
-| `SHIPPED` | Proveedor |
-| `DELIVERED` | Proveedor |
-| `COMPLETED` | Solicitante, confirma la recepción |
-| `CANCELLED` | Cualquiera, antes de `SHIPPED` |
+| Desde | Hacia | Lo provoca |
+|---|---|---|
+| `SUBMITTED` | `ACCEPTED` | El comprador la acepta |
+| `SUBMITTED` | `REJECTED` | El comprador acepta otra |
+| `SUBMITTED` | `WITHDRAWN` | El proveedor la retira (solicitud abierta) |
 
----
+### Pedido (Pedidos) — patrón State + Strategy
 
-## Lo que NO es obligatorio
+```
+PENDING_PAYMENT ──(pago)──► PREPARING ──┬─(DELIVERY)──► IN_TRANSIT ───────┬──► DELIVERED ──(comprador)──► COMPLETED
+                                        └─(PICKUP)────► READY_FOR_PICKUP ─┘
+```
 
-Estas funcionalidades son **complementarias**. Solo se abordan después de que
-el flujo de arriba funcione completo:
+| Desde | Hacia | Quién | Condición |
+|---|---|---|---|
+| `PENDING_PAYMENT` | `PREPARING` | Comprador | Al confirmar el pago |
+| `PREPARING` | `IN_TRANSIT` | Proveedor | Solo si `delivery_type = DELIVERY` |
+| `PREPARING` | `READY_FOR_PICKUP` | Proveedor | Solo si `delivery_type = PICKUP` |
+| `IN_TRANSIT`, `READY_FOR_PICKUP` | `DELIVERED` | Proveedor | |
+| `DELIVERED` | `COMPLETED` | Comprador | Confirma la recepción |
 
-- Pasarela de pagos real (la confirmación de compra se **simula**).
-- Valoraciones de proveedores.
-- Notificaciones push en tiempo real.
-- Filtros avanzados de búsqueda.
+Cualquier otra transición devuelve **422**. Si el rol no corresponde, **403**.
 
-No los empieces hasta tener el flujo principal andando. El proyecto se evalúa
-por el flujo, no por la cantidad de características.
+### Perfil comercial (Identidad)
 
----
+`PENDING` → `APPROVED` o `REJECTED`. Si un proveedor rechazado actualiza su
+perfil, vuelve a `PENDING`.
 
-## Criterio de "ya funciona"
+## Casos que siempre deben probarse
 
-El flujo principal está completo cuando:
-
-- [ ] Un usuario se registra como `COMPRADOR` y publica una solicitud.
-- [ ] Un usuario se registra como `PROVEEDOR` y ve esa solicitud.
-- [ ] El proveedor envía una oferta y el solicitante la recibe.
-- [ ] El solicitante ve **varias** ofertas y puede compararlas.
-- [ ] Al aceptar una, las demás pasan a `REJECTED` automáticamente.
-- [ ] Intentar aceptar una segunda oferta devuelve `409`.
-- [ ] El pedido se crea **solo**, sin que nadie lo pida por endpoint.
-- [ ] El proveedor avanza el pedido por sus estados.
-- [ ] Un estado inválido devuelve `422`.
-- [ ] El solicitante confirma la finalización.
-- [ ] Todo pasando por el Gateway, con JWT, y cada servicio con su propia BD.
+- [ ] Aceptar una oferta deja las demás en `REJECTED`.
+- [ ] Aceptar una segunda oferta de la misma solicitud devuelve **409**.
+- [ ] Dos aceptaciones simultáneas: solo una gana (prueba con peticiones en paralelo).
+- [ ] Un proveedor no aprobado no puede ofertar (**403**).
+- [ ] No se puede ofertar en una solicitud cancelada o con oferta aceptada (**422**).
+- [ ] El mismo `OFFER_ACCEPTED` recibido dos veces crea **un** pedido.
+- [ ] Un pedido `PICKUP` no puede pasar a `IN_TRANSIT` (**422**).
+- [ ] Solo el comprador confirma la recepción; solo el proveedor despacha.
+- [ ] Al completarse el pedido, la solicitud queda `COMPLETED`.

@@ -1,0 +1,39 @@
+'use strict';
+
+/**
+ * Contrato del repositorio.
+ *
+ * Interfaz, NO implementación: el dominio no sabe que hay Sequelize detrás.
+ * La implementación vive en infrastructure/persistence/.
+ */
+class IPartRequestRepository {
+  async findById(id) {
+    throw new Error('not implemented');
+  }
+
+  async findAll(filters = {}) {
+    throw new Error('not implemented');
+  }
+
+  async save(partRequest) {
+    throw new Error('not implemented');
+  }
+
+  /**
+   * Compare-and-swap de estado (defensa contra escrituras concurrentes).
+   *
+   * `UPDATE ... SET status = newStatus WHERE id = ? AND status = expected`
+   * es atómico en la base: de dos PATCH simultáneos solo uno ve `true`.
+   * El que pierde NO debe publicar evento (el historial quedaría mentido).
+   *
+   * @param {number} id Id de la solicitud
+   * @param {string} expectedStatus Estado que se leyó al empezar
+   * @param {string} newStatus Estado nuevo
+   * @returns {Promise<boolean>} true si esta escritura ganó
+   */
+  async updateStatusIfCurrent(id, expectedStatus, newStatus) {
+    throw new Error('not implemented');
+  }
+}
+
+module.exports = { IPartRequestRepository };

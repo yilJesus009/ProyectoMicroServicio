@@ -1,292 +1,136 @@
 # Contratos API
 
-> **Este documento se define ANTES de codificar.** Es el acuerdo entre
-> integrantes: si cambia, se discute primero y se documenta aquí mediante PR.
-> Nadie improvisa un endpoint esperando que el otro adivine.
+> Se acuerdan **antes** de programar. Si un endpoint cambia, se actualiza
+> aquí en el mismo PR.
 
-> ⚠️ **Estado: BORRADOR.** Falta acordar con el equipo los campos exactos de
-> Offer y Order. Lo que está marcado como `[POR ACORDAR]` debe cerrarse en la
-> primera reunión técnica.
-
----
-
-## Convención general
-
-- Prefijo versionado: `/api/v1`
-- El frontend **siempre** habla con el Gateway (`http://localhost:4000`).
-- Todas las respuestas usan el envelope `{ status, msg, data }`.
-- Rutas protegidas validan el JWT. El Gateway añade `X-User-Id` y `X-User-Roles`.
+- Todo pasa por el Gateway: `http://localhost:4000/api/v1/...`
+- Sobre de respuesta: `{ status, msg, data }`. Campos JSON en `snake_case`.
+- 🔓 público · 🔑 cualquier usuario autenticado · 👤 `COMPRADOR` ·
+  🏪 `PROVEEDOR` · 🏪✅ `PROVEEDOR` aprobado · 🛡️ `ADMIN`
 
 ---
 
-## Identity Service (`:5000`)
+## Identidad (Django)
 
-### `POST /api/v1/auth/register`
-Crea un usuario. Público.
+Los endpoints de autenticación ya están implementados y se mantienen.
 
-**Request**
-```json
-{
-  "nombre": "Juan Pérez",
-  "email": "juan@taller.com",
-  "contrasena": "secreto123",
-  "telefono": "76543210",
-  "ciudad": "La Paz",
-  "rol": "COMPRADOR"
-}
-```
-
-| Campo | Tipo | Obligatorio | Notas |
+| Método | Ruta | Quién | Qué hace |
 |---|---|---|---|
-| `nombre` | string | ✅ | |
-| `email` | string | ✅ | Único. Devuelve `409` si ya existe |
-| `contrasena` | string | ✅ | Se hashea con bcrypt, nunca se guarda en claro |
-| `telefono` | string | ❌ | |
-| `ciudad` | string | ❌ | |
-| `rol` | enum | ✅ | `COMPRADOR` \| `PROVEEDOR` \| `ADMIN` |
+| POST | `/auth/register` | 🔓 | Registro. Body: `nombre`, `email`, `contrasena`, `telefono`, `ciudad`, `rol` (`COMPRADOR` o `PROVEEDOR`) → 201 |
+| POST | `/auth/login` | 🔓 | Body: `email`, `contrasena` → `{ token, expires_in, usuario: { id, nombre, rol } }` |
+| GET | `/auth/me` | 🔑 | Usuario del token |
+| POST | `/auth/verify` | 🔑 | Valida un token |
+| GET | `/suppliers/me` | 🏪 | Perfil comercial propio (o 404 si no existe) |
+| PUT | `/suppliers/me` | 🏪 | Crea o actualiza el perfil: `business_name`, `city`, `phone`, `category_ids[]`. Queda `PENDING` |
+| GET | `/admin/suppliers?status=PENDING` | 🛡️ | Perfiles por estado |
+| POST | `/admin/suppliers/{id}/approve` | 🛡️ | Aprueba → publica `SUPPLIER_APPROVED` |
+| POST | `/admin/suppliers/{id}/reject` | 🛡️ | Body: `reason` → publica `SUPPLIER_REJECTED` |
 
-**Respuesta `201`**
-```json
-{
-  "status": 201,
-  "msg": "Usuario registrado exitosamente",
-  "data": {
-    "id": 12,
-    "nombre": "Juan Pérez",
-    "email": "juan@taller.com",
-    "telefono": "76543210",
-    "ciudad": "La Paz",
-    "rol": "COMPRADOR"
-  }
-}
-```
-
-### `POST /api/v1/auth/login`
-Devuelve el JWT. Público.
-
-**Request**
-```json
-{ "email": "juan@taller.com", "contrasena": "secreto123" }
-```
-
-**Respuesta `200`**
-```json
-{
-  "status": 200,
-  "msg": "Inicio de sesión exitoso",
-  "data": {
-    "token": "<jwt>",
-    "expires_in": 3600,
-    "usuario": { "id": 12, "nombre": "Juan Pérez", "rol": "COMPRADOR" }
-  }
-}
-```
-
-**Errores**
-- `401` credenciales incorrectas o usuario inactivo
-
-### `GET /api/v1/auth/me`
-Devuelve el usuario del token. Requiere `Authorization: Bearer <jwt>`.
-
-### `POST /api/v1/auth/verify`
-Lo consume el Gateway para validar un token.
-
-**Respuesta `200`**
-```json
-{ "valid": true, "user_id": 12, "rol": "COMPRADOR", "email": "juan@taller.com" }
-```
-
-**Errores**
-- `401` `{ "valid": false }` si el token es inválido o expiró
+El admin se crea por comando o semilla, nunca desde el registro público.
 
 ---
 
-## Part Request Service (`:4001`)
+## Negociación (Express)
 
-### `POST /api/v1/part-requests`
-Crea una solicitud. Requiere rol `COMPRADOR`. Acepta `multipart/form-data`
-porque puede llevar fotografía.
-
-**Request**
-```
-vehicle_brand   string  ✅  "Toyota"
-vehicle_model   string  ✅  "Hilux"
-vehicle_year    int     ✅  2019
-description     text    ✅  "Filtro de aceite original"
-city            string  ✅  "La Paz"
-urgency         enum    ❌  BAJA | MEDIA | ALTA   (default MEDIA)
-photo           file    ❌  imagen del repuesto
-```
-
-**Respuesta `201`** con el objeto creado, incluyendo `id` y `status: "PUBLISHED"`.
-
-**Efecto:** publica `PART_REQUEST_CREATED` en `part_request_events`.
-
-### `GET /api/v1/part-requests`
-Lista solicitudes. Público o autenticado según filtro.
-
-| Query | Tipo | Notas |
-|---|---|---|
-| `city` | string | Filtra por ciudad |
-| `status` | enum | `PUBLISHED`, `ORDERED`, `COMPLETED`, `CANCELLED` |
-| `urgency` | enum | `BAJA`, `MEDIA`, `ALTA` |
-
-### `GET /api/v1/part-requests/:id`
-Detalle de una solicitud.
-
-### `PATCH /api/v1/part-requests/:id/status`
-Cambia el estado. Requiere ser el dueño de la solicitud.
-
-**Request**
-```json
-{ "status": "ORDERED" }
-```
-
-**Efecto:** publica `PART_REQUEST_STATUS_CHANGED`.
-
-### `GET /api/v1/part-requests/:id/check-status`
-Lo consume el frontend para mostrar el estado mientras se procesa el pedido.
-Devuelve solo el estado, respuesta liviana.
-
----
-
-## Offer Service (`:4002`)
-
-### `POST /api/v1/offers`
-Envía una oferta. Requiere rol `PROVEEDOR`.
-
-**Request**
-```json
-{
-  "request_id": 34,
-  "price": 1250.50,
-  "currency": "BOB",
-  "brand": "Genérico",
-  "condition": "NEW",
-  "availability": "IN_STOCK",
-  "delivery_type": "DELIVERY",
-  "estimated_delivery_days": 3,
-  "notes": "Repuesto nuevo, garantía de 6 meses"
-}
-```
-
-| Campo | Tipo | Obligatorio | Notas |
+| Método | Ruta | Quién | Qué hace |
 |---|---|---|---|
-| `request_id` | int | ✅ | Debe existir y estar `PUBLISHED` |
-| `price` | decimal | ✅ | `[POR ACORDAR]` moneda fija o configurable |
-| `currency` | string | ❌ | default `BOB` |
-| `brand` | string | ✅ | Marca del repuesto ofrecido |
-| `condition` | enum | ✅ | `NEW` \| `USED` \| `REFURBISHED` |
-| `availability` | enum | ✅ | `IN_STOCK` \| `ORDER_REQUIRED` |
-| `delivery_type` | enum | ✅ | `PICKUP` \| `DELIVERY` |
-| `estimated_delivery_days` | int | ✅ | |
-| `notes` | text | ❌ | |
+| POST | `/part-requests` | 👤 | Crea una solicitud (multipart). Campos: `category_id`, `vehicle_brand`, `vehicle_model`, `vehicle_year`, `description`, `city`, `urgency`, `photo` (opcional, jpg/png/webp, máx. 5 MB) → 201, estado `PUBLISHED` |
+| GET | `/part-requests/mine` | 👤 | Mis solicitudes |
+| GET | `/part-requests/open?city=&category_id=` | 🏪✅ | Solicitudes en `PUBLISHED` o `RECEIVING_OFFERS` |
+| GET | `/part-requests/{id}` | 🔑 | Detalle. Solo el dueño o un proveedor aprobado |
+| GET | `/part-requests/{id}/photo` | 🔑 | La fotografía |
+| PATCH | `/part-requests/{id}/cancel` | 👤 dueño | Solo si `PUBLISHED` o `RECEIVING_OFFERS` → `CANCELLED` |
+| GET | `/part-requests/{id}/offers?sort=price\|days` | 👤 dueño | **Comparador**: todas las ofertas de la solicitud |
+| POST | `/part-requests/{id}/offers` | 🏪✅ | Envía oferta: `price`, `brand`, `condition`, `availability`, `delivery_type`, `estimated_days`, `notes` → 201 |
+| GET | `/offers/mine` | 🏪 | Mis ofertas con su estado |
+| PATCH | `/offers/{id}/withdraw` | 🏪 dueño | Solo si `SUBMITTED` y la solicitud sigue abierta → `WITHDRAWN` |
+| POST | `/offers/{id}/accept` | 👤 dueño de la solicitud | **La operación crítica** (ver abajo) |
 
-**Errores**
-- `404` la solicitud no existe o no está publicada
-- `409` el proveedor ya envió una oferta para esta solicitud
-  `[POR ACORDAR]` ¿permitimos varias ofertas del mismo proveedor?
+**`POST /offers/{id}/accept`** — en una transacción:
+1. Bloquea la solicitud (`SELECT ... FOR UPDATE`).
+2. Verifica que esté en `PUBLISHED` o `RECEIVING_OFFERS` → si no, **422**.
+3. Verifica que no haya otra oferta `ACCEPTED` → si la hay, **409**.
+4. Marca la oferta `ACCEPTED`, las demás `SUBMITTED` como `REJECTED` y la
+   solicitud como `OFFER_ACCEPTED`.
+5. Guarda en el outbox `OFFER_ACCEPTED` y un `OFFER_REJECTED` por cada
+   rechazada.
 
-**Efecto:** publica `OFFER_SUBMITTED`.
+Respuesta 200: `{ offer, part_request }`. El pedido aparece unos segundos
+después en Pedidos.
 
-### `GET /api/v1/offers?request_id=34`
-Ofertas de una solicitud. Requiere ser el dueño de la solicitud.
+Errores de oferta: **403** si el proveedor no está aprobado, **409** si ya
+tiene una oferta activa en esa solicitud, **422** si la solicitud no acepta
+ofertas.
 
-### `GET /api/v1/offers?provider_id=55`
-Ofertas enviadas. Requiere rol `PROVEEDOR`.
-
-### `POST /api/v1/offers/:id/accept`
-**La operación más crítica del proyecto.** Requiere ser el dueño de la solicitud.
-
-**Garantías:**
-- Usa `SELECT ... FOR UPDATE` sobre la solicitud.
-- Índice `UNIQUE` parcial en BD como defensa final.
-- Acepta esta oferta y rechaza las demás en una **misma transacción**.
-
-**Errores**
-- `403` no es el dueño de la solicitud
-- `409` la solicitud ya tiene una oferta aceptada
-- `422` la solicitud ya no está en estado aceptable
-
-**Efecto:** publica `OFFER_ACCEPTED` y `OFFER_REJECTED` por cada oferta descartada.
-
-### `POST /api/v1/offers/:id/reject`
-Rechazo manual de una oferta. `[POR ACORDAR]` si se expone o el sistema
-rechaza automáticamente las no seleccionadas.
-
----
-
-## Order Service (`:4003`)
-
-### `POST /api/v1/orders`
-**No se llama desde el frontend.** El pedido se crea consumiendo `OFFER_ACCEPTED`.
-Se documenta aquí para que quede claro el contrato del evento.
-
-### `GET /api/v1/orders/:id`
-Detalle del pedido.
-
-### `GET /api/v1/orders?buyer_id=12`
-Pedidos como comprador.
-
-### `GET /api/v1/orders?provider_id=55`
-Pedidos como proveedor.
-
-### `PATCH /api/v1/orders/:id/status`
-Cambia el estado del pedido.
-
-**Request**
+Ejemplo de oferta en el comparador:
 ```json
-{ "status": "PREPARING" }
+{
+  "id": 78, "part_request_id": 34, "supplier_id": 55, "supplier_name": "AutoParts Center",
+  "price": 620.00, "currency": "BOB", "brand": "KYB", "condition": "NEW",
+  "availability": "IN_STOCK", "delivery_type": "DELIVERY", "estimated_days": 2,
+  "notes": null, "status": "SUBMITTED", "created_at": "2026-11-10T14:00:00Z"
+}
 ```
 
-**Validación de transición:**
+---
+
+## Pedidos (Spring Boot)
+
+No existe endpoint para crear pedidos: nacen del evento `OFFER_ACCEPTED`.
+
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| GET | `/orders/mine` | 👤 | Mis pedidos como comprador |
+| GET | `/orders/supplier` | 🏪 | Mis pedidos como proveedor |
+| GET | `/orders/{id}` | 🔑 comprador o proveedor del pedido | Detalle con historial de estados y pago |
+| GET | `/orders/by-offer/{offerId}` | 👤 | Busca el pedido de una oferta. **404 mientras no se haya creado**: el frontend reintenta cada 2 s |
+| POST | `/orders/{id}/payment` | 👤 dueño | Body: `{ "method": "QR" \| "CARD" }`. Solo si `PENDING_PAYMENT` → registra el pago simulado y pasa a `PREPARING`. Devuelve `reference` |
+| PATCH | `/orders/{id}/status` | 🏪 dueño | Body: `{ "status": ... }`. Transiciones válidas en `docs/flujo-principal.md`; si no, **422** |
+| POST | `/orders/{id}/confirm-receipt` | 👤 dueño | Solo si `DELIVERED` → `COMPLETED` |
+
+Ejemplo de pedido:
+```json
+{
+  "id": 12, "offer_id": 78, "part_request_id": 34, "buyer_id": 7, "supplier_id": 55,
+  "supplier_name": "AutoParts Center", "part_description": "Amortiguador delantero derecho",
+  "vehicle_label": "Toyota Corolla 2018", "price": 620.00, "currency": "BOB",
+  "delivery_type": "DELIVERY", "estimated_days": 2, "status": "PREPARING",
+  "payment": { "method": "QR", "reference": "PAY-20261110-000012", "paid_at": "..." },
+  "history": [ { "from_status": null, "to_status": "PENDING_PAYMENT", "changed_at": "..." } ]
+}
 ```
-PENDING ─► PREPARING ─► SHIPPED ─► DELIVERED ─► COMPLETED
-   └──────────┴───────────┴───────────┴───► CANCELLED
-```
-Una transición inválida devuelve `422`.
-
-**Efecto:** publica `ORDER_STATUS_CHANGED`.
 
 ---
 
-## Catalog / Vehicle Service (`:4004`)
+## Catálogo (NestJS)
 
-### `GET /api/v1/vehicles`
-Lista vehículos registrados.
-
-### `POST /api/v1/vehicles`
-Registra un vehículo.
-
-### `GET /api/v1/parts/categories`
-Categorías de repuestos.
-
-### `GET /api/v1/parts/references?brand=Toyota&model=Hilux&year=2019`
-Referencias de repuestos compatibles con un vehículo. `[POR ACORDAR]` alcance.
-
----
-
-## Notification Service (`:4005`)
-
-No expone API pública al exterior. Consume eventos de todos los topics y
-genera avisos.
-
-### `GET /api/v1/notifications?user_id=12`
-Lista de avisos de un usuario. Accesible solo vía Gateway con el propio token.
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| GET | `/categories` | 🔑 | Categorías activas |
+| GET | `/categories/{id}` | 🔑 | Una categoría. La usa Negociación para validar |
+| GET | `/admin/categories` | 🛡️ | Todas, incluidas las inactivas |
+| POST | `/admin/categories` | 🛡️ | Crea: `name`, `description`, `icon` |
+| PUT | `/admin/categories/{id}` | 🛡️ | Edita |
+| PATCH | `/admin/categories/{id}/toggle` | 🛡️ | Activa o desactiva. No se borran |
+| GET | `/vehicles/mine` | 👤 | Mis vehículos |
+| POST | `/vehicles` | 👤 | Registra: `brand`, `model`, `year`, `plate` (opcional) |
+| DELETE | `/vehicles/{id}` | 👤 dueño | Elimina |
 
 ---
 
-## Eventos entre servicios
+## Notificaciones (Express)
 
-Ver `docs/eventos.md` para el payload completo de cada evento y las colas.
+| Método | Ruta | Quién | Qué hace |
+|---|---|---|---|
+| GET | `/notifications/mine?unread=true` | 🔑 | Avisos del usuario (incluye los dirigidos a su rol) |
+| GET | `/notifications/unread-count` | 🔑 | Número para la campanita |
+| PATCH | `/notifications/{id}/read` | 🔑 dueño | Marca como leído |
+| PATCH | `/notifications/read-all` | 🔑 | Marca todos como leídos |
 
 ---
 
-## Pendientes por acordar
+## Salud
 
-- [ ] ¿Una misma solicitud acepta varias ofertas del mismo proveedor?
-- [ ] ¿Precio fijo en BOB o configurable por usuario?
-- [ ] ¿Alcance del catálogo de referencias de repuestos?
-- [ ] ¿Quién confirma `DELIVERED`: el proveedor o el solicitante?
-- [ ] ¿Rechazo manual de ofertas o solo automático?
-- [ ] Formato exacto de la fotografía (límite de tamaño, formatos permitidos).
+Cada servicio expone `GET /health` → `{ "status": "UP" }` (sin JWT, solo
+dentro de Docker). El Gateway expone `GET /api/v1/health` con el estado de
+todos.
