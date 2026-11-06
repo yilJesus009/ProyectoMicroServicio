@@ -1,0 +1,770 @@
+openapi: 3.0.3
+info:
+  title: RepuestosYa — Marketplace de repuestos automotrices
+  version: 0.1.0
+  description: |
+    Especificación OpenAPI de los endpoints **ya implementados** y expuestos
+    por el API Gateway (`http://localhost:4000`).
+
+    ## Alcance
+
+    Cubre solo lo que existe hoy en código:
+
+    | Servicio | Ruta base | Estado |
+    |---|---|---|
+    | api-gateway | `/health` | ✅ implementado |
+    | identity-service | `/api/v1/auth/*` | ✅ implementado (PR #3) |
+    | part-request-service | `/api/v1/part-requests*` | ✅ implementado (PR #2) |
+
+    **Aún no están aquí** (definidos en `docs/contratos-api.md`, sin código):
+    ofertas, pedidos, catálogo/vehículos y notificaciones.
+
+    ## Convención de respuestas
+
+    Todas las respuestas usan el sobre `{ "status", "msg", "data" }`, con
+    `status` igual al código HTTP.
+
+    **Excepción única:** `POST /api/v1/auth/verify` responde **en plano**
+    (`{"valid": true, "user_id": ..., "rol": ..., "email": ...}` o
+    `{"valid": false}`), porque así lo consume el Gateway.
+
+    ## Errores
+
+    | Código | Cuándo |
+    |---|---|
+    | 400 | datos inválidos (fallo de validación) |
+    | 401 | sin token, token inválido o expirado |
+    | 403 | rol insuficiente o no eres el dueño |
+    | 404 | recurso inexistente |
+    | 409 | conflicto (email ya registrado, estado ya cambiado) |
+    | 422 | regla de negocio violada |
+    | 500 | error interno (sin stack trace) |
+
+    ## Nota de implementación
+
+    Este archivo es la fuente de la UI Swagger en `/docs` del Gateway
+    (Opción A). Servirlo desde el Gateway toca `api-gateway`, que es de
+    `@hendykg`: requiere su acuerdo antes de tocar ese servicio.
+  contact:
+    name: Ingeniería Web III — Proyecto 04
+  license:
+    name: Uso académico
+
+servers:
+  - url: http://localhost:4000
+    description: API Gateway — única puerta de entrada expuesta
+
+tags:
+  - name: Infraestructura
+    description: Salud del sistema.
+  - name: Identidad
+    description: Registro, inicio de sesión y validación de JWT (Django).
+  - name: Solicitudes
+    description: Solicitudes de repuestos (Express).
+
+paths:
+  /health:
+    get:
+      tags: [Infraestructura]
+      summary: Salud del API Gateway
+      operationId: getGatewayHealth
+      security: []
+      responses:
+        '200':
+          description: Gateway disponible.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+              example:
+                status: 200
+                msg: API Gateway disponible
+                data:
+                  service: api-gateway
+
+  /api/v1/auth/register:
+    post:
+      tags: [Identidad]
+      summary: Registrar un usuario
+      operationId: registerUser
+      description: |
+        Público. Crea el usuario con la contraseña hasheada (bcrypt) y
+        publica el evento `USER_CREATED`.
+
+        `rol` admite `COMPRADOR` y `PROVEEDOR`. `ADMIN` devuelve `400`: es
+        un rol reservado al panel de administración y no se autoasigna.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              nombre: Juan Pérez
+              email: juan@taller.com
+              contrasena: secreto123
+              telefono: "76543210"
+              ciudad: La Paz
+              rol: COMPRADOR
+      responses:
+        '201':
+          description: Usuario creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+              example:
+                status: 201
+                msg: Usuario registrado exitosamente
+                data:
+                  id: 12
+                  nombre: Juan Pérez
+                  email: juan@taller.com
+                  telefono: "76543210"
+                  ciudad: La Paz
+                  rol: COMPRADOR
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Identidad]
+      summary: Iniciar sesión
+      operationId: login
+      description: Público. Devuelve un JWT firmado con `JWT_SECRET` (HS256) y los claims `user_id`, `rol` y `email`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: juan@taller.com
+              contrasena: secreto123
+      responses:
+        '200':
+          description: Credenciales correctas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+              example:
+                status: 200
+                msg: Inicio de sesión exitoso
+                data:
+                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  expires_in: 3600
+                  usuario:
+                    id: 12
+                    nombre: Juan Pérez
+                    email: juan@taller.com
+                    telefono: "76543210"
+                    ciudad: La Paz
+                    rol: COMPRADOR
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/me:
+    get:
+      tags: [Identidad]
+      summary: Usuario del token
+      operationId: getCurrentUser
+      description: Devuelve el usuario correspondiente al JWT enviado.
+      responses:
+        '200':
+          $ref: '#/components/responses/UserEnvelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/verify:
+    post:
+      tags: [Identidad]
+      summary: Validar un token (respuesta en plano)
+      operationId: verifyToken
+      description: |
+        Lo consume el Gateway para validar un token.
+
+        **Única respuesta sin sobre:** responde `{ "valid": ... }` en plano.
+
+        Acepta el token por `Authorization: Bearer <jwt>` o por el campo
+        `token` del body.
+
+        Accesible directamente sobre el Identity (`http://localhost:5000`),
+        que es como se usa internamente; el servidor de esta operación está
+        fijado en consecuencia.
+      security: []
+      servers:
+        - url: http://localhost:5000
+          description: Identity Service (red interna)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: JWT a validar. Alternativo al header `Authorization`.
+            example:
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token válido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyOk'
+              example:
+                valid: true
+                user_id: 12
+                rol: COMPRADOR
+                email: juan@taller.com
+        '401':
+          description: Token inválido o expirado. Responde en plano.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyFail'
+              example:
+                valid: false
+
+  /api/v1/part-requests:
+    get:
+      tags: [Solicitudes]
+      summary: Listar solicitudes
+      operationId: listPartRequests
+      description: |
+        Filtra por ciudad, estado y urgencia. A través del Gateway exige
+        JWT; los filtros son acumulativos (AND).
+      parameters:
+        - name: city
+          in: query
+          description: Filtra por ciudad exacta.
+          schema:
+            type: string
+          example: La Paz
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PartRequestStatus'
+        - name: urgency
+          in: query
+          schema:
+            $ref: '#/components/schemas/Urgency'
+      responses:
+        '200':
+          description: Lista de solicitudes (array en `data`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+              example:
+                status: 200
+                msg: Solicitudes encontradas
+                data:
+                  - id: 7
+                    user_id: 12
+                    vehicle_brand: Toyota
+                    vehicle_model: Hilux
+                    vehicle_year: 2019
+                    description: Filtro de aceite original
+                    city: La Paz
+                    urgency: MEDIA
+                    status: PUBLISHED
+                    photo: /uploads/requests/filtro.jpg
+                    created_at: "2026-11-06T14:05:00.000Z"
+                    updated_at: "2026-11-06T14:05:00.000Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Solicitudes]
+      summary: Crear una solicitud
+      operationId: createPartRequest
+      description: |
+        Requiere el rol `COMPRADOR`. Usa `multipart/form-data` porque puede
+        llevar una fotografía del repuesto.
+
+        Publica `PART_REQUEST_CREATED` en `part_request_events` sin bloquear
+        la respuesta (fire-and-forget).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartRequestCreate'
+            encoding:
+              photo:
+                contentType: image/png, image/jpeg, image/webp
+      responses:
+        '201':
+          description: Solicitud creada en estado `PUBLISHED`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+              example:
+                status: 201
+                msg: Solicitud creada exitosamente
+                data:
+                  id: 7
+                  user_id: 12
+                  vehicle_brand: Toyota
+                  vehicle_model: Hilux
+                  vehicle_year: 2019
+                  description: Filtro de aceite original
+                  city: La Paz
+                  urgency: MEDIA
+                  status: PUBLISHED
+                  photo: /uploads/requests/filtro.jpg
+                  created_at: "2026-11-06T14:05:00.000Z"
+                  updated_at: "2026-11-06T14:05:00.000Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/part-requests/{id}:
+    get:
+      tags: [Solicitudes]
+      summary: Detalle de una solicitud
+      operationId: getPartRequestById
+      parameters:
+        - $ref: '#/components/parameters/PartRequestId'
+      responses:
+        '200':
+          description: Solicitud encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/part-requests/{id}/check-status:
+    get:
+      tags: [Solicitudes]
+      summary: Comprobar solo el estado
+      operationId: checkPartRequestStatus
+      description: Devuelve únicamente `id` y `status`. Pensado para consultas ligeras (p. ej. sondeo desde el frontend).
+      parameters:
+        - $ref: '#/components/parameters/PartRequestId'
+      responses:
+        '200':
+          description: Estado actual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+              example:
+                status: 200
+                msg: Estado de la solicitud
+                data:
+                  id: 7
+                  status: PUBLISHED
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/part-requests/{id}/status:
+    patch:
+      tags: [Solicitudes]
+      summary: Cambiar el estado de una solicitud
+      operationId: updatePartRequestStatus
+      description: |
+        Solo el dueño de la solicitud.
+
+        **Máquina de transiciones** (cualquier otra combinación → `422`):
+
+        ```
+        PUBLISHED ──► CANCELLED   el dueño cancela antes de aceptar oferta
+        ORDERED   ──► COMPLETED   el pedido se finalizó
+        ```
+
+        `COMPLETED` y `CANCELLED` son estados terminales.
+
+        **`ORDERED` no se pide por HTTP:** lo asigna el evento
+        `OFFER_ACCEPTED`. Si el cliente lo envía → `422`.
+
+        Si la transición compite con otra petición simultánea, solo una
+        gana (comparación y actualización atómicas) y la otra recibe `409`
+        sin publicar ningún evento.
+      parameters:
+        - $ref: '#/components/parameters/PartRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/PartRequestStatus'
+            example:
+              status: CANCELLED
+      responses:
+        '200':
+          description: Estado actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+              example:
+                status: 200
+                msg: Estado actualizado
+                data:
+                  id: 7
+                  status: CANCELLED
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT firmado con `JWT_SECRET` (HS256). Enviar como
+        `Authorization: Bearer <token>`.
+
+        El Gateway valida la firma, elimina cualquier header `X-User-*` que
+        llegue de fuera y lo reemplaza por `X-User-Id`, `X-User-Roles` y
+        `X-User-Email`. Cada servicio vuelve a validar la firma por su
+        cuenta.
+
+  parameters:
+    PartRequestId:
+      name: id
+      in: path
+      required: true
+      description: Identificador numérico de la solicitud.
+      schema:
+        type: integer
+        minimum: 1
+      example: 7
+
+  responses:
+    BadRequest:
+      description: Datos inválidos (fallo de validación del DTO o de los filtros).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Envelope'
+          example:
+            status: 400
+            msg: El campo 'status' es obligatorio
+            data: null
+    Unauthorized:
+      description: Sin token, token inválido o expirado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Envelope'
+          example:
+            status: 401
+            msg: No autenticado
+            data: null
+    Forbidden:
+      description: Rol insuficiente o no eres el dueño del recurso.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Envelope'
+          example:
+            status: 403
+            msg: No tienes permiso sobre este recurso
+            data: null
+    NotFound:
+      description: Recurso inexistente.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Envelope'
+          example:
+            status: 404
+            msg: Solicitud no encontrada
+            data: null
+    Conflict:
+      description: |
+        Conflicto: email ya registrado (`409` en registro) o la solicitud
+        cambió de estado por otra petición concurrente (`409` en PATCH).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Envelope'
+          example:
+            status: 409
+            msg: El email ya está registrado
+            data: null
+    UnprocessableEntity:
+      description: |
+        Regla de negocio violada: transición inválida, o petición de
+        `ORDERED` que solo puede asignar el evento `OFFER_ACCEPTED`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Envelope'
+          example:
+            status: 422
+            msg: Transición de estado no permitida
+            data: null
+    UserEnvelope:
+      description: Usuario autenticado dentro del sobre estándar.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Envelope'
+          example:
+            status: 200
+            msg: Usuario autenticado
+            data:
+              id: 12
+              nombre: Juan Pérez
+              email: juan@taller.com
+              telefono: "76543210"
+              ciudad: La Paz
+              rol: COMPRADOR
+
+  schemas:
+    Envelope:
+      type: object
+      description: Sobre estándar de respuesta `{ status, msg, data }`.
+      required: [status, msg]
+      properties:
+        status:
+          type: integer
+          description: Código HTTP, igual al de la respuesta.
+          example: 200
+        msg:
+          type: string
+          description: Mensaje en español para el usuario.
+          example: Operación exitosa
+        data:
+          nullable: true
+          description: Carga útil, o `null` cuando hay error.
+      additionalProperties: true
+
+    Role:
+      type: string
+      description: |
+        Rol del usuario en el JWT. `ADMIN` no se puede autoasignar en
+        `/auth/register` (devuelve `400`).
+      enum: [COMPRADOR, PROVEEDOR, ADMIN]
+      example: COMPRADOR
+
+    Urgency:
+      type: string
+      description: Nivel de urgencia de la solicitud.
+      enum: [BAJA, MEDIA, ALTA]
+      default: MEDIA
+      example: MEDIA
+
+    PartRequestStatus:
+      type: string
+      description: |
+        Estado de la solicitud. `ORDERED` solo lo asigna el evento
+        `OFFER_ACCEPTED`, nunca una petición HTTP.
+      enum: [PUBLISHED, ORDERED, COMPLETED, CANCELLED]
+      example: PUBLISHED
+
+    RegisterRequest:
+      type: object
+      required: [nombre, email, contrasena, rol]
+      properties:
+        nombre:
+          type: string
+          maxLength: 120
+          example: Juan Pérez
+        email:
+          type: string
+          format: email
+          description: Único. Si ya existe → `409`.
+          example: juan@taller.com
+        contrasena:
+          type: string
+          format: password
+          maxLength: 128
+          description: |
+            Se hashea con bcrypt, nunca se guarda en claro. Se aplican los
+            `AUTH_PASSWORD_VALIDATORS` (mínimo 8 caracteres, no común, no
+            solo numérica) → `400` si es débil.
+          example: secreto123
+        telefono:
+          type: string
+          maxLength: 20
+          nullable: true
+          example: "76543210"
+        ciudad:
+          type: string
+          maxLength: 80
+          nullable: true
+          example: La Paz
+        rol:
+          type: string
+          description: "`ADMIN` → `400`: rol reservado, no se autoasigna."
+          enum: [COMPRADOR, PROVEEDOR]
+          example: COMPRADOR
+
+    LoginRequest:
+      type: object
+      required: [email, contrasena]
+      properties:
+        email:
+          type: string
+          format: email
+          example: juan@taller.com
+        contrasena:
+          type: string
+          format: password
+          example: secreto123
+
+    User:
+      type: object
+      description: Usuario tal como lo devuelve la API. Nunca incluye la contraseña.
+      required: [id, nombre, email, rol]
+      properties:
+        id:
+          type: integer
+          example: 12
+        nombre:
+          type: string
+          example: Juan Pérez
+        email:
+          type: string
+          format: email
+          example: juan@taller.com
+        telefono:
+          type: string
+          nullable: true
+          example: "76543210"
+        ciudad:
+          type: string
+          nullable: true
+          example: La Paz
+        rol:
+          $ref: '#/components/schemas/Role'
+
+    VerifyOk:
+      type: object
+      description: Token válido. **Sin sobre** (excepción al envelope).
+      required: [valid]
+      properties:
+        valid:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+          example: 12
+        rol:
+          $ref: '#/components/schemas/Role'
+        email:
+          type: string
+          format: email
+          example: juan@taller.com
+
+    VerifyFail:
+      type: object
+      description: Token inválido o expirado. **Sin sobre** (excepción al envelope).
+      required: [valid]
+      properties:
+        valid:
+          type: boolean
+          example: false
+
+    PartRequestCreate:
+      type: object
+      required: [vehicle_brand, vehicle_model, vehicle_year, description, city]
+      properties:
+        vehicle_brand:
+          type: string
+          description: Marca del vehículo.
+          example: Toyota
+        vehicle_model:
+          type: string
+          description: Modelo del vehículo.
+          example: Hilux
+        vehicle_year:
+          type: integer
+          minimum: 1900
+          maximum: 2100
+          example: 2019
+        description:
+          type: string
+          description: Descripción del repuesto buscado.
+          example: Filtro de aceite original
+        city:
+          type: string
+          example: La Paz
+        urgency:
+          $ref: '#/components/schemas/Urgency'
+        photo:
+          type: string
+          format: binary
+          description: Fotografía del repuesto (opcional).
+
+    PartRequest:
+      type: object
+      required: [id, user_id, vehicle_brand, vehicle_model, vehicle_year, description, city, urgency, status]
+      properties:
+        id:
+          type: integer
+          example: 7
+        user_id:
+          type: integer
+          description: Dueño de la solicitud (claim `user_id` del JWT).
+          example: 12
+        vehicle_brand:
+          type: string
+          example: Toyota
+        vehicle_model:
+          type: string
+          example: Hilux
+        vehicle_year:
+          type: integer
+          example: 2019
+        description:
+          type: string
+          example: Filtro de aceite original
+        city:
+          type: string
+          example: La Paz
+        urgency:
+          $ref: '#/components/schemas/Urgency'
+        status:
+          $ref: '#/components/schemas/PartRequestStatus'
+        photo:
+          type: string
+          nullable: true
+          description: Ruta de la fotografía subida, o `null`.
+          example: /uploads/requests/filtro.jpg
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-11-06T14:05:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-11-06T14:05:00.000Z"
