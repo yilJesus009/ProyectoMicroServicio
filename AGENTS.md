@@ -74,7 +74,7 @@ servicios:
 | Integrante | GitHub | Servicios |
 |---|---|---|
 | Jesús | `@yilJesus009` | `identity-service` (Django) |
-| Dylan | `@dylan-alvarez` | `part-request-service`, `catalog-vehicle-service` |
+| Dylan | `@Alvarez-Dylan` | `part-request-service`, `catalog-vehicle-service` |
 | Alexis | `@alexphxmton` | `offer-service`, `order-service` |
 | Latife | `@hendykg` | `api-gateway`, `notification-service`, `frontend` |
 

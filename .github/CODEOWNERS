@@ -5,7 +5,7 @@
 #
 # Equipo (4 integrantes):
 #   yilJesus009     Jesús      -> identity-service
-#   dylan-alvarez   Dylan      -> part-request, catalog-vehicle
+#   Alvarez-Dylan   Dylan      -> part-request, catalog-vehicle
 #   alexphxmton     Alexis     -> offer, order  (regla crítica)
 #   hendykg         Latife     -> gateway, notification, frontend, infra
 #
@@ -14,16 +14,16 @@
 # -----------------------------------------------------------------------
 # Reglas del equipo y documentación -> requieren acuerdo de todos
 # -----------------------------------------------------------------------
-/AGENTS.md                  @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-/CLAUDE.md                  @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-/README.md                  @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
+/AGENTS.md                  @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
+/CLAUDE.md                  @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
+/README.md                  @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
 
 # -----------------------------------------------------------------------
 # Contratos y arquitectura -> afectan a más de un integrante
 # -----------------------------------------------------------------------
-/docs/                      @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-/packages/shared/           @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-/.agents/skills/            @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
+/docs/                      @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
+/packages/shared/           @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
+/.agents/skills/            @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
 
 # -----------------------------------------------------------------------
 # Infraestructura -> puertos y bases de datos afectan a todos
@@ -43,8 +43,8 @@
 # -----------------------------------------------------------------------
 # Part Request y Catalog/Vehicle -> Dylan
 # -----------------------------------------------------------------------
-/apps/part-request-service/     @dylan-alvarez
-/apps/catalog-vehicle-service/  @dylan-alvarez
+/apps/part-request-service/     @Alvarez-Dylan
+/apps/catalog-vehicle-service/  @Alvarez-Dylan
 
 # -----------------------------------------------------------------------
 # Offer y Order -> Alexis
