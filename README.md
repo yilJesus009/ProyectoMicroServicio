@@ -1,225 +1,74 @@
-# Marketplace de Repuestos Automotrices
+# RepuestosYa — Marketplace de repuestos automotrices
 
-Proyecto académico de **Ingeniería Web 3 — Proyecto 04**.
+Proyecto académico de **Ingeniería Web III, Proyecto 04**. Funciona como una
+subasta al revés: el comprador publica qué repuesto necesita, los
+proveedores envían ofertas, el comprador **acepta una sola**, paga (pago
+simulado) y sigue el pedido hasta la entrega.
 
-Una plataforma que conecta a propietarios de vehículos y talleres que necesitan
-un repuesto con proveedores capaces de ofrecerlo. El usuario publica lo que
-busca, recibe distintas propuestas, compara condiciones y selecciona la
-alternativa que más le convenga para generar un pedido.
-
----
+Entrega: **lunes 16 de noviembre de 2026**. Equipo: **Dylan y Jesús**.
 
 ## Flujo principal
 
 ```
-Publicar solicitud  →  Recibir ofertas  →  Aceptar UNA sola  →  Pedido  →  Seguimiento
+Registro/login → perfil de proveedor aprobado → publicar solicitud →
+recibir ofertas → aceptar UNA sola → pedido → pago simulado → seguimiento → entrega
 ```
 
----
+## Servicios
 
-## Arquitectura
+| Servicio | Carpeta | Framework | Puerto | Esquema BD |
+|---|---|---|---|---|
+| Gateway | `apps/gateway` | Express | 4000 (expuesto) | — |
+| Identidad | `apps/identidad` | Django + DRF | 5000 | `identidad` |
+| Negociación | `apps/negociacion` | Express | 4001 | `negociacion` |
+| Pedidos | `apps/pedidos` | Spring Boot | 4003 | `pedidos` |
+| Catálogo | `apps/catalogo` | NestJS | 4004 | `catalogo` |
+| Notificaciones | `apps/notificaciones` | Express | 4005 | `notificaciones` |
+| Frontend | `apps/frontend` | Angular | 4200 (expuesto) | — |
 
-Microservicios con **API Gateway**, **DDD**, **arquitectura limpia**, **CQRS**,
-**eventos** y **persistencia independiente** por servicio.
+Infraestructura: **un solo PostgreSQL** (`repuestosya`, un esquema por
+servicio) y **RabbitMQ**. Todo pasa por el Gateway; los puertos de los
+demás servicios son internos.
 
-```
-                              ┌──────────────────┐
-              Browser ──────► │    API Gateway   │  :4000
-             (Angular :4200)  │  valida JWT, iny.│
-                              │  X-User-Id/Roles │
-                              └────────┬─────────┘
-       ┌──────────┬──────────┬─────────┼─────────┬──────────────┐
-       ▼          ▼          ▼         ▼         ▼              ▼
-  ┌─────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌──────────┐ ┌────────────┐
-  │identity │ │ part-  │ │ offer  │ │ order  │ │ catalog  │ │notification│
-  │ Django  │ │request │ │        │ │        │ │ vehicle  │ │            │
-  │  :5000  │ │ :4001  │ │ :4002  │ │ :4003  │ │  :4004   │ │   :4005    │
-  └────┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └────┬─────┘ └─────┬──────┘
-       ▼          ▼          ▼          ▼           ▼             ▼
-    identity   part_req    offer      order      catalog     notification
-       _db        _db       _db        _db         _db           _db
-     (5433)     (5434)    (5435)     (5436)      (5437)        (5438)
-                                    ▲
-                                    │ consume OFFER_ACCEPTED
-                          ┌─────────┴─────────┐
-                          │     RabbitMQ      │  :5672 / :15672
-                          └───────────────────┘
-```
-
-### Stack
-
-| Componente | Tecnología |
-|---|---|
-| identity-service | Django + DRF + SimpleJWT |
-| Servicios de negocio | Express + Sequelize |
-| Comunicación asíncrona | RabbitMQ |
-| Persistencia | PostgreSQL (uno por servicio) |
-| Frontend | Angular |
-| Infraestructura | Docker Compose |
-
----
-
-## Requisitos previos
-
-- Docker y Docker Compose
-- Node.js 20+
-- Python 3.11+ y `pip`
-- Angular CLI
-
----
-
-## Puesta en marcha
-
-### 1. Clonar e instalar la configuración
+## Puesta en marcha (Docker)
 
 ```bash
-git clone https://github.com/hendykg/ProyectoMicroServicio.git
+git clone https://github.com/yilJesus009/ProyectoMicroServicio.git
 cd ProyectoMicroServicio
 cp .env.example .env
+docker compose up --build
 ```
 
-### 2. Levantar la infraestructura
-
-Esto arranca RabbitMQ y las 6 bases de datos PostgreSQL.
+- Gateway: http://localhost:4000
+- Frontend: http://localhost:4200
+- RabbitMQ (UI, solo demo): http://localhost:15672
 
 ```bash
-docker compose up -d
-docker compose ps
+docker compose logs -f <servicio>   # ver logs de un servicio
+docker compose down -v              # apagar y borrar datos
+node scripts/e2e-flujo.mjs          # recorre el flujo completo contra el Gateway
 ```
-
-- RabbitMQ (UI): http://localhost:15672 — `guest` / `guest`
-
-### 3. Arrancar los microservicios
-
-Cada servicio en su propio terminal:
-
-```bash
-# Identity Service (Django) — puerto 5000
-cd apps/identity-service
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver 5000
-
-# Part Request Service — puerto 4001
-cd apps/part-request-service
-npm install
-npm run dev
-
-# API Gateway — puerto 4000
-cd apps/api-gateway
-npm install
-npm run dev
-```
-
-### 4. Frontend
-
-```bash
-cd apps/frontend
-npm install
-ng serve        # http://localhost:4200
-```
-
----
 
 ## Documentación
 
-Toda la documentación vive en [`docs/`](docs/):
+Para agentes de IA: leer [`AGENTS.md`](AGENTS.md) primero (fuente de verdad
+del proyecto). El resto de la documentación vive en [`docs/`](docs/):
+arquitectura, modelo de datos, contratos de API, eventos, flujo principal,
+frontend y convenciones. El plan de trabajo del 6 al 16 de noviembre está en
+[`docs/plan/`](docs/plan/).
 
-| Documento | Contenido |
-|---|---|
-| [Convenciones](docs/convenciones.md) | Nombres, respuestas HTTP, commits, arquitectura |
-| [Arquitectura](docs/arquitectura.md) | Decisiones de diseño y patrones usados |
-| [Puertos](docs/puertos.md) | Asignación de puertos y bases de datos |
-| [Eventos](docs/eventos.md) | Nomenclatura y payload de los eventos |
-| [Contratos API](docs/contratos-api.md) | Endpoints y sus payloads |
-| [Flujo principal](docs/flujo-principal.md) | El ciclo completo del negocio |
-| [Distribución del equipo](docs/distribucion-equipo.md) | Quién hace qué |
-| **[Arranque del equipo](docs/arranque-equipo.md)** | **Primer mensaje para tu agente de IA** |
+## Reglas que no se negocian
 
-> 🚀 **¿Recién clonaste el repo?** Ve a **[docs/arranque-equipo.md](docs/arranque-equipo.md)**
-> y pega el bloque de tu integrante en tu agente de IA. Sin eso, el agente
-> no sabe qué reglas seguir.
+1. **Una sola oferta aceptada por solicitud** — garantizada en base de
+   datos, dominio y transacción (`SELECT ... FOR UPDATE`). Nunca solo en el
+   frontend.
+2. **Un servicio jamás consulta la base de otro.** Se comunica por HTTP o
+   eventos (RabbitMQ).
+3. **El pedido solo nace del evento `OFFER_ACCEPTED`.**
+4. **Todo pasa por el Gateway**; cada servicio además valida el JWT.
+5. **Nada de secretos en el código**; todo en `.env.example` primero.
 
-Para agentes de IA: leer [`AGENTS.md`](AGENTS.md) primero.
-
----
-
-## Estructura del repositorio
-
-```
-├── apps/                       # Microservicios y frontend
-│   ├── api-gateway/
-│   ├── identity-service/       # Django
-│   ├── part-request-service/
-│   ├── offer-service/
-│   ├── order-service/
-│   ├── catalog-vehicle-service/
-│   ├── notification-service/
-│   └── frontend/               # Angular
-├── packages/
-│   └── shared/                 # Tipos y contratos compartidos
-├── docs/                       # Toda la documentación del proyecto
-├── .agents/skills/             # Skills de IA compartidas por el equipo
-├── .github/                    # Plantillas de PR, CODEOWNERS, CI
-├── docker-compose.yml          # RabbitMQ + 6 PostgreSQL
-├── .env.example                # Variables de entorno documentadas
-├── AGENTS.md                   # Reglas para agentes de IA
-└── CLAUDE.md                   # Complemento específico de Claude Code
-```
-
----
-
-## Flujo de trabajo en equipo
-
-Somos **4 integrantes** trabajando en un monorepo.
-
-```
-main          ← producción simulada. Protegida.
-  └── develop ← integración. Protegida. Solo vía PR.
-        ├── feature/identity-*
-        ├── feature/part-request-*
-        ├── feature/offer-*
-        ├── feature/order-*
-        ├── feature/catalog-*
-        ├── feature/notification
-        ├── feature/api-gateway
-        └── feature/frontend-*
-```
-
-```bash
-git switch develop
-git pull origin develop
-git switch -c feature/offer-create-offer
-# ... trabajar
-git commit -m "feat(offer): validación oferta única"
-git push -u origin feature/offer-create-offer
-```
-
-Los commits son cortos y con palabras clave:
-
-```
-tipo(área): palabras clave
-
-feat(offer): validación oferta única
-fix(order): transición estado inválida
-docs(api-gateway): rutas por prefijo
-```
-
----
-
-## Regla crítica del negocio
-
-> **Una solicitud puede recibir múltiples ofertas, pero únicamente UNA debe
-> ser aceptada para generar el pedido.** Las ofertas no seleccionadas quedan
-> registradas como parte del historial de la solicitud.
-
-Esta regla se garantiza en **tres capas**: índice `UNIQUE` parcial en la base
-de datos, validación en el dominio y bloqueo de fila en la aplicación. **Nunca**
-se garantiza solo ocultando botones en el frontend.
-
-Ver [docs/flujo-principal.md](docs/flujo-principal.md).
-
----
+Detalle completo en [`AGENTS.md`](AGENTS.md).
 
 ## Licencia
 

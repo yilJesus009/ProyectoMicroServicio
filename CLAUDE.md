@@ -1,80 +1,38 @@
-# CLAUDE.md
+@AGENTS.md
 
-> **Lee primero `AGENTS.md`.** Ahí está toda la arquitectura, las reglas, los
-> puertos, los contratos y las convenciones del proyecto.
->
-> Este archivo **no duplica** esa información. Solo añade lo específico de
-> trabajar con Claude Code en este repositorio.
+# Claude Code en este repositorio
 
----
+Las reglas del proyecto están en `AGENTS.md` (importado arriba). Este archivo
+solo agrega cómo trabajar con Claude Code.
 
-## Orden de lectura antes de tocar código
+## Cómo trabajar
 
-1. `docs/arranque-equipo.md` — **el mensaje de arranque de este integrante**,
-   con sus servicios, sus límites y sus skills.
-2. `AGENTS.md` — reglas del proyecto y del equipo.
-3. `docs/convenciones.md` — nombres, respuestas HTTP, estructura de capas.
-4. `docs/contratos-api.md` — si vas a crear o modificar un endpoint.
-5. `docs/eventos.md` — si vas a publicar o consumir un evento.
-6. El skill que corresponda, en `.agents/skills/`.
+1. **Una fase a la vez.** El integrante te indica el archivo de la fase en
+   `docs/plan/` y el bloque (A o B). No adelantes trabajo de otras fases.
+2. **Empieza en modo plan.** Lee los documentos que pide la fase, propón un
+   plan corto (archivos a crear o modificar y por qué) y **espera la
+   aprobación** antes de escribir código.
+3. **Lee la skill que corresponda** en `.agents/skills/` según la tecnología:
+   - Express: `express-backend`
+   - NestJS: `nest-backend`
+   - Spring Boot: `spring-backend`
+   - Django: `django-backend`
+   - Angular: `angular-frontend`
+   - Eventos: `api-contracts-events`
+   - Pruebas: `testing-quality`
+   - Revisión: `code-review-security`
+4. **No toques servicios fuera de la fase** salvo que el integrante lo pida.
 
----
-
-## Contexto mínimo recordatorio
-
-- Proyecto académico: **marketplace de repuestos automotrices**.
-- **4 integrantes**, monorepo compartido. Cada servicio tiene dueño.
-- `identity-service` es **Django**. Todo lo demás es **Express**.
-- `frontend` es **Angular**.
-- RabbitMQ para eventos, PostgreSQL independiente por servicio.
-**Orquestación:** Integrado con flujos de **Gentle** en entorno Windows.
----
-
-## Reglas duras que no se negocian
-
-1. **Una sola oferta aceptada por solicitud.** Garantizada en base de datos
-   (índice `UNIQUE` parcial), en dominio y con `SELECT ... FOR UPDATE`.
-   **Nunca** solo ocultando botones en el frontend.
-2. **Un servicio jamás consulta la base de otro.** Ni `JOIN`, ni migración,
-   ni importar su modelo. Se pide por HTTP o se consume su evento.
-3. **El pedido solo nace del evento `OFFER_ACCEPTED`.** No hay endpoint que
-   cree pedidos desde el frontend.
-4. **Todo pasa por el Gateway (`4000`).** Los puertos de servicios son internos.
-5. **Cada microservicio valida el JWT por su cuenta**, además del Gateway.
-6. **Nada de secretos en el código.** Todo por variables de entorno, y el
-   `.env.example` se actualiza primero.
-
----
-
-## Al generar o modificar código
-
-- Un **caso de uso por operación**. La lógica de negocio vive en `domain/` y
-  `application/`, nunca en los controllers.
-- Los repositorios en `domain/` son **interfaces**; la implementación va en
-  `infrastructure/persistence/`.
-- **Pruebas para toda regla de negocio nueva.** La regla de una sola oferta
-  aceptada debe tener prueba que la cubra explícitamente.
-- No agregues dependencias sin justificarlas.
-- **No afirmes que una prueba pasó si no la ejecutaste.**
-
----
-
-## Antes de terminar una tarea
+## Antes de dar una fase por terminada
 
 ```bash
-git status                 # qué cambiaste
-git diff                   # revisa tu propio diff antes de avisar
+git status && git diff          # revisa tu propio cambio
+docker compose up --build       # todo debe levantar
 ```
 
-Verifica que:
+- [ ] Pruebas del servicio ejecutadas (di cuáles y su resultado real).
+- [ ] El flujo avanzado funciona dentro de Docker, pasando por el Gateway.
+- [ ] Contratos nuevos o cambiados documentados en `docs/`.
+- [ ] Escrito `docs/defensa/fase-N-<area>.md`.
 
-- [ ] Respeta `docs/convenciones.md` (nombres, envelope `{status, msg, data}`).
-- [ ] No toca un servicio que no sea tuyo, o se acordó con su dueño.
-- [ ] Tiene pruebas para las reglas de negocio nuevas.
-- [ ] No rompe el flujo principal descrito en `docs/flujo-principal.md`.
-- [ ] Documenta los cambios de contrato en `docs/contratos-api.md`.
-
-Resume al final: archivos modificados, pruebas realizadas y limitaciones.
-## Orquestación y Agentes (Gentle)
-- Este entorno se coordina mediante **Gentle** (`gentle-pi` / `gentle-orchestrator`).
-- Respeta los límites de ejecución de comandos definidos por el orquestador y mantén la sincronización con los scripts locales de automatización.
+Resume al final: archivos modificados, pruebas ejecutadas y limitaciones.

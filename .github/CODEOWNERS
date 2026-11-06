@@ -1,62 +1,50 @@
 # CODEOWNERS - Revisión obligatoria por área
 #
-# Cada microservicio tiene un dueño. Un PR que toque un área requiere la
-# revisión de quien la posee antes de poder mergearse.
+# Cada bloque tiene un dueño. Un PR que toque un área requiere la revisión
+# del otro integrante antes de poder mergearse.
 #
-# Equipo (4 integrantes):
-#   yilJesus009     Jesús      -> identity-service
-#   Alvarez-Dylan   Dylan      -> part-request, catalog-vehicle
-#   alexphxmton     Alexis     -> offer, order  (regla crítica)
-#   hendykg         Latife     -> gateway, notification, frontend, infra
+# Equipo (2 integrantes):
+#   Alvarez-Dylan   Dylan   -> Bloque A: negociacion, pedidos, notificaciones, catalogo
+#   yilJesus009     Jesús   -> Bloque B: docker/infra, gateway, identidad, frontend
 #
 # Documentación: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # -----------------------------------------------------------------------
-# Reglas del equipo y documentación -> requieren acuerdo de todos
+# Reglas del equipo y documentación -> requieren acuerdo de los dos
 # -----------------------------------------------------------------------
-/AGENTS.md                  @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
-/CLAUDE.md                  @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
-/README.md                  @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
+/AGENTS.md              @Alvarez-Dylan @yilJesus009
+/CLAUDE.md               @Alvarez-Dylan @yilJesus009
+/README.md               @Alvarez-Dylan @yilJesus009
 
 # -----------------------------------------------------------------------
-# Contratos y arquitectura -> afectan a más de un integrante
+# Contratos y arquitectura -> afectan a los dos bloques
 # -----------------------------------------------------------------------
-/docs/                      @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
-/packages/shared/           @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
-/.agents/skills/            @yilJesus009 @Alvarez-Dylan @alexphxmton @hendykg
+/docs/                   @Alvarez-Dylan @yilJesus009
+/packages/shared/        @Alvarez-Dylan @yilJesus009
+/.agents/skills/         @Alvarez-Dylan @yilJesus009
 
 # -----------------------------------------------------------------------
-# Infraestructura -> puertos y bases de datos afectan a todos
+# Infraestructura -> Jesús (Bloque B: Docker, Gateway, Identidad, Frontend)
 # -----------------------------------------------------------------------
-/docker-compose.yml         @hendykg
-/.env.example               @hendykg
-/.editorconfig              @hendykg
-/.gitignore                 @hendykg
-/.github/                   @hendykg
+/docker-compose.yml      @yilJesus009
+/.env.example            @yilJesus009
+/.editorconfig           @yilJesus009
+/.gitignore              @yilJesus009
+/.github/                @yilJesus009
+/infra/                  @yilJesus009
 
 # -----------------------------------------------------------------------
-# Identity Service (Django) -> Jesús
-# Define el JWT del que dependen todos los demás servicios.
+# Bloque A (Dylan) -> Negociación, Pedidos, Notificaciones, Catálogo
+# apps/negociacion tiene la regla crítica: una sola oferta aceptada.
 # -----------------------------------------------------------------------
-/apps/identity-service/     @yilJesus009
+/apps/negociacion/       @Alvarez-Dylan
+/apps/pedidos/           @Alvarez-Dylan
+/apps/notificaciones/    @Alvarez-Dylan
+/apps/catalogo/          @Alvarez-Dylan
 
 # -----------------------------------------------------------------------
-# Part Request y Catalog/Vehicle -> Dylan
+# Bloque B (Jesús) -> Gateway, Identidad, Frontend
 # -----------------------------------------------------------------------
-/apps/part-request-service/     @Alvarez-Dylan
-/apps/catalog-vehicle-service/  @Alvarez-Dylan
-
-# -----------------------------------------------------------------------
-# Offer y Order -> Alexis
-# REGLA CRÍTICA DEL PROYECTO: una sola oferta aceptada por solicitud.
-# Revisar con especial atención cualquier cambio aquí.
-# -----------------------------------------------------------------------
-/apps/offer-service/        @alexphxmton
-/apps/order-service/        @alexphxmton
-
-# -----------------------------------------------------------------------
-# Gateway, Notification y Frontend -> Latife
-# -----------------------------------------------------------------------
-/apps/api-gateway/          @hendykg
-/apps/notification-service/ @hendykg
-/apps/frontend/             @hendykg
+/apps/gateway/           @yilJesus009
+/apps/identidad/         @yilJesus009
+/apps/frontend/          @yilJesus009
