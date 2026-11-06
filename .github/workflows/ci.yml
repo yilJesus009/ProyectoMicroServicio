@@ -204,6 +204,48 @@ jobs:
         run: python manage.py test --verbosity 2
 
   # ---------------------------------------------------------------------------
+  # Catalogo (NestJS)
+  # ---------------------------------------------------------------------------
+  catalogo:
+    name: Catalogo (NestJS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detectar si el servicio existe
+        id: check
+        shell: bash
+        run: |
+          if [ -f "apps/catalogo/package.json" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::catalogo aún no existe. Se omite."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.exists == 'true'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/catalogo/package-lock.json
+
+      - name: Instalar dependencias
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/catalogo
+        run: npm ci
+
+      - name: Build
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/catalogo
+        run: npm run build
+
+      - name: Pruebas
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/catalogo
+        run: npm test
+
+  # ---------------------------------------------------------------------------
   # Frontend (Angular)
   # ---------------------------------------------------------------------------
   frontend:
