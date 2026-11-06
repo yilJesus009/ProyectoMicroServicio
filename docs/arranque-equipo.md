@@ -76,12 +76,23 @@ Skills relevantes, léelas:
 - .agents/skills/clean-architecture-ddd/SKILL.md
 - .agents/skills/api-contracts-events/SKILL.md
 
-part-request-service ya existe en apps/ y hay que reestructurarlo a las 4
-capas (domain, application, infrastructure, presentation) y migrarlo de
-SQLite a PostgreSQL. NO reescribir desde cero: mover el código existente.
+part-request-service YA está reestructurado a las 4 capas
+(domain, application, infrastructure, presentation), con PostgreSQL y
+publicando eventos a RabbitMQ. Es tu PLANTILLA de referencia:
+  - Copia su estructura para crear catalog-vehicle-service desde cero.
+  - src/domain/entities/partRequest.js → tu entidad Vehicle
+  - server.js → solo ensambla dependencias (revisar como ejemplo)
+  - npm test → 19 pruebas unitarias (node --test, sin BD)
+  - scripts/smoke-part-request.ps1 → prueba manual contra Docker
 
-Rama de trabajo: git switch develop && git switch -c feature/part-request-crud
-Commits cortos: tipo(área): palabras clave  →  fix(part-request): migración postgres
+Pendiente tuyo en part-request-service (baja prioridad):
+  - Los campos user_id/user_email se copiaron del JWT: cuando exista
+    catalog-vehicle-service, enriquecer con HTTP (NO con JOIN a otra BD).
+
+Urgencias unificadas a BAJA | MEDIA | ALTA (contrato). Confirmar en equipo.
+
+Rama de trabajo: git switch develop && git switch -c feature/catalog-vehicle-crud
+Commits cortos: tipo(área): palabras clave  →  feat(catalog): registro vehiculo
 ```
 
 ### 🟡 Alexis — `offer-service`, `order-service`

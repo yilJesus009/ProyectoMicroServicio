@@ -139,10 +139,28 @@ Cambia el estado. Requiere ser el dueño de la solicitud.
 
 **Request**
 ```json
-{ "status": "ORDERED" }
+{ "status": "CANCELLED" }
 ```
 
-**Efecto:** publica `PART_REQUEST_STATUS_CHANGED`.
+**Máquina de transiciones** (lo demás devuelve `422`):
+
+```
+PUBLISHED ──► CANCELLED  (el dueño cancela antes de aceptar oferta)
+ORDERED   ──► COMPLETED  (pedido finalizado)
+
+COMPLETED y CANCELLED son estados terminales.
+```
+
+**`ORDERED` no se pide por HTTP**: lo asigna el evento `OFFER_ACCEPTED`
+(`docs/arquitectura.md` §3.4). Un `PATCH` con `"status": "ORDERED"` responde
+`422` (`EventDrivenStatusException`). Cuando exista el consumidor del evento
+en este servicio, `PUBLISHED ──► ORDERED` vuelve a estar disponible.
+
+**Carrera:** si dos cambios llegan a la vez, solo uno se aplica; el otro
+recibe `409` (`PartRequestStatusConflictException`) y no se publica evento.
+
+**Efecto:** publica `PART_REQUEST_STATUS_CHANGED` (fire-and-forget, no
+bloquea la respuesta).
 
 ### `GET /api/v1/part-requests/:id/check-status`
 Lo consume el frontend para mostrar el estado mientras se procesa el pedido.
