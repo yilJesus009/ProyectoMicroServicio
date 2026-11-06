@@ -191,12 +191,14 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         working-directory: apps/identidad
         env:
-          # Base de datos en memoria para las pruebas
-          DB_IDENTITY_NAME: identity_test
-          DB_IDENTITY_USER: identity_user
-          DB_IDENTITY_PASSWORD: identity_pass
-          DB_IDENTITY_HOST: localhost
-          DB_IDENTITY_PORT: 5432
+          # En `manage.py test` settings.py usa SQLite en memoria; estas
+          # variables documentan la configuración real de .env.example
+          # (un solo PostgreSQL, esquema `identidad`).
+          DB_NAME: repuestosya
+          DB_IDENTIDAD_USER: identidad_user
+          DB_IDENTIDAD_PASSWORD: identidad_pass
+          DB_HOST: localhost
+          DB_PORT: "5432"
           DJANGO_SECRET_KEY: ci-test-secret-key-no-usar-en-produccion
           # Los JWT se firman con JWT_SECRET (AGENTS.md 4.5), no con
           # DJANGO_SECRET_KEY; sin esto SimpleJWT caería al fallback.

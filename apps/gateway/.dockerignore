@@ -1,0 +1,9 @@
+# No subir artefactos locales al contexto de build.
+# El Dockerfile solo copia package*.json y src/, pero el contexto igual se
+# envía al demonio: con esto el build es mucho más rápido.
+#
+# OJO: en .dockerignore los patrones NO son como en .gitignore: un patrón sin
+# `**` solo aplica en la raíz del contexto. Hay que escribir `**/node_modules/`.
+**/node_modules/
+**/npm-debug.log*
+**/.env

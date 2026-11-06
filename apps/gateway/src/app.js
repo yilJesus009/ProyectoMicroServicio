@@ -8,13 +8,18 @@ const {
 const { errorMiddleware } = require('./middleware/error.middleware');
 const { createApiRouter } = require('./routes');
 
+// Origen permitido para CORS: SOLO el frontend (docs/arquitectura.md).
+// Se puede sobreescribir con FRONTEND_ORIGIN; el valor por defecto es la URL
+// de Angular en local, que es la documentada en .env.example.
+const DEFAULT_FRONTEND_ORIGIN = 'http://localhost:4200';
+
 function createApp({
   serviceUrls = getServiceUrls(),
   jwtSecret = process.env.JWT_SECRET,
-  frontendOrigin = process.env.FRONTEND_ORIGIN,
+  frontendOrigin = process.env.FRONTEND_ORIGIN || DEFAULT_FRONTEND_ORIGIN,
 } = {}) {
   if (!frontendOrigin) {
-    throw new Error('FRONTEND_ORIGIN es obligatorio para iniciar el API Gateway');
+    throw new Error('FRONTEND_ORIGIN debe ser una URL válida');
   }
 
   const app = express();

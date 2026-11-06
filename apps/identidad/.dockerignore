@@ -1,0 +1,9 @@
+# No subir artefactos locales a la imagen.
+# Sin esto, `COPY . .` mete el __pycache__ del desarrollador en el contenedor.
+#
+# OJO: en .dockerignore los patrones NO son como en .gitignore: un patrón sin
+# `**` solo aplica en la raíz del contexto. Hay que escribir `**/__pycache__/`.
+**/__pycache__/
+**/*.py[cod]
+**/*.sqlite3
+**/.env

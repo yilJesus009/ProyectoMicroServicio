@@ -28,12 +28,11 @@ async function createGateway(t, upstreamHandler) {
 
   const target = getUrl(upstreamServer);
   const serviceUrls = {
-    identity: target,
-    partRequest: target,
-    offer: target,
-    order: target,
-    catalog: target,
-    notification: target,
+    identidad: target,
+    negociacion: target,
+    pedidos: target,
+    catalogo: target,
+    notificaciones: target,
   };
   const gatewayServer = await listen(
     createApp({
@@ -170,4 +169,61 @@ test('registro público conserva el body y descarta headers de identidad falsifi
     body,
     userId: null,
   });
+});
+
+test('GET /api/v1/health es público y reporta UP cuando todos responden', async (t) => {
+  const gatewayUrl = await createGateway(t, (_req, res) =>
+    res.status(200).json({ status: 'UP' })
+  );
+
+  // Sin Authorization: el health no exige JWT (docs/contratos-api.md).
+  const response = await fetch(`${gatewayUrl}/api/v1/health`);
+  assert.equal(response.status, 200);
+
+  const body = await response.json();
+  assert.equal(body.status, 200);
+  assert.deepEqual(body.data, {
+    gateway: 'UP',
+    identidad: 'UP',
+    negociacion: 'UP',
+    pedidos: 'UP',
+    catalogo: 'UP',
+    notificaciones: 'UP',
+  });
+});
+
+test('GET /api/v1/health marca DOWN a un servicio que falla', async (t) => {
+  const healthy = express();
+  healthy.use((_req, res) => res.status(200).json({ status: 'UP' }));
+  const healthyServer = await listen(healthy);
+  t.after(() => new Promise((resolve) => healthyServer.close(resolve)));
+
+  const failing = express();
+  failing.use((_req, res) => res.status(500).json({ status: 'ERROR' }));
+  const failingServer = await listen(failing);
+  t.after(() => new Promise((resolve) => failingServer.close(resolve)));
+
+  const gatewayServer = await listen(
+    createApp({
+      serviceUrls: {
+        identidad: getUrl(healthyServer),
+        negociacion: getUrl(healthyServer),
+        pedidos: getUrl(failingServer),
+        catalogo: getUrl(healthyServer),
+        notificaciones: getUrl(healthyServer),
+      },
+      jwtSecret: JWT_SECRET,
+      frontendOrigin: FRONTEND_ORIGIN,
+    })
+  );
+  t.after(() => new Promise((resolve) => gatewayServer.close(resolve)));
+
+  const response = await fetch(`${getUrl(gatewayServer)}/api/v1/health`);
+  assert.equal(response.status, 200);
+
+  const { data } = await response.json();
+  assert.equal(data.gateway, 'UP');
+  assert.equal(data.identidad, 'UP');
+  assert.equal(data.pedidos, 'DOWN');
+  assert.equal(data.catalogo, 'UP');
 });

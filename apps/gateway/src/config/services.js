@@ -1,10 +1,14 @@
+// URLs de los microservicios, resueltas por NOMBRE DE CONTENEDOR dentro de
+// Docker (AGENTS.md 8: nunca localhost dentro de la red de compose).
+//
+// Los nombres de las variables vienen de .env.example, que es la fuente de
+// verdad de las variables de entorno (AGENTS.md 4.7).
 const SERVICE_ENV_VARS = {
-  identity: 'IDENTITY_SERVICE_URL',
-  partRequest: 'PART_REQUEST_SERVICE_URL',
-  offer: 'OFFER_SERVICE_URL',
-  order: 'ORDER_SERVICE_URL',
-  catalog: 'CATALOG_SERVICE_URL',
-  notification: 'NOTIFICATION_SERVICE_URL',
+  identidad: 'IDENTIDAD_SERVICE_URL',
+  negociacion: 'NEGOCIACION_SERVICE_URL',
+  pedidos: 'PEDIDOS_SERVICE_URL',
+  catalogo: 'CATALOGO_SERVICE_URL',
+  notificaciones: 'NOTIFICACIONES_SERVICE_URL',
 };
 
 function getServiceUrls(env = process.env) {
@@ -31,4 +35,4 @@ function getServiceUrls(env = process.env) {
   );
 }
 
-module.exports = { getServiceUrls };
+module.exports = { getServiceUrls, SERVICE_ENV_VARS };
