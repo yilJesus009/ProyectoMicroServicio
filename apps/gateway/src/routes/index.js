@@ -1,27 +1,49 @@
 const express = require('express');
 const { createAuthMiddleware } = require('../middleware/auth.middleware');
 const { createServiceProxy } = require('../proxy/service.proxy');
+const { createHealthHandler } = require('./health');
 
+// Rutas por prefijo: docs/arquitectura.md -> Gateway.
+//   /auth, /suppliers, /admin/suppliers          -> Identidad
+//   /part-requests, /offers                      -> Negociacion
+//   /orders                                      -> Pedidos
+//   /categories, /vehicles, /admin/categories    -> Catalogo
+//   /notifications                               -> Notificaciones
 function createApiRouter({ serviceUrls, jwtSecret }) {
   const router = express.Router();
   const requireAuth = createAuthMiddleware(jwtSecret);
 
-  const identityProxy = createServiceProxy(serviceUrls.identity);
-  const partRequestProxy = createServiceProxy(serviceUrls.partRequest);
-  const offerProxy = createServiceProxy(serviceUrls.offer);
-  const orderProxy = createServiceProxy(serviceUrls.order);
-  const catalogProxy = createServiceProxy(serviceUrls.catalog);
-  const notificationProxy = createServiceProxy(serviceUrls.notification);
+  const identidadProxy = createServiceProxy(serviceUrls.identidad);
+  const negociacionProxy = createServiceProxy(serviceUrls.negociacion);
+  const pedidosProxy = createServiceProxy(serviceUrls.pedidos);
+  const catalogoProxy = createServiceProxy(serviceUrls.catalogo);
+  const notificacionesProxy = createServiceProxy(serviceUrls.notificaciones);
 
-  router.post('/auth/register', identityProxy);
-  router.post('/auth/login', identityProxy);
-  router.use('/auth', requireAuth, identityProxy);
+  // Salud agregada: sin JWT, para la defensa.
+  router.get('/health', createHealthHandler(serviceUrls));
 
-  router.use('/part-requests', requireAuth, partRequestProxy);
-  router.use('/offers', requireAuth, offerProxy);
-  router.use('/orders', requireAuth, orderProxy);
-  router.use(['/vehicles', '/parts'], requireAuth, catalogProxy);
-  router.use('/notifications', requireAuth, notificationProxy);
+  // --- Identidad ------------------------------------------------------------
+  // Solo registro e inicio de sesion son publicos; el resto exige JWT
+  // (docs/arquitectura.md). El orden importa: las dos publicas van primero.
+  router.post('/auth/register', identidadProxy);
+  router.post('/auth/login', identidadProxy);
+  router.use('/auth', requireAuth, identidadProxy);
+
+  router.use('/admin/suppliers', requireAuth, identidadProxy);
+  router.use('/suppliers', requireAuth, identidadProxy);
+
+  // --- Negociacion ----------------------------------------------------------
+  router.use('/part-requests', requireAuth, negociacionProxy);
+  router.use('/offers', requireAuth, negociacionProxy);
+
+  // --- Pedidos --------------------------------------------------------------
+  router.use('/orders', requireAuth, pedidosProxy);
+
+  // --- Catalogo -------------------------------------------------------------
+  router.use(['/categories', '/vehicles', '/admin/categories'], requireAuth, catalogoProxy);
+
+  // --- Notificaciones -------------------------------------------------------
+  router.use('/notifications', requireAuth, notificacionesProxy);
 
   return router;
 }
