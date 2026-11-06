@@ -23,6 +23,19 @@ requieren `Authorization: Bearer <token>`. El Gateway acepta las claims
 `roles` para el rol. Cada servicio conserva la responsabilidad de validar la
 firma del token.
 
+## Rutas
+
+| Prefijo | Servicio |
+|---|---|
+| `/api/v1/health` | Estado agregado de los 5 servicios (público) |
+| `/api/v1/auth`, `/api/v1/suppliers`, `/api/v1/admin/suppliers` | Identidad |
+| `/api/v1/part-requests`, `/api/v1/offers` | Negociación |
+| `/api/v1/orders` | Pedidos |
+| `/api/v1/categories`, `/api/v1/vehicles`, `/api/v1/admin/categories` | Catálogo |
+| `/api/v1/notifications` | Notificaciones |
+
+Los prefijos están en `docs/arquitectura.md`.
+
 ## Ejecución local
 
 Configura las variables documentadas en el `.env.example` de la raíz y ejecuta:
@@ -33,7 +46,8 @@ npm test
 npm run dev
 ```
 
-El Gateway requiere `API_GATEWAY_PORT`, `JWT_SECRET`, `FRONTEND_ORIGIN` y las
-URLs de servicios `IDENTITY_SERVICE_URL`, `PART_REQUEST_SERVICE_URL`,
-`OFFER_SERVICE_URL`, `ORDER_SERVICE_URL`, `CATALOG_SERVICE_URL` y
-`NOTIFICATION_SERVICE_URL`.
+El Gateway requiere `GATEWAY_PORT`, `JWT_SECRET`, `FRONTEND_ORIGIN` y las
+URLs de servicios `IDENTIDAD_SERVICE_URL`, `NEGOCIACION_SERVICE_URL`,
+`PEDIDOS_SERVICE_URL`, `CATALOGO_SERVICE_URL` y
+`NOTIFICACIONES_SERVICE_URL`. Dentro de Docker esas URLs apuntan al nombre
+del contenedor (`http://identidad:5000`), nunca a `localhost`.
