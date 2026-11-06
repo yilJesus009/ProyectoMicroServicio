@@ -1,5 +1,5 @@
 ﻿{
-  "name": "part-request-service",
+  "name": "negociacion",
   "version": "1.0.0",
   "description": "Microservicio de solicitudes de repuestos (4 capas: domain/application/infrastructure/presentation)",
   "main": "server.js",

@@ -3,7 +3,7 @@
 # =============================================================================
 # USO:
 #   1. Levantar infra:   docker compose up -d db-part-request rabbitmq
-#   2. Arrancar servicio: cd apps/part-request-service && npm run dev
+#   2. Arrancar servicio: cd apps/negociacion && npm run dev
 #   3. Ejecutar:         powershell -File scripts/smoke-part-request.ps1
 #
 # Requiere: .env.example en la raiz (usa JWT_SECRET y puertos de ahi).
@@ -22,7 +22,7 @@ Get-Content (Join-Path $repoRoot ".env.example") | ForEach-Object {
 }
 
 # --- Generar JWTs de prueba (claims iguales a los del Identity) --------------
-$svc = Join-Path $repoRoot "apps\part-request-service"
+$svc = Join-Path $repoRoot "apps\negociacion"
 Push-Location $svc
 $code = @'
 const jwt = require("jsonwebtoken");
