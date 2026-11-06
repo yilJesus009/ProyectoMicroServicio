@@ -22,16 +22,21 @@ const PartRequestEvent = Object.freeze({
 });
 
 /**
- * Estados que este servicio NO acepta desde una petición HTTP: los asigna
- * un consumidor de eventos.
+ * Estados que este servicio NO acepta desde una petición HTTP (PATCH
+ * .../status): los asigna un caso de uso interno o un consumidor de
+ * eventos. docs/flujo-principal.md: "el comprador nunca puede poner
+ * OFFER_ACCEPTED ni COMPLETED a mano".
  *
- *   ORDERED ← OFFER_ACCEPTED (docs/arquitectura.md §3.4)
+ *   RECEIVING_OFFERS ← se asigna al enviar la primera oferta (fase 2)
+ *   OFFER_ACCEPTED   ← se asigna al aceptar una oferta (fase 2)
+ *   COMPLETED        ← consumidor de ORDER_STATUS_CHANGED (Pedidos)
  *
- * El dueño no puede declarar por su cuenta que ya tiene oferta aceptada:
- * lo dice quien acepta la oferta. Quien lo pida por PATCH recibe 422.
+ * El valor es el nombre del evento asociado, para el mensaje de error.
  */
 const EVENT_DRIVEN_STATUS = Object.freeze({
-  ORDERED: 'OFFER_ACCEPTED',
+  RECEIVING_OFFERS: 'OFFER_SUBMITTED',
+  OFFER_ACCEPTED: 'OFFER_ACCEPTED',
+  COMPLETED: 'ORDER_STATUS_CHANGED',
 });
 
 module.exports = { Topic, PartRequestEvent, EVENT_DRIVEN_STATUS };

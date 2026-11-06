@@ -38,8 +38,8 @@ class SequelizePartRequestRepository extends IPartRequestRepository {
     });
   }
 
-  async findById(id) {
-    const row = await this.model.findByPk(id);
+  async findById(id, { transaction } = {}) {
+    const row = await this.model.findByPk(id, { transaction });
     return SequelizePartRequestRepository.toEntity(row);
   }
 
@@ -53,7 +53,7 @@ class SequelizePartRequestRepository extends IPartRequestRepository {
     return rows.map(SequelizePartRequestRepository.toEntity);
   }
 
-  async save(partRequest) {
+  async save(partRequest, { transaction } = {}) {
     const data = {
       userId: partRequest.userId,
       userEmail: partRequest.userEmail,
@@ -68,12 +68,12 @@ class SequelizePartRequestRepository extends IPartRequestRepository {
     };
 
     if (partRequest.id == null) {
-      const created = await this.model.create(data);
+      const created = await this.model.create(data, { transaction });
       return SequelizePartRequestRepository.toEntity(created);
     }
 
-    await this.model.update(data, { where: { id: partRequest.id } });
-    return this.findById(partRequest.id);
+    await this.model.update(data, { where: { id: partRequest.id }, transaction });
+    return this.findById(partRequest.id, { transaction });
   }
 
   /**
@@ -86,10 +86,10 @@ class SequelizePartRequestRepository extends IPartRequestRepository {
    *
    * @returns {Promise<boolean>} true si esta escritura ganó
    */
-  async updateStatusIfCurrent(id, expectedStatus, newStatus) {
+  async updateStatusIfCurrent(id, expectedStatus, newStatus, { transaction } = {}) {
     const [affected] = await this.model.update(
       { status: newStatus },
-      { where: { id, status: expectedStatus } }
+      { where: { id, status: expectedStatus }, transaction }
     );
     return affected > 0;
   }

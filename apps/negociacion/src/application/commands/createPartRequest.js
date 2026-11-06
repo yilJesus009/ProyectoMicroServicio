@@ -2,19 +2,22 @@
 
 const { PartRequest } = require('../../domain/entities/partRequest');
 const { Topic, PartRequestEvent } = require('../contracts');
-const { publishFireAndForget } = require('../publishFireAndForget');
+const { buildEventEnvelope } = require('../buildEventEnvelope');
 
 /**
  * Caso de uso: crear una solicitud de repuesto.
  *
- * Orquesta: entidad (regla) → repositorio (persistencia) → publica evento.
- * El publish NUNCA rompe la operación (docs/eventos.md regla 3) y NUNCA
- * bloquea la respuesta esperando al broker.
+ * Orquesta: entidad (regla) → repositorio (persistencia) → outbox, todo
+ * en la MISMA transacción (docs/eventos.md): si el outbox no se puede
+ * guardar, la solicitud tampoco queda guardada. Un proceso aparte
+ * (infrastructure/messaging/outboxPublisherWorker.js) publica después.
  */
 class CreatePartRequest {
-  constructor({ partRequestRepository, eventPublisher }) {
+  constructor({ partRequestRepository, outboxRepository, unitOfWork, producer }) {
     this.partRequestRepository = partRequestRepository;
-    this.eventPublisher = eventPublisher;
+    this.outboxRepository = outboxRepository;
+    this.unitOfWork = unitOfWork;
+    this.producer = producer;
   }
 
   /**
@@ -39,29 +42,32 @@ class CreatePartRequest {
       photo: photoPath,
     });
 
-    const saved = await this.partRequestRepository.save(request);
+    return this.unitOfWork.run(async (transaction) => {
+      const saved = await this.partRequestRepository.save(request, { transaction });
 
-    // Fire-and-forget (eventos.md regla 3): NO se espera al broker antes
-    // de responder; el dato ya está persistido.
-    publishFireAndForget(
-      this.eventPublisher,
-      'CreatePartRequest',
-      Topic.PART_REQUEST,
-      PartRequestEvent.CREATED,
-      {
-        request_id: saved.id,
-        user_id: saved.userId,
-        user_email: saved.userEmail,
-        vehicle_brand: saved.vehicleBrand,
-        vehicle_model: saved.vehicleModel,
-        vehicle_year: saved.vehicleYear,
-        city: saved.city,
-        urgency: saved.urgency,
-      },
-      correlationId
-    );
+      const envelope = buildEventEnvelope({
+        eventName: PartRequestEvent.CREATED,
+        producer: this.producer,
+        correlationId,
+        payload: {
+          request_id: saved.id,
+          user_id: saved.userId,
+          user_email: saved.userEmail,
+          vehicle_brand: saved.vehicleBrand,
+          vehicle_model: saved.vehicleModel,
+          vehicle_year: saved.vehicleYear,
+          city: saved.city,
+          urgency: saved.urgency,
+        },
+      });
+      await this.outboxRepository.enqueue(envelope, {
+        exchange: Topic.PART_REQUEST,
+        routingKey: PartRequestEvent.CREATED,
+        transaction,
+      });
 
-    return saved;
+      return saved;
+    });
   }
 }
 

@@ -7,7 +7,8 @@
  * La implementación vive en infrastructure/persistence/.
  */
 class IPartRequestRepository {
-  async findById(id) {
+  /** @param {Object} [options] @param {unknown} [options.transaction] */
+  async findById(id, options = {}) {
     throw new Error('not implemented');
   }
 
@@ -15,7 +16,8 @@ class IPartRequestRepository {
     throw new Error('not implemented');
   }
 
-  async save(partRequest) {
+  /** @param {Object} [options] @param {unknown} [options.transaction] */
+  async save(partRequest, options = {}) {
     throw new Error('not implemented');
   }
 
@@ -29,9 +31,10 @@ class IPartRequestRepository {
    * @param {number} id Id de la solicitud
    * @param {string} expectedStatus Estado que se leyó al empezar
    * @param {string} newStatus Estado nuevo
+   * @param {Object} [options] @param {unknown} [options.transaction]
    * @returns {Promise<boolean>} true si esta escritura ganó
    */
-  async updateStatusIfCurrent(id, expectedStatus, newStatus) {
+  async updateStatusIfCurrent(id, expectedStatus, newStatus, options = {}) {
     throw new Error('not implemented');
   }
 }

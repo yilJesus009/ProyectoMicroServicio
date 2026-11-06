@@ -4,20 +4,23 @@ require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
 /**
- * Conexión a la base PROPIA de este servicio.
+ * Conexión al PostgreSQL compartido ("repuestosya"), esquema propio.
  *
- * Cada microservicio tiene su PostgreSQL independiente (AGENTS.md 4.2).
- * Nunca se usan las variables de otro servicio.
+ * Un solo servidor, un esquema y un usuario por servicio (AGENTS.md §5):
+ * `define: { schema: 'negociacion' }` hace que Sequelize cualifique cada
+ * tabla como `negociacion.<tabla>`. Nunca se usan las variables de otro
+ * servicio.
  */
 const sequelize = new Sequelize(
-  process.env.DB_PART_REQUEST_NAME,
-  process.env.DB_PART_REQUEST_USER,
-  process.env.DB_PART_REQUEST_PASSWORD,
+  process.env.DB_NAME,
+  process.env.DB_NEGOCIACION_USER,
+  process.env.DB_NEGOCIACION_PASSWORD,
   {
-    host: process.env.DB_PART_REQUEST_HOST,
-    port: Number(process.env.DB_PART_REQUEST_PORT),
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT),
     dialect: 'postgres',
     logging: false,
+    define: { schema: 'negociacion' },
   }
 );
 

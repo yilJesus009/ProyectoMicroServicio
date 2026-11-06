@@ -72,7 +72,7 @@ test('status desconocido → ValidationException (400)', () => {
 });
 
 test('status válido del contrato pasa', () => {
-  assert.equal(validateStatusDto({ status: 'ORDERED' }), 'ORDERED');
+  assert.equal(validateStatusDto({ status: 'OFFER_ACCEPTED' }), 'OFFER_ACCEPTED');
 });
 
 test('filtros de búsqueda validan los enums', () => {

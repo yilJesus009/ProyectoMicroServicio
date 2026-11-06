@@ -9,18 +9,23 @@
  * paquete compartido todavía. Cuando el equipo active los workspaces, este
  * archivo pasa a re-exportar desde @repuestos/shared.
  *
- * Valores según docs/contratos-api.md:
+ * Valores según docs/flujo-principal.md:
  *   - urgency: BAJA | MEDIA | ALTA
- *   - status:  PUBLISHED | ORDERED | COMPLETED | CANCELLED
+ *   - status:  PUBLISHED | RECEIVING_OFFERS | OFFER_ACCEPTED | COMPLETED | CANCELLED
  */
 
 const PartRequestStatus = Object.freeze({
-  PUBLISHED: 'PUBLISHED', // Visible para proveedores. Acepta ofertas.
-  // Lo asigna el consumidor de OFFER_ACCEPTED, no el cliente: un PATCH
-  // con este estado responde 422 (EventDrivenStatusException).
-  ORDERED: 'ORDERED', // Oferta aceptada y pedido generado.
-  COMPLETED: 'COMPLETED', // El pedido se finalizó.
-  CANCELLED: 'CANCELLED', // Cancelada (antes de aceptar una oferta).
+  PUBLISHED: 'PUBLISHED', // Visible para proveedores. Todavía sin ofertas.
+  // Lo asigna el caso de uso de enviar la primera oferta (fase 2), no el
+  // cliente: un PATCH con este estado responde 422 (EventDrivenStatusException).
+  RECEIVING_OFFERS: 'RECEIVING_OFFERS',
+  // Lo asigna el caso de uso de aceptar una oferta (fase 2), no el cliente.
+  OFFER_ACCEPTED: 'OFFER_ACCEPTED',
+  // Lo asigna el consumidor de ORDER_STATUS_CHANGED=COMPLETED (Pedidos),
+  // no el cliente. docs/flujo-principal.md: "el comprador nunca puede
+  // poner OFFER_ACCEPTED ni COMPLETED a mano".
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED', // El dueño cancela antes de aceptar una oferta.
 });
 
 const Urgency = Object.freeze({
@@ -31,23 +36,32 @@ const Urgency = Object.freeze({
 
 /**
  * Máquina de transiciones legales. Clave: estado actual.
+ * Fuente: docs/flujo-principal.md, sección "Estados > Solicitud (Negociación)".
  *
- *   PUBLISHED ──► ORDERED   (oferta aceptada)   ← solo vía evento
- *   PUBLISHED ──► CANCELLED (el dueño cancela antes de aceptar oferta)
- *   ORDERED   ──► COMPLETED (pedido finalizado)
+ *   PUBLISHED ──► RECEIVING_OFFERS (primera oferta)         ← vía evento
+ *   PUBLISHED, RECEIVING_OFFERS ──► OFFER_ACCEPTED           ← vía evento
+ *   PUBLISHED, RECEIVING_OFFERS ──► CANCELLED (el dueño cancela)
+ *   OFFER_ACCEPTED ──► COMPLETED (evento ORDER_STATUS_CHANGED)  ← vía evento
  *   COMPLETED y CANCELLED son estados terminales.
  *
  * Una transición no listada se rechaza con HTTP 422.
- * Documentada en docs/contratos-api.md (PATCH .../status).
  *
- * `PUBLISHED ──► ORDERED` queda en la máquina porque es legal EN EL
- * DOMINIO: la ejecuta el consumidor de OFFER_ACCEPTED, no un cliente.
- * El caso de uso la bloquea antes de llegar aquí (422) mientras no
- * exista ese consumidor en este servicio.
+ * Las marcadas "vía evento" quedan en la máquina porque son legales EN EL
+ * DOMINIO: las ejecuta un caso de uso interno o un consumidor de eventos,
+ * nunca un cliente por PATCH. El caso de uso de HTTP las bloquea antes de
+ * llegar aquí con EventDrivenStatusException (ver application/contracts.js).
  */
 const PART_REQUEST_TRANSITIONS = Object.freeze({
-  [PartRequestStatus.PUBLISHED]: [PartRequestStatus.ORDERED, PartRequestStatus.CANCELLED],
-  [PartRequestStatus.ORDERED]: [PartRequestStatus.COMPLETED],
+  [PartRequestStatus.PUBLISHED]: [
+    PartRequestStatus.RECEIVING_OFFERS,
+    PartRequestStatus.OFFER_ACCEPTED,
+    PartRequestStatus.CANCELLED,
+  ],
+  [PartRequestStatus.RECEIVING_OFFERS]: [
+    PartRequestStatus.OFFER_ACCEPTED,
+    PartRequestStatus.CANCELLED,
+  ],
+  [PartRequestStatus.OFFER_ACCEPTED]: [PartRequestStatus.COMPLETED],
   [PartRequestStatus.COMPLETED]: [],
   [PartRequestStatus.CANCELLED]: [],
 });

@@ -3,21 +3,20 @@
 const amqp = require('amqplib');
 
 /**
- * Productor RabbitMQ (implementación del puerto IEventPublisher).
+ * Productor RabbitMQ para el worker del outbox (infrastructure/messaging/
+ * outboxPublisherWorker.js). A diferencia del publish directo que tenía
+ * este servicio antes, `publishConfirmed` SÍ propaga el error: el worker
+ * necesita saberlo para decidir si marca `published_at` o reintenta.
  *
- * Envelope de docs/eventos.md:
- *   { event_name, occurred_at, correlation_id, producer, payload }
- *
- * Reglas:
- *   - Exchange tipo "topic", durable; routing_key = nombre del evento.
- *   - Publicar es fire-and-forget: NUNCA lanza excepción hacia arriba
- *     (docs/eventos.md regla 3: un fallo del bus no bloquea al productor).
- *   - Conexión perezosa: el servicio arranca aunque RabbitMQ no esté listo.
+ * Reglas (docs/eventos.md):
+ *   - Exchange tipo "topic", durable: sobrevive a un reinicio de RabbitMQ.
+ *   - Mensaje persistente (`persistent: true`): se guarda en disco.
+ *   - Confirmación del broker: se espera el ack antes de considerar
+ *     publicado el evento.
  */
 class RabbitMqEventPublisher {
-  constructor({ url, producer }) {
+  constructor({ url }) {
     this.url = url;
-    this.producer = producer;
     this.connection = null;
     this.channel = null;
     this.connecting = null;
@@ -28,7 +27,7 @@ class RabbitMqEventPublisher {
     if (!this.connecting) {
       this.connecting = (async () => {
         this.connection = await amqp.connect(this.url);
-        this.channel = await this.connection.createChannel();
+        this.channel = await this.connection.createConfirmChannel();
         this.connection.on('close', () => {
           this.connection = null;
           this.channel = null;
@@ -45,31 +44,28 @@ class RabbitMqEventPublisher {
     return this.channel;
   }
 
-  async publish(topic, eventName, payload, correlationId) {
-    try {
-      const channel = await this.connect();
-      await channel.assertExchange(topic, 'topic', { durable: true });
+  /**
+   * Publica con confirmación del broker. Resuelve cuando RabbitMQ confirma
+   * la persistencia del mensaje; rechaza si el broker lo rechaza o la
+   * conexión falla. NO traga el error: eso lo decide quien llama.
+   *
+   * @param {string} exchange
+   * @param {string} routingKey
+   * @param {Object} envelope Sobre completo (docs/eventos.md)
+   */
+  async publishConfirmed(exchange, routingKey, envelope) {
+    const channel = await this.connect();
+    await channel.assertExchange(exchange, 'topic', { durable: true });
 
-      const message = {
-        event_name: eventName,
-        occurred_at: new Date().toISOString(),
-        correlation_id: correlationId || crypto.randomUUID(),
-        producer: this.producer,
-        payload,
-      };
-
-      channel.publish(topic, eventName, Buffer.from(JSON.stringify(message)), {
-        persistent: true,
-        contentType: 'application/json',
-      });
-    } catch (error) {
-      // Fire-and-forget: se loguea y se continúa. La operación principal ya
-      // tiene éxito aunque el bus esté caído.
-      console.error(
-        `[EventPublisher] no se pudo publicar ${eventName} en ${topic}:`,
-        error.message
+    return new Promise((resolve, reject) => {
+      channel.publish(
+        exchange,
+        routingKey,
+        Buffer.from(JSON.stringify(envelope)),
+        { persistent: true, contentType: 'application/json' },
+        (err) => (err ? reject(err) : resolve())
       );
-    }
+    });
   }
 
   async close() {

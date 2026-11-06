@@ -9,57 +9,130 @@ const { CreatePartRequest } = require('../../src/application/commands/createPart
 const { GetPartRequestById } = require('../../src/application/queries/getPartRequestById');
 const { PartRequestEvent, Topic } = require('../../src/application/contracts');
 
-/** Repositorio en memoria (fake del contrato IPartRequestRepository). */
-class InMemoryRepository {
+/**
+ * Repositorio en memoria CON semántica transaccional real: las escrituras
+ * hechas con un `transaction` (token opaco) quedan en un borrador aparte y
+ * solo se mezclan con los datos "de verdad" cuando el FakeUnitOfWork hace
+ * `commit`. Si hace `rollback`, el borrador se descarta.
+ *
+ * Es lo que permite probar de verdad "si falla el outbox, la solicitud
+ * tampoco queda guardada" sin levantar un Postgres real.
+ */
+class TransactionalInMemoryRepository {
   constructor(seed = []) {
-    this.rows = [...seed];
+    this.committedRows = seed.map((r) => ({ ...r }));
     this.nextId = seed.length + 1;
+    this.drafts = new Map(); // transaction token -> clon de las filas
   }
 
-  async findById(id) {
-    return this.rows.find((r) => r.id === id) ?? null;
+  _rowsFor(transaction) {
+    if (!transaction) return this.committedRows;
+    if (!this.drafts.has(transaction)) {
+      this.drafts.set(transaction, this.committedRows.map((r) => ({ ...r })));
+    }
+    return this.drafts.get(transaction);
+  }
+
+  async findById(id, { transaction } = {}) {
+    const row = this._rowsFor(transaction).find((r) => r.id === id);
+    // Reconstruye la ENTIDAD (no un objeto plano): el caso de uso llama
+    // request.assertCanTransition(...), que vive en el prototipo de PartRequest.
+    return row ? new PartRequest({ ...row }) : null;
   }
 
   async findAll(filters = {}) {
-    return this.rows.filter(
-      (r) =>
-        (!filters.city || r.city === filters.city) &&
-        (!filters.status || r.status === filters.status)
+    return this.committedRows.filter(
+      (r) => (!filters.city || r.city === filters.city) && (!filters.status || r.status === filters.status)
     );
   }
 
-  async save(entity) {
+  async save(entity, { transaction } = {}) {
+    const rows = this._rowsFor(transaction);
     if (entity.id == null) {
       entity.id = this.nextId++;
-      this.rows.push(entity);
+      rows.push({ ...entity });
       return entity;
     }
+    const idx = rows.findIndex((r) => r.id === entity.id);
+    if (idx >= 0) rows[idx] = { ...entity };
     return entity;
   }
 
   /** Igual que el real: solo escribe si el estado sigue siendo el leído. */
-  async updateStatusIfCurrent(id, expectedStatus, newStatus) {
-    const row = this.rows.find((r) => r.id === id);
+  async updateStatusIfCurrent(id, expectedStatus, newStatus, { transaction } = {}) {
+    const rows = this._rowsFor(transaction);
+    const row = rows.find((r) => r.id === id);
     if (!row || row.status !== expectedStatus) return false;
     row.status = newStatus;
     return true;
   }
-}
 
-/** Publisher que registra lo publicado y opcionalmente falla. */
-class SpyPublisher {
-  constructor({ fail = false } = {}) {
-    this.fail = fail;
-    this.published = [];
+  commit(transaction) {
+    if (this.drafts.has(transaction)) {
+      this.committedRows = this.drafts.get(transaction);
+      this.drafts.delete(transaction);
+    }
   }
 
-  async publish(topic, eventName, payload, correlationId) {
-    if (this.fail) throw new Error('bus caído');
-    this.published.push({ topic, eventName, payload, correlationId });
+  rollback(transaction) {
+    this.drafts.delete(transaction);
+  }
+}
+
+/** Outbox en memoria con la misma semántica transaccional. */
+class TransactionalInMemoryOutboxRepository {
+  constructor() {
+    this.committed = [];
+    this.drafts = new Map();
+    this.failNext = false; // simula un fallo real al guardar en outbox_events
+  }
+
+  async enqueue(envelope, { exchange, routingKey, transaction } = {}) {
+    if (this.failNext) {
+      this.failNext = false;
+      throw new Error('outbox_events: fallo simulado de escritura');
+    }
+    const draft = this.drafts.get(transaction) ?? [];
+    draft.push({ ...envelope, _exchange: exchange, _routingKey: routingKey });
+    this.drafts.set(transaction, draft);
+  }
+
+  commit(transaction) {
+    if (this.drafts.has(transaction)) {
+      this.committed.push(...this.drafts.get(transaction));
+      this.drafts.delete(transaction);
+    }
+  }
+
+  rollback(transaction) {
+    this.drafts.delete(transaction);
+  }
+}
+
+/**
+ * Fake de IUnitOfWork: coordina el commit/rollback de todos los
+ * repositorios "participantes" al estilo de una transacción real.
+ */
+class FakeUnitOfWork {
+  constructor(participants) {
+    this.participants = participants;
+  }
+
+  async run(fn) {
+    const transaction = Symbol('fake-transaction');
+    try {
+      const result = await fn(transaction);
+      for (const p of this.participants) p.commit(transaction);
+      return result;
+    } catch (error) {
+      for (const p of this.participants) p.rollback(transaction);
+      throw error;
+    }
   }
 }
 
 const OWNER_ID = 12;
+const PRODUCER = 'negociacion';
 
 function seedRequest(overrides = {}) {
   return new PartRequest({
@@ -75,10 +148,28 @@ function seedRequest(overrides = {}) {
   });
 }
 
+function makeChangeStatusUseCase({ repository, outbox }) {
+  return new ChangePartRequestStatus({
+    partRequestRepository: repository,
+    outboxRepository: outbox,
+    unitOfWork: new FakeUnitOfWork([repository, outbox]),
+    producer: PRODUCER,
+  });
+}
+
+function makeCreateUseCase({ repository, outbox }) {
+  return new CreatePartRequest({
+    partRequestRepository: repository,
+    outboxRepository: outbox,
+    unitOfWork: new FakeUnitOfWork([repository, outbox]),
+    producer: PRODUCER,
+  });
+}
+
 test('cambiar estado de solicitud inexistente → PartRequestNotFoundException (404)', async () => {
-  const useCase = new ChangePartRequestStatus({
-    partRequestRepository: new InMemoryRepository(),
-    eventPublisher: new SpyPublisher(),
+  const useCase = makeChangeStatusUseCase({
+    repository: new TransactionalInMemoryRepository(),
+    outbox: new TransactionalInMemoryOutboxRepository(),
   });
 
   await assert.rejects(
@@ -91,11 +182,8 @@ test('cambiar estado de solicitud inexistente → PartRequestNotFoundException (
 });
 
 test('el que NO es el dueño no puede cambiar el estado → ForbiddenException (403)', async () => {
-  const repository = new InMemoryRepository([seedRequest()]);
-  const useCase = new ChangePartRequestStatus({
-    partRequestRepository: repository,
-    eventPublisher: new SpyPublisher(),
-  });
+  const repository = new TransactionalInMemoryRepository([seedRequest()]);
+  const useCase = makeChangeStatusUseCase({ repository, outbox: new TransactionalInMemoryOutboxRepository() });
 
   await assert.rejects(
     useCase.execute({ requestId: 7, newStatus: 'CANCELLED', actorId: 999 }),
@@ -105,39 +193,33 @@ test('el que NO es el dueño no puede cambiar el estado → ForbiddenException (
     }
   );
 
-  // La solicitud no fue tocada.
   const current = await repository.findById(7);
   assert.equal(current.status, 'PUBLISHED');
 });
 
 test('transición inválida desde el caso de uso → 422 y no persiste', async () => {
-  const repository = new InMemoryRepository([seedRequest()]);
-  const publisher = new SpyPublisher();
-  const useCase = new ChangePartRequestStatus({
-    partRequestRepository: repository,
-    eventPublisher: publisher,
-  });
+  const repository = new TransactionalInMemoryRepository([seedRequest({ status: 'CANCELLED' })]);
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  const useCase = makeChangeStatusUseCase({ repository, outbox });
 
+  // CANCELLED es terminal: ni siquiera repetir el mismo estado es legal.
   await assert.rejects(
-    useCase.execute({ requestId: 7, newStatus: 'COMPLETED', actorId: OWNER_ID }),
+    useCase.execute({ requestId: 7, newStatus: 'CANCELLED', actorId: OWNER_ID }),
     (err) => {
       assert.equal(err.name, 'InvalidPartRequestTransitionException');
       return true;
     }
   );
-  assert.equal(publisher.published.length, 0, 'no se publica evento si la regla falla');
+  assert.equal(outbox.committed.length, 0, 'no se encola evento si la regla falla');
 });
 
-test('cambio de estado exitoso publica PART_REQUEST_STATUS_CHANGED con el contrato', async () => {
-  const repository = new InMemoryRepository([seedRequest()]);
-  const publisher = new SpyPublisher();
-  const useCase = new ChangePartRequestStatus({
-    partRequestRepository: repository,
-    eventPublisher: publisher,
-  });
+test('cambio de estado exitoso encola PART_REQUEST_STATUS_CHANGED con event_id y version', async () => {
+  const repository = new TransactionalInMemoryRepository([seedRequest()]);
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  const useCase = makeChangeStatusUseCase({ repository, outbox });
 
   // CANCELLED es la única transición que el cliente puede ejecutar hoy:
-  // PUBLISHED → ORDERED la asigna el evento OFFER_ACCEPTED.
+  // PUBLISHED → OFFER_ACCEPTED la asigna el caso de uso de aceptar oferta.
   const result = await useCase.execute({
     requestId: 7,
     newStatus: 'CANCELLED',
@@ -146,29 +228,31 @@ test('cambio de estado exitoso publica PART_REQUEST_STATUS_CHANGED con el contra
   });
 
   assert.equal(result.status, 'CANCELLED');
-  assert.equal(publisher.published.length, 1);
+  assert.equal(outbox.committed.length, 1);
 
-  const evt = publisher.published[0];
-  assert.equal(evt.topic, Topic.PART_REQUEST);
-  assert.equal(evt.eventName, PartRequestEvent.STATUS_CHANGED);
-  assert.equal(evt.correlationId, 'corr-123');
-  assert.deepEqual(evt.payload, {
+  const envelope = outbox.committed[0];
+  assert.equal(envelope._exchange, Topic.PART_REQUEST);
+  assert.equal(envelope._routingKey, PartRequestEvent.STATUS_CHANGED);
+  assert.equal(envelope.event_name, PartRequestEvent.STATUS_CHANGED);
+  assert.equal(envelope.version, 1);
+  assert.equal(typeof envelope.event_id, 'string');
+  assert.ok(envelope.event_id.length > 0);
+  assert.equal(envelope.producer, PRODUCER);
+  assert.equal(envelope.correlation_id, 'corr-123');
+  assert.deepEqual(envelope.payload, {
     request_id: 7,
     previous_status: 'PUBLISHED',
     new_status: 'CANCELLED',
   });
 });
 
-test('ORDERED no sale de una petición → EventDrivenStatusException (422)', async () => {
-  const repository = new InMemoryRepository([seedRequest()]);
-  const publisher = new SpyPublisher();
-  const useCase = new ChangePartRequestStatus({
-    partRequestRepository: repository,
-    eventPublisher: publisher,
-  });
+test('OFFER_ACCEPTED no sale de una petición → EventDrivenStatusException (422)', async () => {
+  const repository = new TransactionalInMemoryRepository([seedRequest()]);
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  const useCase = makeChangeStatusUseCase({ repository, outbox });
 
   await assert.rejects(
-    useCase.execute({ requestId: 7, newStatus: 'ORDERED', actorId: OWNER_ID }),
+    useCase.execute({ requestId: 7, newStatus: 'OFFER_ACCEPTED', actorId: OWNER_ID }),
     (err) => {
       assert.equal(err.name, 'EventDrivenStatusException');
       assert.equal(err.eventName, 'OFFER_ACCEPTED');
@@ -176,25 +260,37 @@ test('ORDERED no sale de una petición → EventDrivenStatusException (422)', as
     }
   );
 
-  assert.equal(publisher.published.length, 0, 'no se publica nada');
+  assert.equal(outbox.committed.length, 0, 'no se encola nada');
   const current = await repository.findById(7);
   assert.equal(current.status, 'PUBLISHED', 'el estado no cambió');
 });
 
+test('COMPLETED tampoco sale de una petición → EventDrivenStatusException (422)', async () => {
+  const repository = new TransactionalInMemoryRepository([seedRequest({ status: 'OFFER_ACCEPTED' })]);
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  const useCase = makeChangeStatusUseCase({ repository, outbox });
+
+  await assert.rejects(
+    useCase.execute({ requestId: 7, newStatus: 'COMPLETED', actorId: OWNER_ID }),
+    (err) => {
+      assert.equal(err.name, 'EventDrivenStatusException');
+      assert.equal(err.eventName, 'ORDER_STATUS_CHANGED');
+      return true;
+    }
+  );
+});
+
 test('escritura concurrente: el que pierde recibe 409 y no publica', async () => {
-  const repository = new InMemoryRepository([seedRequest()]);
-  const publisher = new SpyPublisher();
-  const useCase = new ChangePartRequestStatus({
-    partRequestRepository: repository,
-    eventPublisher: publisher,
-  });
+  const repository = new TransactionalInMemoryRepository([seedRequest()]);
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  const useCase = makeChangeStatusUseCase({ repository, outbox });
 
   // El dueño lee PUBLISHED y, antes de escribir, OFFER_ACCEPTED deja la
-  // solicitud en ORDERED. Su CANCELLED ya no debe aplicarse ni publicarse.
+  // solicitud en ese estado. Su CANCELLED ya no debe aplicarse ni publicarse.
   const casReal = repository.updateStatusIfCurrent.bind(repository);
-  repository.updateStatusIfCurrent = async (id, expected, next) => {
-    repository.rows[0].status = 'ORDERED';
-    return casReal(id, expected, next);
+  repository.updateStatusIfCurrent = async (id, expected, next, opts) => {
+    repository.committedRows[0].status = 'OFFER_ACCEPTED';
+    return casReal(id, expected, next, opts);
   };
 
   await assert.rejects(
@@ -205,53 +301,35 @@ test('escritura concurrente: el que pierde recibe 409 y no publica', async () =>
     }
   );
 
-  assert.equal(publisher.published.length, 0, 'el perdedor no publica evento');
+  assert.equal(outbox.committed.length, 0, 'el perdedor no publica evento');
   const current = await repository.findById(7);
-  assert.equal(current.status, 'ORDERED', 'no se pisa la escritura que ganó');
+  assert.equal(current.status, 'OFFER_ACCEPTED', 'no se pisa la escritura que ganó');
 });
 
-test('un broker que no responde NO retiene la respuesta (eventos.md regla 3)', async () => {
-  const repository = new InMemoryRepository([seedRequest()]);
-  let release = null;
-  const publisher = {
-    publish: () =>
-      new Promise((resolve) => {
-        release = resolve;
-      }),
-  };
-  const useCase = new ChangePartRequestStatus({
-    partRequestRepository: repository,
-    eventPublisher: publisher,
-  });
+test('si falla el guardado en outbox_events, la solicitud tampoco queda guardada (atomicidad)', async () => {
+  const repository = new TransactionalInMemoryRepository([seedRequest()]);
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  outbox.failNext = true; // el insert en outbox_events falla esta vez
+  const useCase = makeChangeStatusUseCase({ repository, outbox });
 
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error('execute esperó al broker: el publish bloqueó la respuesta')),
-      1000
-    );
-  });
+  await assert.rejects(
+    useCase.execute({ requestId: 7, newStatus: 'CANCELLED', actorId: OWNER_ID }),
+    (err) => {
+      assert.match(err.message, /outbox_events/);
+      return true;
+    }
+  );
 
-  try {
-    const result = await Promise.race([
-      useCase.execute({ requestId: 7, newStatus: 'CANCELLED', actorId: OWNER_ID }),
-      timeout,
-    ]);
-    assert.equal(result.status, 'CANCELLED');
-    assert.equal(typeof release, 'function', 'el evento se lanzó sin esperarse');
-  } finally {
-    clearTimeout(timer);
-    if (release) release();
-  }
+  // El cambio de estado se revirtió junto con el outbox: sigue PUBLISHED.
+  const current = await repository.findById(7);
+  assert.equal(current.status, 'PUBLISHED', 'la transacción completa se revirtió');
+  assert.equal(outbox.committed.length, 0);
 });
 
-test('crear solicitud publica PART_REQUEST_CREATED con el payload del contrato', async () => {
-  const repository = new InMemoryRepository();
-  const publisher = new SpyPublisher();
-  const useCase = new CreatePartRequest({
-    partRequestRepository: repository,
-    eventPublisher: publisher,
-  });
+test('crear solicitud encola PART_REQUEST_CREATED con el payload del contrato', async () => {
+  const repository = new TransactionalInMemoryRepository();
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  const useCase = makeCreateUseCase({ repository, outbox });
 
   const saved = await useCase.execute({
     userId: OWNER_ID,
@@ -267,12 +345,15 @@ test('crear solicitud publica PART_REQUEST_CREATED con el payload del contrato',
   });
 
   assert.equal(saved.status, 'PUBLISHED');
-  assert.equal(publisher.published.length, 1);
+  assert.equal(outbox.committed.length, 1);
 
-  const evt = publisher.published[0];
-  assert.equal(evt.topic, Topic.PART_REQUEST);
-  assert.equal(evt.eventName, PartRequestEvent.CREATED);
-  assert.deepEqual(evt.payload, {
+  const envelope = outbox.committed[0];
+  assert.equal(envelope._exchange, Topic.PART_REQUEST);
+  assert.equal(envelope._routingKey, PartRequestEvent.CREATED);
+  assert.equal(envelope.event_name, PartRequestEvent.CREATED);
+  assert.equal(envelope.version, 1);
+  assert.equal(typeof envelope.event_id, 'string');
+  assert.deepEqual(envelope.payload, {
     request_id: 1,
     user_id: OWNER_ID,
     user_email: 'juan@taller.com',
@@ -284,25 +365,33 @@ test('crear solicitud publica PART_REQUEST_CREATED con el payload del contrato',
   });
 });
 
-test('si el bus está caído, la operación principal NO falla (regla eventos.md 3)', async () => {
-  const repository = new InMemoryRepository([seedRequest()]);
-  const useCase = new ChangePartRequestStatus({
-    partRequestRepository: repository,
-    eventPublisher: new SpyPublisher({ fail: true }),
-  });
+test('si falla el outbox al crear, la solicitud tampoco queda guardada', async () => {
+  const repository = new TransactionalInMemoryRepository();
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  outbox.failNext = true;
+  const useCase = makeCreateUseCase({ repository, outbox });
 
-  const result = await useCase.execute({
-    requestId: 7,
-    newStatus: 'CANCELLED',
-    actorId: OWNER_ID,
-  });
+  await assert.rejects(
+    useCase.execute({
+      userId: OWNER_ID,
+      userEmail: 'juan@taller.com',
+      data: {
+        vehicleBrand: 'Toyota',
+        vehicleModel: 'Hilux',
+        vehicleYear: 2019,
+        description: 'Filtro de aceite',
+        city: 'La Paz',
+        urgency: 'ALTA',
+      },
+    })
+  );
 
-  assert.equal(result.status, 'CANCELLED', 'el estado se guardó igual');
+  assert.equal(repository.committedRows.length, 0, 'nada quedó persistido');
 });
 
 test('consultar solicitud inexistente → PartRequestNotFoundException (404)', async () => {
   const query = new GetPartRequestById({
-    partRequestRepository: new InMemoryRepository(),
+    partRequestRepository: new TransactionalInMemoryRepository(),
   });
   await assert.rejects(query.execute(42), (err) => {
     assert.equal(err.name, 'PartRequestNotFoundException');
