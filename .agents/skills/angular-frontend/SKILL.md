@@ -1,214 +1,111 @@
 ---
 name: angular-frontend
-description: Implementar el frontend en Angular para los flujos de solicitante y proveedor. Estructura por features con DDD, guards, interceptores, y consumo del API Gateway. Usar cuando se trabaja en apps/frontend.
+description: Implementar el frontend en Angular (standalone + Material) para los tres roles (comprador, proveedor, admin). Estructura por features con patrón smart/dumb y facades, guards, interceptor JWT, consumo del API Gateway. Usar cuando se trabaja en apps/frontend.
 ---
 
 # Angular Frontend
 
-> **Angular es obligatorio** (requisito de la instructora). El frontend es la
-> cara visible del proyecto: los dos flujos, solicitante y proveedor.
+> **Angular es obligatorio** (requisito de la instructora). Habla **solo**
+> con el Gateway (`environment.apiUrl = http://localhost:4000/api/v1`). Se
+> sirve con nginx en Docker, puerto 4200.
 
 ## Antes de empezar
 
-1. Leer `AGENTS.md`.
-2. Leer `docs/contratos-api.md` (los endpoints que vas a consumir).
-3. Leer `docs/flujo-principal.md` (los flujos que vas a implementar).
-4. Revisar la estructura existente de `apps/frontend/`.
+1. Leer `AGENTS.md`, `docs/frontend.md` (pantallas exactas por rol) y
+   `docs/flujo-principal.md`.
+2. Leer `docs/contratos-api.md` de los endpoints que vas a consumir.
 
-## Regla de oro
-
-> **El frontend nunca habla directo con un microservicio.** Siempre pasa por
-> el API Gateway (`http://localhost:4000`).
-
-Un solo `API_BASE_URL` en la configuración. Si algún día cambia el Gateway,
-se cambia en un solo lugar.
-
-```typescript
-// core/config/api.config.ts
-export const API_BASE_URL = 'http://localhost:4000';
-```
-
-## Estructura por features (DDD)
-
-Organizar por **feature**, no por tipo de archivo. Dentro de cada feature,
-las capas del dominio:
+## Estructura por features
 
 ```
 src/app/
-├── core/                        # transversal a todo el app
-│   ├── config/
-│   ├── guards/                  # auth.guard, role.guard
-│   ├── interceptors/            # auth.interceptor (adjunta el JWT)
-│   ├── layouts/                 # main-layout, auth-layout
-│   └── services/
+├── core/            interceptor JWT, guards por rol, sesión, manejo de errores
+├── shared/          componentes dumb reutilizables (tarjetas, badges, timeline)
 ├── features/
-│   ├── auth/                    # login y registro
-│   │   ├── domain/
-│   │   ├── application/
-│   │   └── presentation/
-│   ├── requests/                # solicitudes (solicitante y proveedor)
-│   ├── offers/                  # ofertas
-│   ├── orders/                  # pedidos
-│   └── profile/
-├── shared/                      # componentes y utilidades reutilizables
-│   ├── ui/                      # botones, tablas, cards, modales
-│   └── pipes/
-└── app.module.ts
+│   ├── auth/        login, registro (elige COMPRADOR o PROVEEDOR)
+│   ├── comprador/   solicitudes, comparador, pago, pedidos, vehículos
+│   ├── proveedor/   perfil comercial, solicitudes abiertas, ofertas, pedidos
+│   ├── admin/       proveedores pendientes, categorías
+│   └── notificaciones/  campanita y lista
+└── facades/         un servicio por dominio que habla con la API
 ```
 
-**`shared/` solo para lo realmente compartido.** Si un componente lo usa una
-feature, va dentro de esa feature. Ahí es donde un monorepo se convierte en
-un monolito.
+`shared/` solo para lo realmente compartido entre features.
 
-## El interceptor de autenticación
+## Patrón smart / dumb
 
-Un solo interceptor adjunta el JWT a todas las llamadas y maneja el `401`:
+- **Smart** (uno por pantalla): usa una *facade* para pedir o enviar datos
+  y reacciona a eventos de sus hijos.
+- **Dumb**: recibe datos por `input()`, avisa con `output()`,
+  `ChangeDetectionStrategy.OnPush`, no inyecta servicios.
+- Ejemplo de reutilización: `OfferCardComponent` se usa en el comparador del
+  comprador (botón "Aceptar") y en "Mis ofertas" del proveedor (botón
+  "Retirar").
+
+## Interceptor y guards
 
 ```typescript
 // core/interceptors/auth.interceptor.ts
-@Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const token = this.auth.token;
-    const cloned = token
-      ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-      : req;
-
-    return next.handle(cloned).pipe(
-      catchError((err: HttpErrorResponse) => {
-        if (err.status === 401) this.auth.logout();   // token expirado
-        return throwError(() => err);
-      })
-    );
-  }
+intercept(req, next) {
+  const cloned = this.auth.token
+    ? req.clone({ setHeaders: { Authorization: `Bearer ${this.auth.token}` } })
+    : req;
+  return next.handle(cloned).pipe(
+    catchError(err => { if (err.status === 401) this.auth.logout(); return throwError(() => err); })
+  );
 }
 ```
 
-## Guards por rol
+Guards por rol (`COMPRADOR`, `PROVEEDOR`, `ADMIN`) redirigen al panel de
+cada rol. **Son solo comodidad visual**: si el backend responde `409` o
+`422`, se muestra su `msg` aunque el frontend ya hubiera ocultado el botón.
 
-El frontend tiene **dos flujos** con permisos distintos. Los guards lo
-reflejan, pero **son solo comodidad visual**: la autorización real vive en el
-backend.
+## Rutas por rol (`docs/frontend.md`)
 
-```typescript
-// core/guards/role.guard.ts
-@Injectable()
-export class RoleGuard implements CanActivate {
-  constructor(private auth: AuthService, private router: Router) {}
+- **Comprador:** `/comprador/solicitudes`, `/solicitudes/nueva` (categoría
+  en tarjetas, vehículo propio o escrito, foto, ciudad, urgencia),
+  `/solicitudes/:id` (comparador ordenable + aceptar con confirmación),
+  `/pedidos/:id/pago`, `/pedidos`, `/pedidos/:id` (timeline + "Confirmar
+  recepción"), `/vehiculos`.
+- **Proveedor:** `/proveedor/perfil`, `/solicitudes` (aviso si no está
+  aprobado), `/solicitudes/:id/ofertar`, `/ofertas`, `/pedidos`.
+- **Admin:** `/admin/proveedores` (aprobar/rechazar con motivo),
+  `/admin/categorias` (listar, crear, editar, activar/desactivar).
 
-  canActivate(route: ActivatedRouteSnapshot): boolean {
-    const expected = route.data['roles'] as string[];
-    const actual   = this.auth.role;
-    if (expected.includes(actual)) return true;
-    this.router.navigate(['/']);       // o una página 403
-    return false;
-  }
-}
-```
+Al aceptar una oferta: pantalla "Generando tu pedido…" haciendo polling a
+`GET /orders/by-offer/{offerId}` cada 2 s hasta que exista, luego ir a pago.
 
-```typescript
-{ path: 'solicitudes/nueva', component: NuevaSolicitudPage,
-  canActivate: [AuthGuard, RoleGuard], data: { roles: ['COMPRADOR'] } },
+## Pago simulado
 
-{ path: 'ofertas', component: OfertasPage,
-  canActivate: [AuthGuard, RoleGuard], data: { roles: ['PROVEEDOR'] } },
-```
+Dos pestañas, **QR** y **Tarjeta** (datos de demo precargados, solo se
+valida formato en el navegador). Se envía únicamente
+`{ "method": "QR" }` o `{ "method": "CARD" }`: **los datos de tarjeta nunca
+salen del navegador**. Aviso visible: "Simulación: no se realiza ningún
+cobro".
 
-> ⚠️ El PDF exige que la regla de una sola oferta aceptada se garantice en el
-> **backend**. Ocultar el botón de "aceptar" cuando ya hay una oferta aceptada
-> es una **comodidad**, no una garantía. El backend devuelve `409` aunque el
-> frontend lo oculte, y eso es lo que se prueba.
+## Campanita
 
-## Estados de la interfaz
+Contador de no leídos cada 15 s, lista desplegable; clic navega al `link`
+del aviso y lo marca leído. `takeUntil`/`take` siempre, para no dejar
+polling huérfano.
 
-Todo componente con datos remotas debe manejar los **cuatro estados**. Es lo
-que separa un frontend cuidado de uno improvisado.
+## Los cuatro estados de cada pantalla con datos
 
-- **Cargando** — spinner o skeleton.
-- **Vacío** — "Aún no hay solicitudes publicadas."
-- **Error** — mensaje y botón de reintentar.
-- **Con datos** — el contenido.
-
-No mostrar una tabla en blanco mientras carga: eso parece roto.
-
-## El flujo del solicitante
-
-```
-/login
-  → /solicitudes            lista de MIS solicitudes
-  → /solicitudes/nueva      formulario: vehículo, descripción, foto, ciudad, urgencia
-  → /solicitudes/:id        detalle + pestaña de ofertas recibidas
-  → comparar ofertas        tabla: precio, marca, condición, disponibilidad, entrega
-  → aceptar UNA oferta      confirmación explícita (es irreversible)
-  → /pedidos/:id            seguimiento del pedido
-  → confirmar finalización
-```
-
-**La comparación de ofertas es la pantalla más importante del proyecto.**
-Mostrar las condiciones lado a lado en una tabla, resaltando la diferencia de
-precio, disponibilidad y tiempo de entrega. No esconder la información detrás
-de un modal.
-
-**Antes de aceptar, un modal de confirmación** que advierta que es
-irreversible y que las demás ofertas serán rechazadas.
-
-## El flujo del proveedor
-
-```
-/login
-  → /solicitudes-publicas    solicitudes PUBLISHED disponibles
-  → /solicitudes-publicas/:id   detalle + formulario de oferta
-  → /ofertas                 MIS ofertas con su estado
-  → /pedidos                 pedidos donde soy proveedor
-  → actualizar estado del pedido   PREPARING → SHIPPED → DELIVERED
-```
-
-## Espera del pedido
-
-Cuando se acepta una oferta, el pedido se crea **asincrónicamente** (por
-evento). Mostrar una pantalla de espera que consulte el estado:
-
-```typescript
-// polling cada 1.5s, con tope y cancelación
-this.timer = interval(1500)
-  .pipe(takeUntil(this.destroy$), switchMap(() => this.api.checkStatus(id)))
-  .subscribe(res => {
-    if (res.data.status !== 'PUBLISHED') {   // ya avanzó
-      this.timer.unsubscribe();
-      this.router.navigate(['/pedidos', res.data.orderId]);
-    }
-  });
-```
-
-**Siempre** `takeUntil` o `take` para evitar fugas de memoria y requests
-huérfanas.
-
-## Accesibilidad y UX
-
-- Labels asociados a cada input. Nunca placeholder como única etiqueta.
-- Estados de error junto al campo, no solo un toast.
-- Formularios con validación en el cliente **y** en el servidor.
-- Diseño responsive: el solicitante puede publicar desde el celular.
-- Botones de acción destructiva con confirmación.
-- Contraste suficiente en los textos.
+Cargando (skeleton), vacío (mensaje), error (reintentar), con datos. Nunca
+una tabla en blanco mientras carga.
 
 ## Pruebas
 
 ```bash
-ng test          # unitarias (Karma/Jasmine)
-ng e2e           # end-to-end (Playwright)
+ng test    # Karma/Jasmine
+ng build --configuration production
 ```
 
-Priorizar pruebas de:
-- Los guards de rol.
-- El interceptor (adjunta el token, maneja `401`).
-- La comparación de ofertas.
-- El formulario de aceptar oferta y su confirmación.
+Priorizar: guards de rol, interceptor (token + 401), comparador de ofertas,
+confirmación de aceptar oferta.
 
 ## Al terminar
 
-- `ng build` sin errores.
-- `ng test` pasando.
-- Los cuatro estados de carga cubiertos en las pantallas con datos.
-- Ninguna llamada directa a un microservicio (todo por el Gateway).
-- Resumir: archivos modificados, pruebas realizadas, limitaciones.
+`ng build` sin errores; `ng test` pasando; los cuatro estados cubiertos;
+ninguna llamada directa a un microservicio (todo por el Gateway). Resumir
+archivos modificados, pruebas realizadas, limitaciones.

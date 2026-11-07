@@ -3,183 +3,134 @@
 ## Vista general
 
 ```
-                         ┌──────────────────────┐
-        Browser ───────► │     API Gateway      │  puerto 4000
-        (Angular:4200)   │  (valida JWT, inyecta │
-                         │   X-User-Id / Roles)  │
-                         └──────────┬───────────┘
-                                    │ rutea por prefijo
-      ┌──────────┬──────────┬───────┴────┬───────────┬──────────────┐
-      ▼          ▼          ▼            ▼           ▼              ▼
- ┌─────────┐ ┌────────┐ ┌────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐
- │identity │ │ part-  │ │ offer  │ │  order   │ │ catalog  │ │notification│
- │ Django  │ │request │ │        │ │          │ │ vehicle  │ │            │
- │  :5000  │ │ :4001  │ │ :4002  │ │  :4003   │ │  :4004   │ │   :4005    │
- └────┬────┘ └───┬────┘ └───┬────┘ └────┬─────┘ └────┬─────┘ └─────┬──────┘
-      │          │          │           │            │             │
-      ▼          ▼          ▼           ▼            ▼             ▼
- identity   part_req     offer       order       catalog      notification
-    _db         _db        _db         _db          _db            _db
-  (5433)      (5434)     (5435)      (5436)       (5437)         (5438)
-                                    ▲
-                                    │ consume OFFER_ACCEPTED
-                          ┌─────────┴─────────┐
-                          │     RabbitMQ      │  5672 / 15672
-                          │  bus de eventos   │
-                          └───────────────────┘
+                    Navegador
+                        │
+              ┌─────────┴─────────┐
+              │ Frontend Angular  │ :4200 (expuesto)
+              └─────────┬─────────┘
+                        │ HTTP /api/v1/...
+              ┌─────────┴─────────┐
+              │  Gateway Express  │ :4000 (expuesto)
+              │ valida JWT, enruta│
+              └─────────┬─────────┘
+     ┌─────────┬────────┼─────────┬──────────────┐
+     ▼         ▼        ▼         ▼              ▼
+┌─────────┐┌─────────┐┌────────┐┌────────┐┌──────────────┐
+│Identidad││Negocia- ││Pedidos ││Catálogo││Notificaciones│
+│ Django  ││ción     ││Spring  ││NestJS  ││Express       │
+│ :5000   ││Express  ││Boot    ││:4004   ││:4005         │
+│         ││:4001    ││:4003   ││        ││              │
+└────┬────┘└────┬────┘└───┬────┘└───┬────┘└──────┬───────┘
+     │          │         │         │            │
+     └──────────┴─────────┴────┬────┴────────────┘
+                               ▼
+           ┌───────────────────────────────────────┐
+           │ PostgreSQL "repuestosya"              │
+           │ esquemas: identidad · negociacion ·   │
+           │ pedidos · catalogo · notificaciones   │
+           └───────────────────────────────────────┘
+
+  Identidad, Negociación y Pedidos publican eventos ──► RabbitMQ ──►
+  Negociación, Pedidos y Notificaciones los consumen
 ```
 
-## Decisiones arquitectónicas
+## Servicios
 
-### 1. API Gateway como punto de entrada único
+| Servicio | Framework | Puerto | Esquema | Publica | Consume |
+|---|---|---|---|---|---|
+| Gateway | Express | 4000 | — | — | — |
+| Identidad | Django + DRF | 5000 | `identidad` | `USER_CREATED`, `SUPPLIER_PROFILE_SUBMITTED`, `SUPPLIER_APPROVED`, `SUPPLIER_REJECTED` | — |
+| Negociación | Express | 4001 | `negociacion` | `PART_REQUEST_CREATED`, `PART_REQUEST_STATUS_CHANGED`, `OFFER_SUBMITTED`, `OFFER_ACCEPTED`, `OFFER_REJECTED` | `SUPPLIER_APPROVED`, `SUPPLIER_REJECTED`, `ORDER_STATUS_CHANGED` |
+| Pedidos | Spring Boot | 4003 | `pedidos` | `ORDER_CREATED`, `ORDER_STATUS_CHANGED` | `OFFER_ACCEPTED` |
+| Catálogo | NestJS | 4004 | `catalogo` | — | — |
+| Notificaciones | Express | 4005 | `notificaciones` | — | `SUPPLIER_PROFILE_SUBMITTED`, `SUPPLIER_APPROVED`, `SUPPLIER_REJECTED`, `PART_REQUEST_CREATED`, `OFFER_SUBMITTED`, `OFFER_ACCEPTED`, `OFFER_REJECTED`, `ORDER_CREATED`, `ORDER_STATUS_CHANGED` |
+| Frontend | Angular (nginx) | 4200 | — | — | — |
 
-Ningún microservicio se expone al exterior. Todo pasa por el Gateway (`4000`),
-que hace dos cosas:
+## Comunicación
 
-1. **Valida el JWT** que envía el navegador.
-2. **Descompone el token en headers** que los servicios consumen:
-
-```
-X-User-Id:      12
-X-User-Roles:   COMPRADOR
-X-User-Email:   juan@taller.com
-X-Correlation-Id: a1b2c3d4-...
-```
-
-**Importante** (lección del proyecto de referencia): el Gateway **no** debe
-ser el único que valida la firma. Cada microservicio **también** valida el
-token con el mismo `JWT_SECRET`. Así, si alguien alcanza un servicio
-directamente (por ejemplo desde dentro de la red Docker), no se cola.
-
-### 2. Microservicios stateless
-
-Los servicios no guardan sesión. Reciben los headers confiables del Gateway
-y confían en ellos. Cualquier instancia puede atender cualquier request.
-
-### 3. DDD y arquitectura limpia
-
-Cada servicio separa sus responsabilidades en 4 capas:
-
-```
-domain/         → la regla de negocio pura. Sin Express, sin Sequelize.
-application/    → casos de uso: orquestan el dominio ante un comando.
-infrastructure/ → adaptadores: base de datos, RabbitMQ, configuración.
-presentation/   → HTTP: controllers delgados que solo llaman casos de uso.
-```
-
-La dependencia apunta hacia adentro: `presentation → application → domain`.
-El `domain/` nunca importa de las capas de afuera.
-
-### 4. CQRS (Command Query Responsibility Segregation)
-
-Separar **escrituras** de **lecturas** donde sea pertinente. No hace falta un
-patrón pesado: alcanza con separar los casos de uso.
-
-```
-application/
-├── commands/     CreateOfferCommand + CreateOfferCommandHandler
-│                 (valida reglas, escribe, publica evento)
-└── queries/      GetOffersByRequestQuery + GetOffersByRequestQueryHandler
-                  (solo lee, puede proyectar a otra vista)
-```
-
-**Dónde aplica en este proyecto:**
-
-| Servicio | Commands | Queries |
+| Tipo | Cuándo | Ejemplo |
 |---|---|---|
-| part-request | `CreatePartRequest`, `ChangePartRequestStatus` | `GetPartRequestById`, `SearchPartRequests` |
-| offer | `SubmitOffer`, **`AcceptOffer`**, `RejectOffer` | `GetOffersByRequest`, `GetOffersByProvider` |
-| order | `CreateOrder`, `ChangeOrderStatus`, `CancelOrder` | `GetOrderById`, `GetOrdersByBuyer` |
+| **HTTP vía Gateway** | El navegador pide o cambia algo | `POST /api/v1/offers/78/accept` |
+| **HTTP interno** | Un servicio lee un dato de referencia una vez | Negociación consulta `GET /api/v1/categories/{id}` a Catálogo, reenviando el token del usuario |
+| **Eventos (RabbitMQ)** | Avisar que algo ya pasó | `OFFER_ACCEPTED` → Pedidos crea el pedido |
 
-`AcceptOffer` es el command más delicado del proyecto: escribe y debe
-garantizar que solo pase una vez.
+**Regla:** si quien llama necesita una respuesta inmediata, es HTTP. Si es un
+hecho ya ocurrido al que otros reaccionan, es un evento.
 
-### 5. Comunicación híbrida (HTTP + RabbitMQ)
+## Gateway
 
-| Tipo | Tecnología | Cuándo |
+- Rutas por prefijo:
+
+| Prefijo | Servicio |
+|---|---|
+| `/api/v1/auth`, `/api/v1/suppliers`, `/api/v1/admin/suppliers` | Identidad |
+| `/api/v1/part-requests`, `/api/v1/offers` | Negociación |
+| `/api/v1/orders` | Pedidos |
+| `/api/v1/categories`, `/api/v1/vehicles`, `/api/v1/admin/categories` | Catálogo |
+| `/api/v1/notifications` | Notificaciones |
+
+- `POST /api/v1/auth/register` y `POST /api/v1/auth/login` son públicas; el
+  resto exige JWT.
+- Agrega `X-Correlation-Id` si no viene y lo reenvía.
+- `GET /api/v1/health` devuelve el estado de los 5 servicios (útil en la
+  defensa).
+- Habilita CORS solo para el origen del frontend.
+
+## JWT
+
+- Lo emite Identidad (SimpleJWT, HS256, `JWT_SECRET` compartido).
+- Claims: `user_id`, `email`, `rol` (`COMPRADOR`, `PROVEEDOR`, `ADMIN`).
+- Cada servicio valida la firma y el rol por su cuenta.
+- Si el proveedor está aprobado **no** va en el token: Negociación lo sabe
+  por su copia local de proveedores (decisión D11).
+
+## Base de datos
+
+- `infra/postgres/init.sql` crea los 5 esquemas y 5 usuarios
+  (`identidad_user`, `negociacion_user`, ...). Cada usuario es dueño de su
+  esquema y tiene su `search_path` apuntando a él.
+- Configuración por framework:
+
+| Framework | Cómo se fija el esquema | Tablas |
 |---|---|---|
-| **Síncrona** | HTTP | Consultas puntuales. El frontend pregunta por una solicitud. |
-| **Asíncrona** | RabbitMQ | Hechos que ya ocurrieron. `OFFER_ACCEPTED` dispara `ORDER_CREATED`. |
+| Django | `OPTIONS: {"options": "-c search_path=identidad"}` | migrations |
+| Express (Sequelize) | `define: { schema: 'negociacion' }` o `searchPath` | `sync()` limitado a su esquema |
+| Spring Boot | `spring.jpa.properties.hibernate.default_schema=pedidos` | Flyway |
+| NestJS (TypeORM) | `schema: 'catalogo'` | sincronización o migrations |
 
-**Regla:** si el emisor necesita una respuesta inmediata, es HTTP. Si es un
-hecho del pasado que otros pueden reaccionar cuando quieran, es un evento.
+## Docker
 
-### 6. Persistencia independiente
+`docker-compose.yml` en la raíz:
 
-Cada microservicio tiene su **propia base PostgreSQL**. No hay bases compartidas.
-
-- Un servicio **nunca** consulta la base de otro.
-- Si necesita datos de otro servicio, los pide por HTTP o consume su evento.
-- Cada servicio decide su propio modelo de datos y sus migraciones.
-
-### 7. Patrones de diseño usados
-
-| Patrón | Dónde | Por qué |
+| Contenedor | Imagen o build | Expuesto |
 |---|---|---|
-| **Gateway** | api-gateway | Punto único de entrada, autenticación centralizada |
-| **Strategy** | offer-service | La regla de aceptación puede variar según tipo de entrega |
-| **Observer / Pub-Sub** | RabbitMQ | Desacople entre quien produce y quien consume eventos |
-| **Adapter (Hexagonal)** | todos | El dominio no depende de Sequelize ni de Express |
-| **Unit of Work** | offer-service, order-service | Transacciones atómicas en operaciones críticas |
-| **Null Object** | catalog-service | Vehículo opcional sin `if (vehicle)` por todos lados |
-| **Factory** | order-service | Construcción del pedido según tipo de entrega |
-| **Decorator** | api-gateway | Capas de auth, logging y correlation-id encadenadas |
+| `postgres` | `postgres:16-alpine` + `init.sql` | No |
+| `rabbitmq` | `rabbitmq:3.13-management-alpine` | Solo la UI 15672, para la demo |
+| `identidad` | `apps/identidad/Dockerfile` | No |
+| `negociacion` | `apps/negociacion/Dockerfile` (volumen `uploads` para fotos) | No |
+| `pedidos` | `apps/pedidos/Dockerfile` (multi-stage Maven → JRE) | No |
+| `catalogo` | `apps/catalogo/Dockerfile` (multi-stage Node) | No |
+| `notificaciones` | `apps/notificaciones/Dockerfile` | No |
+| `gateway` | `apps/gateway/Dockerfile` | 4000 |
+| `frontend` | `apps/frontend/Dockerfile` (build Angular → nginx) | 4200 |
 
-## Flujo principal (el que evalúa el proyecto)
+- Todos usan `healthcheck` y `depends_on: condition: service_healthy`, para
+  que ningún servicio arranque antes que la base o RabbitMQ.
+- Dentro de Docker los servicios se llaman por nombre de contenedor
+  (`http://pedidos:4003`).
+- Variables en `.env` (copiado de `.env.example`).
 
-```
-1. Solicitante publica una solicitud
-     POST /api/v1/part-requests        (por el Gateway)
-     → part-request-service persiste y publica PART_REQUEST_CREATED
+## Patrones de diseño
 
-2. Proveedor consulta y envía una oferta
-     GET  /api/v1/part-requests?status=PUBLISHED
-     POST /api/v1/offers
-     → offer-service persiste y publica OFFER_SUBMITTED
-
-3. Solicitante compara y acepta UNA oferta
-     POST /api/v1/offers/78/accept
-     → offer-service:
-         a. bloquea la fila (SELECT ... FOR UPDATE)
-         b. verifica que la solicitud no tenga ya una oferta aceptada
-         c. si no tiene: acepta esta, rechaza las demás  (transacción atómica)
-         d. publica OFFER_ACCEPTED
-     → part-request-service recibe el evento, cambia estado a ORDERED
-
-4. El pedido se genera
-     order-service consume OFFER_ACCEPTED
-     → crea el pedido en PENDING y publica ORDER_CREATED
-
-5. Seguimiento hasta la finalización
-     proveedor:  PENDING → PREPARING → SHIPPED → DELIVERED
-     solicitante confirma → COMPLETED
-     → cada cambio publica ORDER_STATUS_CHANGED
-```
-
-## La regla crítica: una sola oferta aceptada
-
-Es el requisito más importante del proyecto. Se defiende en **tres capas**:
-
-1. **Base de datos** — índice único parcial. Es la defensa final:
-   ```sql
-   CREATE UNIQUE INDEX uq_one_accepted_offer_per_request
-     ON offers (request_id)
-     WHERE status = 'ACCEPTED';
-   ```
-   Aunque dos requests concurrentes pasen la validación, una falla en el índice.
-
-2. **Dominio** — el agregado `Offer` expone `accept()`, que lanza
-   `OfferAlreadyAcceptedException` si la solicitud ya tiene oferta aceptada.
-
-3. **Aplicación** — `AcceptOfferCommandHandler` abre una transacción y bloquea
-   la fila de la solicitud antes de leer, evitando la condición de carrera.
-
-**No se garantiza ocultando botones en el frontend.** El frontend solo
-refleja el estado; la regla vive en el backend.
-
-## Qué NO incluye este proyecto
-
-- Pasarela de pagos real (la confirmación de compra se simula).
-- Notificaciones push en tiempo real (el Notification Service es complementario).
-- Valoraciones de proveedores y filtros avanzados: son opcionales y solo se
-  abordan después de que el flujo principal funcione de punta a punta.
+| Patrón | Dónde | Para qué |
+|---|---|---|
+| API Gateway | `gateway` | Punto de entrada único y autenticación |
+| Repository | todos los servicios | El dominio no conoce la base de datos |
+| State | Pedidos (`Order`) | Cada estado decide a cuáles puede pasar |
+| Strategy | Pedidos | Siguiente estado según entrega o retiro; método de pago QR o tarjeta |
+| Factory | Pedidos | Construir el pedido desde el evento `OFFER_ACCEPTED` |
+| Adapter | Pedidos (`SimulatedPaymentGateway`) | Pasarela de pago simulada e intercambiable |
+| Observer / Pub-Sub | RabbitMQ | Desacoplar a quien produce de quien reacciona |
+| Transactional Outbox | Negociación, Pedidos | No perder eventos |
+| Facade | Angular | Los componentes smart no conocen HTTP |
+| Smart / Dumb components | Angular | Separar lógica de presentación |

@@ -13,6 +13,8 @@
  */
 const PartRequestStatus = Object.freeze({
   PUBLISHED: 'PUBLISHED',   // Visible para proveedores. Acepta ofertas.
+  // ORDERED lo asigna part-request-service al consumir OFFER_ACCEPTED
+  // (docs/arquitectura.md §3.4): el cliente no puede pedirlo por HTTP (422).
   ORDERED:   'ORDERED',     // Ya tiene oferta aceptada y pedido generado.
   COMPLETED: 'COMPLETED',   // El pedido se finalizó.
   CANCELLED: 'CANCELLED',   // Cancelada antes de aceptar una oferta.
@@ -20,12 +22,47 @@ const PartRequestStatus = Object.freeze({
 
 /**
  * Nivel de urgencia de una solicitud.
+ *
+ * Valores según docs/contratos-api.md (BAJA | MEDIA | ALTA).
+ * Antes decía LOW/MEDIUM/HIGH: se unificó al español porque el contrato y
+ * los payloads de eventos usan BAJA/MEDIA/ALTA.
+ * Pendiente de confirmación en la primera reunión técnica del equipo.
  */
 const Urgency = Object.freeze({
-  LOW:    'LOW',
-  MEDIUM: 'MEDIUM',
-  HIGH:   'HIGH',
+  BAJA:  'BAJA',
+  MEDIA: 'MEDIA',
+  ALTA:  'ALTA',
 });
+
+/**
+ * Transiciones legales de una solicitud de repuesto.
+ * Dueño: part-request-service.
+ *
+ * Clave: estado actual. Valor: estados a los que se puede avanzar.
+ * COMPLETED y CANCELLED son terminales. Una transición no listada → 422.
+ *
+ * `PUBLISHED ──► ORDERED` es legal en el dominio pero NO sale de una
+ * petición HTTP: la ejecuta el consumidor de OFFER_ACCEPTED
+ * (part-request-service responde 422 si el cliente la pide).
+ */
+const PART_REQUEST_TRANSITIONS = Object.freeze({
+  [PartRequestStatus.PUBLISHED]: [PartRequestStatus.ORDERED, PartRequestStatus.CANCELLED],
+  [PartRequestStatus.ORDERED]:   [PartRequestStatus.COMPLETED],
+  [PartRequestStatus.COMPLETED]: [],
+  [PartRequestStatus.CANCELLED]: [],
+});
+
+/**
+ * Determina si una transición de estado de una solicitud es legal.
+ *
+ * @param {string} from Estado actual
+ * @param {string} to   Estado deseado
+ * @returns {boolean}
+ */
+function canPartRequestTransition(from, to) {
+  const allowed = PART_REQUEST_TRANSITIONS[from];
+  return Array.isArray(allowed) && allowed.includes(to);
+}
 
 /**
  * Estados de una oferta.
@@ -107,6 +144,8 @@ function canTransition(from, to) {
 
 module.exports = {
   PartRequestStatus,
+  PART_REQUEST_TRANSITIONS,
+  canPartRequestTransition,
   Urgency,
   OfferStatus,
   PartCondition,

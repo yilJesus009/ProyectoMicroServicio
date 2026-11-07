@@ -1,62 +1,8 @@
-# CODEOWNERS - Revisión obligatoria por área
+# CODEOWNERS - todo cambio necesita la aprobación del otro integrante.
+# GitHub no deja que el autor apruebe su propio PR, así que con los dos
+# como dueños de todo, cada PR lo aprueba siempre el otro.
 #
-# Cada microservicio tiene un dueño. Un PR que toque un área requiere la
-# revisión de quien la posee antes de poder mergearse.
-#
-# Equipo (4 integrantes):
-#   yilJesus009     Jesús      -> identity-service
-#   dylan-alvarez   Dylan      -> part-request, catalog-vehicle
-#   alexphxmton     Alexis     -> offer, order  (regla crítica)
-#   hendykg         Latife     -> gateway, notification, frontend, infra
-#
-# Documentación: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#   Alvarez-Dylan  -> Bloque A: negociacion, pedidos, notificaciones, catalogo
+#   yilJesus009    -> Bloque B: docker/infra, gateway, identidad, frontend
 
-# -----------------------------------------------------------------------
-# Reglas del equipo y documentación -> requieren acuerdo de todos
-# -----------------------------------------------------------------------
-/AGENTS.md                  @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-/CLAUDE.md                  @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-/README.md                  @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-
-# -----------------------------------------------------------------------
-# Contratos y arquitectura -> afectan a más de un integrante
-# -----------------------------------------------------------------------
-/docs/                      @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-/packages/shared/           @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-/.agents/skills/            @yilJesus009 @dylan-alvarez @alexphxmton @hendykg
-
-# -----------------------------------------------------------------------
-# Infraestructura -> puertos y bases de datos afectan a todos
-# -----------------------------------------------------------------------
-/docker-compose.yml         @hendykg
-/.env.example               @hendykg
-/.editorconfig              @hendykg
-/.gitignore                 @hendykg
-/.github/                   @hendykg
-
-# -----------------------------------------------------------------------
-# Identity Service (Django) -> Jesús
-# Define el JWT del que dependen todos los demás servicios.
-# -----------------------------------------------------------------------
-/apps/identity-service/     @yilJesus009
-
-# -----------------------------------------------------------------------
-# Part Request y Catalog/Vehicle -> Dylan
-# -----------------------------------------------------------------------
-/apps/part-request-service/     @dylan-alvarez
-/apps/catalog-vehicle-service/  @dylan-alvarez
-
-# -----------------------------------------------------------------------
-# Offer y Order -> Alexis
-# REGLA CRÍTICA DEL PROYECTO: una sola oferta aceptada por solicitud.
-# Revisar con especial atención cualquier cambio aquí.
-# -----------------------------------------------------------------------
-/apps/offer-service/        @alexphxmton
-/apps/order-service/        @alexphxmton
-
-# -----------------------------------------------------------------------
-# Gateway, Notification y Frontend -> Latife
-# -----------------------------------------------------------------------
-/apps/api-gateway/          @hendykg
-/apps/notification-service/ @hendykg
-/apps/frontend/             @hendykg
+* @Alvarez-Dylan @yilJesus009
