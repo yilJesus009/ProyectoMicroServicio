@@ -27,14 +27,26 @@ test('nueva solicitud nace en PUBLISHED con urgencia MEDIA por defecto', () => {
   assert.equal(request.id, null);
 });
 
-test('transiciones legales: PUBLISHED → ORDERED y PUBLISHED → CANCELLED', () => {
+test('transiciones legales: PUBLISHED → OFFER_ACCEPTED → COMPLETED, y PUBLISHED → CANCELLED', () => {
   const request = new PartRequest(base);
-  const previous = request.changeStatus(PartRequestStatus.ORDERED);
+  const previous = request.changeStatus(PartRequestStatus.OFFER_ACCEPTED);
   assert.equal(previous, PartRequestStatus.PUBLISHED);
-  assert.equal(request.status, PartRequestStatus.ORDERED);
+  assert.equal(request.status, PartRequestStatus.OFFER_ACCEPTED);
 
   request.changeStatus(PartRequestStatus.COMPLETED);
   assert.equal(request.status, PartRequestStatus.COMPLETED);
+
+  const other = new PartRequest(base);
+  other.changeStatus(PartRequestStatus.CANCELLED);
+  assert.equal(other.status, PartRequestStatus.CANCELLED);
+});
+
+test('la primera oferta deja la solicitud en RECEIVING_OFFERS, desde ahí también se puede aceptar o cancelar', () => {
+  const request = new PartRequest(base);
+  request.changeStatus(PartRequestStatus.RECEIVING_OFFERS);
+  assert.equal(request.status, PartRequestStatus.RECEIVING_OFFERS);
+  assert.equal(canTransition(PartRequestStatus.RECEIVING_OFFERS, PartRequestStatus.OFFER_ACCEPTED), true);
+  assert.equal(canTransition(PartRequestStatus.RECEIVING_OFFERS, PartRequestStatus.CANCELLED), true);
 });
 
 test('transición inválida lanza InvalidPartRequestTransitionException (→ 422)', () => {
@@ -53,12 +65,12 @@ test('estados terminales no aceptan transiciones', () => {
   assert.throws(() => completed.changeStatus(PartRequestStatus.PUBLISHED));
 
   const cancelled = new PartRequest({ ...base, status: PartRequestStatus.CANCELLED });
-  assert.throws(() => cancelled.changeStatus(PartRequestStatus.ORDERED));
+  assert.throws(() => cancelled.changeStatus(PartRequestStatus.OFFER_ACCEPTED));
 });
 
-test('ciclo ORDERED → PUBLISHED está prohibido', () => {
+test('ciclo OFFER_ACCEPTED → PUBLISHED está prohibido', () => {
   assert.equal(
-    canTransition(PartRequestStatus.ORDERED, PartRequestStatus.PUBLISHED),
+    canTransition(PartRequestStatus.OFFER_ACCEPTED, PartRequestStatus.PUBLISHED),
     false
   );
 });

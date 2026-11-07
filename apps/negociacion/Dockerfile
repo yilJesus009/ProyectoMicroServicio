@@ -7,8 +7,8 @@ WORKDIR /usr/src/app
 # Copiar archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias del proyecto
-RUN npm install
+# Instalar dependencias del proyecto (reproducible: respeta package-lock.json)
+RUN npm ci --omit=dev
 
 # Copiar el resto del código fuente del microservicio
 COPY . .

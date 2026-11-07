@@ -17,8 +17,8 @@
 # nadie arrance antes que la base o RabbitMQ (decisiones.md D4).
 #
 # Los servicios que faltan en esta fase se agregan aqui en su propio PR:
-#   - negociacion, pedidos, notificaciones  -> Bloque A
-#   - catalogo, frontend                    -> Bloque A / Bloque B
+#   - pedidos, notificaciones  -> Bloque A
+#   - frontend                 -> Bloque B
 # =============================================================================
 
 name: repuestos-marketplace
@@ -110,6 +110,71 @@ services:
       start_period: 40s
 
   # ---------------------------------------------------------------------------
+  # NEGOCIACION (Express) - puerto interno 4001, NO expuesto
+  # ---------------------------------------------------------------------------
+  negociacion:
+    build:
+      context: ./apps/negociacion
+      dockerfile: Dockerfile
+    container_name: marketplace-negociacion
+    restart: unless-stopped
+    environment:
+      # Base: esquema `negociacion` dentro de la base `repuestosya`
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-repuestosya}
+      DB_NEGOCIACION_USER: ${DB_NEGOCIACION_USER:-negociacion_user}
+      DB_NEGOCIACION_PASSWORD: ${DB_NEGOCIACION_PASSWORD:-negociacion_pass}
+      JWT_SECRET: ${JWT_SECRET:-cambia-este-secreto-en-produccion-min-32-caracteres}
+      NEGOCIACION_PORT: ${NEGOCIACION_PORT:-4001}
+      # RabbitMQ
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-guest}
+    volumes:
+      - uploads_requests:/usr/src/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${NEGOCIACION_PORT:-4001}/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # CATALOGO (NestJS) - puerto interno 4004, NO expuesto
+  # ---------------------------------------------------------------------------
+  catalogo:
+    build:
+      context: ./apps/catalogo
+      dockerfile: Dockerfile
+    container_name: marketplace-catalogo
+    restart: unless-stopped
+    environment:
+      # Base: esquema `catalogo` dentro de la base `repuestosya`
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-repuestosya}
+      DB_CATALOGO_USER: ${DB_CATALOGO_USER:-catalogo_user}
+      DB_CATALOGO_PASSWORD: ${DB_CATALOGO_PASSWORD:-catalogo_pass}
+      JWT_SECRET: ${JWT_SECRET:-cambia-este-secreto-en-produccion-min-32-caracteres}
+      CATALOGO_PORT: ${CATALOGO_PORT:-4004}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${CATALOGO_PORT:-4004}/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
   # GATEWAY (Express) - puerto 4000, UNICO punto de entrada expuesto
   # ---------------------------------------------------------------------------
   gateway:
@@ -144,3 +209,4 @@ services:
 volumes:
   postgres_data:
   rabbitmq_data:
+  uploads_requests:
