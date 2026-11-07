@@ -21,6 +21,7 @@ __pycache__/
 **/dist/
 **/build/
 **/out/
+**/target/
 **/.angular/
 **/coverage/
 **/.nyc_output/
