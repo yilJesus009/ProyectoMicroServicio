@@ -1,0 +1,46 @@
+<mat-sidenav-container class="layout">
+  <mat-sidenav
+    class="menu-lateral"
+    mode="side"
+    [opened]="abierto()"
+    [fixedInViewport]="false"
+  >
+    <div class="marca">RepuestosYa</div>
+
+    <mat-nav-list>
+      @for (item of menu(); track item.ruta) {
+        <a
+          mat-list-item
+          [routerLink]="item.ruta"
+          routerLinkActive="activo"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          {{ item.etiqueta }}
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="barra">
+      <button mat-button type="button" class="alternar" (click)="alternar()">
+        {{ abierto() ? 'Ocultar menú' : 'Mostrar menú' }}
+      </button>
+
+      <span class="titulo">RepuestosYa</span>
+      <span class="espacio"></span>
+
+      @if (usuario(); as persona) {
+        <span class="sesion">
+          {{ persona.nombre }} · {{ nombreRol() }}
+        </span>
+      }
+
+      <button mat-button type="button" class="salir" (click)="salir()">Salir</button>
+    </mat-toolbar>
+
+    <main class="contenido">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>
