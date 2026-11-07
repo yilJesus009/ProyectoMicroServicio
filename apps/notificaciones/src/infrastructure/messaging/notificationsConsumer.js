@@ -16,9 +16,12 @@ const DLQ_NAME = 'notificaciones.all.dlq';
  *
  * Reintenta la conexión inicial: aunque `depends_on: rabbitmq healthy` en
  * docker-compose.yml evita la mayoría de las carreras, un solo intento
- * fallido dejaría la cola sin crear para siempre.
+ * fallido dejaría la cola sin crear para siempre. 30 intentos x 3s (90s)
+ * porque se observó en la práctica que el healthcheck de RabbitMQ puede
+ * pasar unos segundos antes de que el puerto AMQP acepte conexiones de
+ * verdad, sobre todo con la máquina bajo carga (varios builds a la vez).
  */
-async function connectWithRetry(url, retries = 10, delayMs = 2000) {
+async function connectWithRetry(url, retries = 30, delayMs = 3000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       return await amqp.connect(url);
