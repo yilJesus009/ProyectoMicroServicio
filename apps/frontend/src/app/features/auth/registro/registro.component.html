@@ -1,0 +1,75 @@
+<section class="acceso">
+  <mat-card class="tarjeta">
+    <mat-card-header>
+      <mat-card-title>Crear una cuenta</mat-card-title>
+      <mat-card-subtitle>Elige cómo vas a usar RepuestosYa</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form class="formulario" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <mat-radio-group formControlName="rol" class="roles">
+          <mat-radio-button value="COMPRADOR">Quiero comprar repuestos</mat-radio-button>
+          <mat-radio-button value="PROVEEDOR">Soy proveedor</mat-radio-button>
+        </mat-radio-group>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre completo</mat-label>
+          <input matInput formControlName="nombre" autocomplete="name" />
+          @if (form.controls.nombre.invalid && form.controls.nombre.touched) {
+            <mat-error>Ingresa tu nombre</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Correo electrónico</mat-label>
+          <input matInput type="email" formControlName="email" autocomplete="email" />
+          @if (form.controls.email.invalid && form.controls.email.touched) {
+            <mat-error>Ingresa un correo válido</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Contraseña</mat-label>
+          <input
+            matInput
+            type="password"
+            formControlName="contrasena"
+            autocomplete="new-password"
+          />
+          <mat-hint>Mínimo 8 caracteres</mat-hint>
+          @if (form.controls.contrasena.invalid && form.controls.contrasena.touched) {
+            <mat-error>Usa al menos 8 caracteres</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Teléfono (opcional)</mat-label>
+          <input matInput formControlName="telefono" autocomplete="tel" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Ciudad (opcional)</mat-label>
+          <input matInput formControlName="ciudad" autocomplete="address-level2" />
+        </mat-form-field>
+
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="accion"
+          [disabled]="enviando()"
+        >
+          {{ enviando() ? 'Creando cuenta…' : 'Crear cuenta' }}
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions align="end">
+      <a mat-button routerLink="/login">Ya tengo cuenta</a>
+    </mat-card-actions>
+  </mat-card>
+</section>

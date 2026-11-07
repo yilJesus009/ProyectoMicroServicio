@@ -1,0 +1,34 @@
+.acceso {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.tarjeta {
+  width: 100%;
+  max-width: 30rem;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 1rem;
+}
+
+.roles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.accion {
+  margin-top: 0.5rem;
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  color: var(--mat-sys-error);
+  font-size: 0.875rem;
+}
