@@ -5,28 +5,39 @@
  *
  * Son la fuente de verdad. Si un servicio usa un estado que no está aquí,
  * primero se agrega en este archivo y se documenta en docs/.
+ *
+ * FUENTE: docs/flujo-principal.md (sección "Estados") y docs/modelo-datos.md.
+ *
+ * NOTA: hoy ningún servicio importa este paquete todavía (los workspaces de
+ * npm no están configurados y la imagen de Docker solo copia el servicio).
+ * Cada servicio mantiene un espejo local: ver
+ * apps/negociacion/src/domain/enums/index.js. Cuando se activen los
+ * workspaces, esos espejos pasan a re-exportar desde aquí.
  */
 
 /**
- * Estados de una solicitud de repuesto (Part Request).
- * Dueño: part-request-service.
+ * Estados de una solicitud de repuesto.
+ * Dueño: negociacion.
  */
 const PartRequestStatus = Object.freeze({
-  PUBLISHED: 'PUBLISHED',   // Visible para proveedores. Acepta ofertas.
-  // ORDERED lo asigna part-request-service al consumir OFFER_ACCEPTED
-  // (docs/arquitectura.md §3.4): el cliente no puede pedirlo por HTTP (422).
-  ORDERED:   'ORDERED',     // Ya tiene oferta aceptada y pedido generado.
-  COMPLETED: 'COMPLETED',   // El pedido se finalizó.
-  CANCELLED: 'CANCELLED',   // Cancelada antes de aceptar una oferta.
+  PUBLISHED: 'PUBLISHED',       // Visible para proveedores. Todavía sin ofertas.
+  // Lo asigna el caso de uso de enviar la PRIMERA oferta, no el cliente:
+  // un PATCH con este estado responde 422.
+  RECEIVING_OFFERS: 'RECEIVING_OFFERS',
+  // Lo asigna el caso de uso de ACEPTAR una oferta, no el cliente.
+  // El comprador nunca puede ponerlo a mano.
+  OFFER_ACCEPTED: 'OFFER_ACCEPTED',
+  // Lo asigna el consumidor de ORDER_STATUS_CHANGED = COMPLETED (Pedidos).
+  COMPLETED: 'COMPLETED',       // Terminal.
+  CANCELLED: 'CANCELLED',       // El dueño cancela antes de aceptar una oferta.
 });
 
 /**
  * Nivel de urgencia de una solicitud.
  *
- * Valores según docs/contratos-api.md (BAJA | MEDIA | ALTA).
- * Antes decía LOW/MEDIUM/HIGH: se unificó al español porque el contrato y
- * los payloads de eventos usan BAJA/MEDIA/ALTA.
- * Pendiente de confirmación en la primera reunión técnica del equipo.
+ * Valores según docs/contratos-api.md y docs/modelo-datos.md
+ * (BAJA | MEDIA | ALTA). Antes decía LOW/MEDIUM/HIGH: se unificó al español
+ * porque el contrato y los payloads de eventos usan BAJA/MEDIA/ALTA.
  */
 const Urgency = Object.freeze({
   BAJA:  'BAJA',
@@ -36,18 +47,27 @@ const Urgency = Object.freeze({
 
 /**
  * Transiciones legales de una solicitud de repuesto.
- * Dueño: part-request-service.
+ * Dueño: negociacion.
  *
  * Clave: estado actual. Valor: estados a los que se puede avanzar.
  * COMPLETED y CANCELLED son terminales. Una transición no listada → 422.
  *
- * `PUBLISHED ──► ORDERED` es legal en el dominio pero NO sale de una
- * petición HTTP: la ejecuta el consumidor de OFFER_ACCEPTED
- * (part-request-service responde 422 si el cliente la pide).
+ * `RECEIVING_OFFERS`, `OFFER_ACCEPTED` y `COMPLETED` son legales EN EL
+ * DOMINIO pero NO salen de una petición HTTP: los ejecuta un caso de uso
+ * interno o un consumidor de eventos (negociacion responde 422 si el cliente
+ * los pide a mano).
  */
 const PART_REQUEST_TRANSITIONS = Object.freeze({
-  [PartRequestStatus.PUBLISHED]: [PartRequestStatus.ORDERED, PartRequestStatus.CANCELLED],
-  [PartRequestStatus.ORDERED]:   [PartRequestStatus.COMPLETED],
+  [PartRequestStatus.PUBLISHED]: [
+    PartRequestStatus.RECEIVING_OFFERS,
+    PartRequestStatus.OFFER_ACCEPTED,
+    PartRequestStatus.CANCELLED,
+  ],
+  [PartRequestStatus.RECEIVING_OFFERS]: [
+    PartRequestStatus.OFFER_ACCEPTED,
+    PartRequestStatus.CANCELLED,
+  ],
+  [PartRequestStatus.OFFER_ACCEPTED]: [PartRequestStatus.COMPLETED],
   [PartRequestStatus.COMPLETED]: [],
   [PartRequestStatus.CANCELLED]: [],
 });
@@ -66,7 +86,7 @@ function canPartRequestTransition(from, to) {
 
 /**
  * Estados de una oferta.
- * Dueño: offer-service.
+ * Dueño: negociacion.
  *
  * IMPORTANTE: solo puede existir UNA oferta en ACCEPTED por solicitud.
  * Regla garantizada con un índice UNIQUE parcial en la base de datos.
@@ -75,6 +95,7 @@ const OfferStatus = Object.freeze({
   SUBMITTED: 'SUBMITTED',   // Enviada, pendiente de decisión.
   ACCEPTED:  'ACCEPTED',    // La elegida. Genera el pedido. Una sola por solicitud.
   REJECTED:  'REJECTED',    // No seleccionada. Queda en el historial.
+  WITHDRAWN: 'WITHDRAWN',   // Retirada por el proveedor, con la solicitud abierta.
 });
 
 /**
@@ -103,31 +124,38 @@ const DeliveryType = Object.freeze({
 });
 
 /**
- * Estados del pedido (Order) y sus transiciones legales.
- * Dueño: order-service.
+ * Estados del pedido y sus transiciones legales.
+ * Dueño: pedidos.
  *
- * Una transición no listada devuelve HTTP 422.
+ * La siguiente transición después de PREPARING depende de DeliveryType
+ * (DELIVERY → IN_TRANSIT, PICKUP → READY_FOR_PICKUP): patrón Strategy.
+ * Una transición no listada devuelve HTTP 422; el rol equivocado, 403.
+ *
+ * Mismo conjunto que el CHECK de apps/pedidos (V1__init.sql).
  */
 const OrderStatus = Object.freeze({
-  PENDING:   'PENDING',     // Creado a partir de OFFER_ACCEPTED.
-  PREPARING: 'PREPARING',   // El proveedor lo está preparando.
-  SHIPPED:   'SHIPPED',     // En camino.
-  DELIVERED: 'DELIVERED',   // Llegó al solicitante.
-  COMPLETED: 'COMPLETED',   // El solicitante confirmó la recepción.
-  CANCELLED: 'CANCELLED',   // Cancelado por cualquiera, antes de SHIPPED.
+  PENDING_PAYMENT:  'PENDING_PAYMENT',  // Creado a partir de OFFER_ACCEPTED. Espera pago.
+  PREPARING:        'PREPARING',        // Pago confirmado; el proveedor prepara.
+  IN_TRANSIT:       'IN_TRANSIT',       // Solo si delivery_type = DELIVERY.
+  READY_FOR_PICKUP: 'READY_FOR_PICKUP', // Solo si delivery_type = PICKUP.
+  DELIVERED:        'DELIVERED',        // Llegó al solicitante.
+  COMPLETED:        'COMPLETED',        // El solicitante confirmó la recepción. Terminal.
 });
 
 /**
  * Transiciones permitidas del pedido.
  * Clave: estado actual. Valor: estados a los que se puede avanzar.
+ *
+ *   PENDING_PAYMENT ──(pago)──► PREPARING ──┬─► IN_TRANSIT ──────┬──► DELIVERED ──► COMPLETED
+ *                                          └─► READY_FOR_PICKUP ─┘
  */
 const ORDER_TRANSITIONS = Object.freeze({
-  [OrderStatus.PENDING]:   [OrderStatus.PREPARING, OrderStatus.CANCELLED],
-  [OrderStatus.PREPARING]: [OrderStatus.SHIPPED,   OrderStatus.CANCELLED],
-  [OrderStatus.SHIPPED]:   [OrderStatus.DELIVERED],
+  [OrderStatus.PENDING_PAYMENT]: [OrderStatus.PREPARING],
+  [OrderStatus.PREPARING]: [OrderStatus.IN_TRANSIT, OrderStatus.READY_FOR_PICKUP],
+  [OrderStatus.IN_TRANSIT]: [OrderStatus.DELIVERED],
+  [OrderStatus.READY_FOR_PICKUP]: [OrderStatus.DELIVERED],
   [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED],
   [OrderStatus.COMPLETED]: [],
-  [OrderStatus.CANCELLED]: [],
 });
 
 /**
