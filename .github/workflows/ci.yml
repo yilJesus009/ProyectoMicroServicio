@@ -96,6 +96,7 @@ jobs:
         service:
           - gateway
           - negociacion
+          - notificaciones
     steps:
       - uses: actions/checkout@v4
 
@@ -246,6 +247,39 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         working-directory: apps/catalogo
         run: npm test
+
+  # ---------------------------------------------------------------------------
+  # Pedidos (Spring Boot)
+  # ---------------------------------------------------------------------------
+  pedidos:
+    name: Pedidos (Spring Boot)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detectar si el servicio existe
+        id: check
+        shell: bash
+        run: |
+          if [ -f "apps/pedidos/pom.xml" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::pedidos aún no existe. Se omite."
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.check.outputs.exists == 'true'
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: apps/pedidos/pom.xml
+
+      - name: Pruebas
+        if: steps.check.outputs.exists == 'true'
+        working-directory: apps/pedidos
+        run: mvn -B test
 
   # ---------------------------------------------------------------------------
   # Frontend (Angular)

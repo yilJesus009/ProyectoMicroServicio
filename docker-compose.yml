@@ -17,8 +17,7 @@
 # nadie arrance antes que la base o RabbitMQ (decisiones.md D4).
 #
 # Los servicios que faltan en esta fase se agregan aqui en su propio PR:
-#   - pedidos, notificaciones  -> Bloque A
-#   - frontend                 -> Bloque B
+#   - frontend  -> Bloque B
 # =============================================================================
 
 name: repuestos-marketplace
@@ -169,6 +168,76 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${CATALOGO_PORT:-4004}/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # PEDIDOS (Spring Boot) - puerto interno 4003, NO expuesto
+  # ---------------------------------------------------------------------------
+  pedidos:
+    build:
+      context: ./apps/pedidos
+      dockerfile: Dockerfile
+    container_name: marketplace-pedidos
+    restart: unless-stopped
+    environment:
+      # Base: esquema `pedidos` dentro de la base `repuestosya`
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-repuestosya}
+      DB_PEDIDOS_USER: ${DB_PEDIDOS_USER:-pedidos_user}
+      DB_PEDIDOS_PASSWORD: ${DB_PEDIDOS_PASSWORD:-pedidos_pass}
+      JWT_SECRET: ${JWT_SECRET:-cambia-este-secreto-en-produccion-min-32-caracteres}
+      PEDIDOS_PORT: ${PEDIDOS_PORT:-4003}
+      # RabbitMQ: deja creada pedidos.offer_accepted (sin consumidor todavia)
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-guest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${PEDIDOS_PORT:-4003}/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # NOTIFICACIONES (Express) - puerto interno 4005, NO expuesto
+  # ---------------------------------------------------------------------------
+  notificaciones:
+    build:
+      context: ./apps/notificaciones
+      dockerfile: Dockerfile
+    container_name: marketplace-notificaciones
+    restart: unless-stopped
+    environment:
+      # Base: esquema `notificaciones` dentro de la base `repuestosya`
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-repuestosya}
+      DB_NOTIFICACIONES_USER: ${DB_NOTIFICACIONES_USER:-notificaciones_user}
+      DB_NOTIFICACIONES_PASSWORD: ${DB_NOTIFICACIONES_PASSWORD:-notificaciones_pass}
+      JWT_SECRET: ${JWT_SECRET:-cambia-este-secreto-en-produccion-min-32-caracteres}
+      NOTIFICACIONES_PORT: ${NOTIFICACIONES_PORT:-4005}
+      # RabbitMQ
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:-guest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${NOTIFICACIONES_PORT:-4005}/health >/dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
