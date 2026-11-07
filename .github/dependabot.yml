@@ -1,0 +1,84 @@
+# =============================================================================
+# Dependabot - actualizaciones automáticas de dependencias
+# =============================================================================
+# Sin este archivo, las corridas de "Dependabot Updates" fallan en cada push a
+# develop (no encuentran configuración) y además no hay actualizaciones de
+# versión: solo las de seguridad, que se disparan solas desde los alertas.
+#
+# Cada directorio que tenga su propio package.json / requirements.txt /
+# pom.xml va en su propia entrada, con su propio ciclo.
+# =============================================================================
+
+version: 2
+
+updates:
+
+  # --- Node.js ---------------------------------------------------------------
+  - package-ecosystem: npm
+    directories:
+      - "/apps/gateway"
+      - "/apps/negociacion"
+      - "/apps/notificaciones"
+      - "/apps/catalogo"
+      - "/packages/shared"
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - npm
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Un solo PR por carpeta en vez de uno por paquete: menos ruido y el
+      # otro integrante revisa menos.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # --- Python (Identidad / Django) ------------------------------------------
+  - package-ecosystem: pip
+    directories:
+      - "/apps/identidad"
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "chore(deps)"
+
+  # --- Maven (Pedidos / Spring Boot) ----------------------------------------
+  - package-ecosystem: maven
+    directories:
+      - "/apps/pedidos"
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - maven
+    commit-message:
+      prefix: "chore(deps)"
+
+  # --- GitHub Actions --------------------------------------------------------
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(ci)"
