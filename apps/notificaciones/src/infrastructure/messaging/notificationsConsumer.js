@@ -3,13 +3,16 @@
 const amqp = require('amqplib');
 
 const QUEUE_NAME = 'notificaciones.all';
+const DLX_EXCHANGE = 'dlx';
+const DLQ_NAME = 'notificaciones.all.dlq';
 
 /**
  * Deja creada la cola de este servicio al arrancar (docs/eventos.md): cada
- * consumidor tiene su propia cola. Todavía SIN bindings (fase 2 los agrega
- * uno por evento: SUPPLIER_PROFILE_SUBMITTED, SUPPLIER_APPROVED, ...): por
- * ahora la cola existe, durable, y el consumidor está prendido pero no le
- * llega nada.
+ * consumidor tiene su propia cola, con su propia cola de errores (dlq)
+ * colgada del dead-letter exchange `dlx`. Todavía SIN bindings a eventos
+ * reales (fase 2 los agrega uno por evento: SUPPLIER_PROFILE_SUBMITTED,
+ * SUPPLIER_APPROVED, ...): por ahora la cola existe, durable, y el
+ * consumidor está prendido pero no le llega nada.
  *
  * Reintenta la conexión inicial: aunque `depends_on: rabbitmq healthy` en
  * docker-compose.yml evita la mayoría de las carreras, un solo intento
@@ -32,7 +35,20 @@ async function connectWithRetry(url, retries = 10, delayMs = 2000) {
 async function startNotificationsConsumer({ url, onMessage }) {
   const connection = await connectWithRetry(url);
   const channel = await connection.createChannel();
-  await channel.assertQueue(QUEUE_NAME, { durable: true });
+
+  // Cola de errores (docs/eventos.md §4): recibe lo que nack sin reencolar.
+  await channel.assertExchange(DLX_EXCHANGE, 'direct', { durable: true });
+  await channel.assertQueue(DLQ_NAME, { durable: true });
+  await channel.bindQueue(DLQ_NAME, DLX_EXCHANGE, DLQ_NAME);
+
+  // Cola principal, con dead-lettering hacia `dlx`.
+  await channel.assertQueue(QUEUE_NAME, {
+    durable: true,
+    arguments: {
+      'x-dead-letter-exchange': DLX_EXCHANGE,
+      'x-dead-letter-routing-key': DLQ_NAME,
+    },
+  });
   await channel.prefetch(1);
 
   await channel.consume(QUEUE_NAME, async (msg) => {
@@ -43,7 +59,7 @@ async function startNotificationsConsumer({ url, onMessage }) {
       channel.ack(msg);
     } catch (error) {
       console.error(`[notificaciones-consumer] error procesando mensaje:`, error.message);
-      channel.nack(msg, false, false); // sin reencolar: va al DLQ si existe
+      channel.nack(msg, false, false); // sin reencolar: va a notificaciones.all.dlq
     }
   });
 
@@ -55,4 +71,4 @@ async function startNotificationsConsumer({ url, onMessage }) {
   };
 }
 
-module.exports = { startNotificationsConsumer, QUEUE_NAME };
+module.exports = { startNotificationsConsumer, QUEUE_NAME, DLX_EXCHANGE, DLQ_NAME };

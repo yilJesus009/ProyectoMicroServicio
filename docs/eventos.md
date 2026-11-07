@@ -113,6 +113,17 @@ En **Negociación** y **Pedidos**:
 4. Si falla: `nack` sin reencolar → va a la cola de errores `<cola>.dlq`
    (dead-letter exchange `dlx`) y se registra en el log.
 
+   Convención exacta, igual para toda cola nueva (fase 2 en adelante):
+   - Exchange `dlx`: `direct`, durable. Se declara una sola vez por servicio.
+   - Por cada cola principal `<cola>`, se declara también `<cola>.dlq`
+     (durable), enlazada a `dlx` con routing key `<cola>.dlq`.
+   - La cola principal `<cola>` se declara con los argumentos
+     `x-dead-letter-exchange: dlx` y
+     `x-dead-letter-routing-key: <cola>.dlq`.
+   - Con eso, un `nack(requeue=false)` en `<cola>` basta: RabbitMQ reenvía
+     el mensaje a `dlx` con la routing key `<cola>.dlq`, que lo entrega a
+     `<cola>.dlq`. Nadie publica a `dlx` directamente.
+
 ## Reglas
 
 - Los eventos no se editan. Para corregir, se publica otro evento.

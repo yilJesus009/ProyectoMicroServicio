@@ -31,4 +31,30 @@ class RabbitMqConfigTest {
         assertThat(binding.getExchange()).isEqualTo("offer_events");
         assertThat(binding.getDestination()).isEqualTo("pedidos.offer_accepted");
     }
+
+    @Test
+    void laColaPrincipalApuntaAlDlxConSuPropiaDlq() {
+        var args = config.offerAcceptedQueue().getArguments();
+
+        assertThat(args.get("x-dead-letter-exchange")).isEqualTo("dlx");
+        assertThat(args.get("x-dead-letter-routing-key")).isEqualTo("pedidos.offer_accepted.dlq");
+    }
+
+    @Test
+    void elDlxEsDirectYDurable() {
+        assertThat(config.dlxExchange().getName()).isEqualTo("dlx");
+        assertThat(config.dlxExchange().getType()).isEqualTo("direct");
+        assertThat(config.dlxExchange().isDurable()).isTrue();
+    }
+
+    @Test
+    void laDlqEsDuraderaYSuBindingUsaSuPropioNombreComoRoutingKey() {
+        assertThat(config.offerAcceptedDlq().getName()).isEqualTo("pedidos.offer_accepted.dlq");
+        assertThat(config.offerAcceptedDlq().isDurable()).isTrue();
+
+        var binding = config.offerAcceptedDlqBinding(config.offerAcceptedDlq(), config.dlxExchange());
+        assertThat(binding.getRoutingKey()).isEqualTo("pedidos.offer_accepted.dlq");
+        assertThat(binding.getExchange()).isEqualTo("dlx");
+        assertThat(binding.getDestination()).isEqualTo("pedidos.offer_accepted.dlq");
+    }
 }
