@@ -1,0 +1,132 @@
+<section class="nueva">
+  <mat-card class="tarjeta">
+    <mat-card-header>
+      <mat-card-title>Nueva solicitud</mat-card-title>
+      <mat-card-subtitle>Cuéntanos qué repuesto necesitas</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (cargando()) {
+        <p class="cargando">Cargando categorías…</p>
+      } @else {
+        <form class="formulario" [formGroup]="form" (ngSubmit)="crear()">
+          <fieldset class="categorias">
+            <legend>¿Qué categoría necesita?</legend>
+            <div class="tarjetas">
+              @for (categoria of categorias(); track categoria.id) {
+                <button
+                  type="button"
+                  class="tarjeta-categoria"
+                  [class.elegida]="categoriaElegida() === categoria.id"
+                  (click)="elegirCategoria(categoria.id)"
+                >
+                  <span class="icono" aria-hidden="true">{{ categoria.icon || '🔧' }}</span>
+                  <span class="nombre">{{ categoria.name }}</span>
+                </button>
+              }
+            </div>
+          </fieldset>
+
+          <mat-form-field appearance="outline">
+            <mat-label>¿Tienes el vehículo?</mat-label>
+            <mat-select formControlName="vehicleId">
+              @for (vehiculo of vehiculos(); track vehiculo.id) {
+                <mat-option [value]="vehiculo.id">
+                  {{ vehiculo.brand }} {{ vehiculo.model }} {{ vehiculo.year }}
+                </mat-option>
+              }
+              <mat-option [value]="''">Otro (escribir los datos)</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          @if (vehiculoManual) {
+            <div class="vehiculo-manual">
+              <mat-form-field appearance="outline">
+                <mat-label>Marca del vehículo</mat-label>
+                <input matInput formControlName="vehicleBrand" placeholder="Toyota" />
+                @if (form.controls.vehicleBrand.invalid && form.controls.vehicleBrand.touched) {
+                  <mat-error>Ingresa la marca</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Modelo del vehículo</mat-label>
+                <input matInput formControlName="vehicleModel" placeholder="Corolla" />
+                @if (form.controls.vehicleModel.invalid && form.controls.vehicleModel.touched) {
+                  <mat-error>Ingresa el modelo</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Año del vehículo</mat-label>
+                <input matInput type="number" formControlName="vehicleYear" placeholder="2018" />
+                @if (form.controls.vehicleYear.invalid && form.controls.vehicleYear.touched) {
+                  <mat-error>Año entre {{ anioMinimo }} y {{ anioMaximo }}</mat-error>
+                }
+              </mat-form-field>
+            </div>
+          }
+
+          <mat-form-field appearance="outline">
+            <mat-label>Descripción</mat-label>
+            <textarea
+              matInput
+              formControlName="description"
+              rows="3"
+              placeholder="Pastillas de freno delanteras"
+            ></textarea>
+            @if (form.controls.description.invalid && form.controls.description.touched) {
+              <mat-error>Describe lo que necesitas</mat-error>
+            }
+          </mat-form-field>
+
+          <div class="fila">
+            <mat-form-field appearance="outline">
+              <mat-label>Ciudad</mat-label>
+              <input matInput formControlName="city" placeholder="Santa Cruz" />
+              @if (form.controls.city.invalid && form.controls.city.touched) {
+                <mat-error>Ingresa tu ciudad</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Urgencia</mat-label>
+              <mat-select formControlName="urgency">
+                <mat-option value="BAJA">Baja</mat-option>
+                <mat-option value="MEDIA">Media</mat-option>
+                <mat-option value="ALTA">Alta</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="foto">
+            <label for="foto">Foto del repuesto (opcional)</label>
+            <input
+              id="foto"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="alElegirFoto($event)"
+            />
+            @if (foto(); as archivo) {
+              <span class="nombre-foto">Foto lista: {{ archivo.name }}</span>
+            }
+          </div>
+
+          @if (error()) {
+            <p class="error" role="alert">{{ error() }}</p>
+          }
+
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            class="accion"
+            [disabled]="enviando()"
+          >
+            {{ enviando() ? 'Publicando…' : 'Publicar solicitud' }}
+          </button>
+        </form>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

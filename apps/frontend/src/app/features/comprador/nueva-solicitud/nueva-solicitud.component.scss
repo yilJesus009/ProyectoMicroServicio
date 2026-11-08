@@ -1,0 +1,94 @@
+.nueva {
+  display: flex;
+  justify-content: center;
+}
+
+.tarjeta {
+  width: 100%;
+  max-width: 44rem;
+}
+
+.cargando {
+  color: #546e7a;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.categorias {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+legend {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.tarjetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tarjeta-categoria {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 6.5rem;
+  padding: 0.6rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.tarjeta-categoria.elegida {
+  border-color: #1565c0;
+  background: #e3f2fd;
+}
+
+.icono {
+  font-size: 1.4rem;
+}
+
+.nombre {
+  font-size: 0.85rem;
+}
+
+.vehiculo-manual,
+.fila {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.vehiculo-manual mat-form-field,
+.fila mat-form-field {
+  flex: 1;
+}
+
+.foto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: #546e7a;
+}
+
+.nombre-foto {
+  color: #1e6b34;
+}
+
+.error {
+  color: #b3261e;
+  margin: 0;
+}
+
+.accion {
+  align-self: flex-start;
+}

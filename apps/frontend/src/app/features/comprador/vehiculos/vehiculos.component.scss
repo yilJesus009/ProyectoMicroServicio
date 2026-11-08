@@ -1,0 +1,45 @@
+.vehiculos {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+h2 {
+  margin: 0.5rem 0 0;
+}
+
+.tarjeta {
+  max-width: 36rem;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.accion {
+  margin-top: 0.5rem;
+  align-self: flex-start;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cargando,
+.vacia {
+  color: #546e7a;
+}
+
+.error {
+  color: #b3261e;
+  margin: 0;
+}
+
+.aviso {
+  color: #1e6b34;
+  margin: 0;
+}

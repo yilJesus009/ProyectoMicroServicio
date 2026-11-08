@@ -1,0 +1,32 @@
+.mias {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+h2 {
+  margin: 0;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cargando {
+  color: #546e7a;
+}
+
+.error {
+  color: #b3261e;
+  margin: 0;
+}

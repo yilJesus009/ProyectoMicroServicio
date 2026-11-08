@@ -1,0 +1,91 @@
+<section class="vehiculos">
+  <mat-card class="tarjeta">
+    <mat-card-header>
+      <mat-card-title>Registrar vehículo</mat-card-title>
+      <mat-card-subtitle>Para publicar solicitudes más rápido</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <form class="formulario" [formGroup]="form" (ngSubmit)="crear()">
+        <mat-form-field appearance="outline">
+          <mat-label>Marca</mat-label>
+          <input matInput formControlName="brand" placeholder="Toyota" />
+          @if (form.controls.brand.invalid && form.controls.brand.touched) {
+            <mat-error>Ingresa la marca</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Modelo</mat-label>
+          <input matInput formControlName="model" placeholder="Corolla" />
+          @if (form.controls.model.invalid && form.controls.model.touched) {
+            <mat-error>Ingresa el modelo</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Año</mat-label>
+          <input matInput type="number" formControlName="year" placeholder="2018" />
+          @if (form.controls.year.invalid && form.controls.year.touched) {
+            <mat-error>Año entre 1950 y {{ anioMaximo }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Placa (opcional)</mat-label>
+          <input matInput formControlName="plate" placeholder="ABC123" />
+        </mat-form-field>
+
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        @if (aviso()) {
+          <p class="aviso" role="status">{{ aviso() }}</p>
+        }
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="accion"
+          [disabled]="accionando()"
+        >
+          {{ accionando() ? 'Guardando…' : 'Registrar vehículo' }}
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <h2>Mis vehículos</h2>
+
+  @if (cargando()) {
+    <p class="cargando">Cargando vehículos…</p>
+  }
+
+  <div class="lista">
+    @for (vehiculo of lista(); track vehiculo.id) {
+      <mat-card class="tarjeta">
+        <mat-card-header>
+          <mat-card-title>
+            {{ vehiculo.brand }} {{ vehiculo.model }} {{ vehiculo.year }}
+          </mat-card-title>
+          <mat-card-subtitle>{{ vehiculo.plate || 'Sin placa' }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-actions align="end">
+          <button
+            mat-stroked-button
+            color="warn"
+            type="button"
+            [disabled]="accionando()"
+            (click)="borrar(vehiculo)"
+          >
+            Eliminar
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    } @empty {
+      @if (!cargando()) {
+        <p class="vacia">Aún no registras vehículos.</p>
+      }
+    }
+  </div>
+</section>
