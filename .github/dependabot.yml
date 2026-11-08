@@ -1,6 +1,11 @@
 # =============================================================================
 # Dependabot - actualizaciones automáticas de dependencias
 # =============================================================================
+# ESTADO: DETENIDO a petición del equipo (8 nov 2026) hasta nuevo aviso.
+# `open-pull-requests-limit: 0` en cada ecosistema deja de abrir PR de
+# versiones sin borrar la configuración: para reanearar basta con subir el
+# límite a 5 de nuevo. Las alertas de seguridad (que no abren PR) siguen.
+#
 # Sin este archivo, las corridas de "Dependabot Updates" fallan en cada push a
 # develop (no encuentran configuración) y además no hay actualizaciones de
 # versión: solo las de seguridad, que se disparan solas desde los alertas.
@@ -25,7 +30,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0  # detenido (equipo, 8 nov 2026)
     labels:
       - dependencies
       - npm
@@ -47,7 +52,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0  # detenido (equipo, 8 nov 2026)
     labels:
       - dependencies
       - python
@@ -62,7 +67,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0  # detenido (equipo, 8 nov 2026)
     labels:
       - dependencies
       - maven
@@ -76,7 +81,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0  # detenido (equipo, 8 nov 2026)
     labels:
       - dependencies
       - github-actions
