@@ -6,7 +6,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
 from accounts import serializers
-from accounts.services import auth_service
+from accounts.exceptions import (
+    InvalidSupplierStatusException,
+    SupplierProfileNotFoundException,
+)
+from accounts.models import SupplierProfile, SupplierProfileStatus
+from accounts.permissions import IsAdminRole, IsSupplier
+from accounts.services import auth_service, supplier_service
 from core.responses import success
 
 
@@ -118,3 +124,97 @@ class VerifyView(APIView):
             return Response({"valid": False}, status=401)
         except jwt.InvalidTokenError:
             return Response({"valid": False}, status=401)
+
+
+class SupplierMeView(APIView):
+    """🏪 GET/PUT /api/v1/suppliers/me — perfil comercial propio.
+
+    GET → 404 si aún no existe; PUT → crea o actualiza y vuelve a PENDING
+    (docs/contratos-api.md).
+    """
+
+    permission_classes = [IsAuthenticated, IsSupplier]
+
+    def get(self, request):
+        profile = supplier_service.get_profile(request.user)
+        return success(
+            serializers.SupplierProfileSerializer(profile).data,
+            msg="Perfil comercial",
+        )
+
+    def put(self, request):
+        serializer = serializers.SupplierProfileWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        profile = supplier_service.save_profile(
+            request.user,
+            **serializer.validated_data,
+            correlation_id=getattr(request, "correlation_id", None),
+        )
+        return success(
+            serializers.SupplierProfileSerializer(profile).data,
+            msg="Perfil comercial guardado; pendiente de aprobación",
+        )
+
+
+class AdminSuppliersView(APIView):
+    """🛡️ GET /api/v1/admin/suppliers?status=PENDING — perfiles por estado."""
+
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def get(self, request):
+        estado = request.query_params.get("status")
+        if estado is not None and estado not in SupplierProfileStatus.values:
+            raise InvalidSupplierStatusException(estado)
+
+        perfiles = supplier_service.list_profiles(status=estado)
+        return success(
+            serializers.SupplierProfileSerializer(perfiles, many=True).data,
+            msg="Perfiles de proveedores",
+        )
+
+
+class AdminSupplierApproveView(APIView):
+    """🛡️ POST /api/v1/admin/suppliers/{id}/approve → SUPPLIER_APPROVED."""
+
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def post(self, request, profile_id):
+        profile = SupplierProfile.objects.filter(pk=profile_id).first()
+        if profile is None:
+            raise SupplierProfileNotFoundException()
+
+        profile = supplier_service.approve(
+            profile,
+            admin=request.user,
+            correlation_id=getattr(request, "correlation_id", None),
+        )
+        return success(
+            serializers.SupplierProfileSerializer(profile).data,
+            msg="Proveedor aprobado",
+        )
+
+
+class AdminSupplierRejectView(APIView):
+    """🛡️ POST /api/v1/admin/suppliers/{id}/reject (body: reason)."""
+
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def post(self, request, profile_id):
+        serializer = serializers.SupplierRejectSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        profile = SupplierProfile.objects.filter(pk=profile_id).first()
+        if profile is None:
+            raise SupplierProfileNotFoundException()
+
+        profile = supplier_service.reject(
+            profile,
+            reason=serializer.validated_data["reason"],
+            admin=request.user,
+            correlation_id=getattr(request, "correlation_id", None),
+        )
+        return success(
+            serializers.SupplierProfileSerializer(profile).data,
+            msg="Proveedor rechazado",
+        )

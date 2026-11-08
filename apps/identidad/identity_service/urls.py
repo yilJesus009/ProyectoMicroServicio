@@ -17,4 +17,6 @@ urlpatterns = [
     path("health", health),
     path("admin/", admin.site.urls),
     path("api/v1/auth/", include("accounts.urls")),
+    # Perfil comercial del proveedor y aprobación (Fase 2 B1)
+    path("api/v1/", include("accounts.supplier_urls")),
 ]

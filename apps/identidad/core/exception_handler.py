@@ -22,6 +22,9 @@ from accounts.exceptions import (
     AdminSelfRegistrationException,
     EmailAlreadyRegisteredException,
     InvalidRoleException,
+    InvalidSupplierStatusException,
+    SupplierAlreadyReviewedException,
+    SupplierProfileNotFoundException,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,6 +34,9 @@ DOMAIN_EXCEPTIONS = {
     EmailAlreadyRegisteredException: status.HTTP_409_CONFLICT,
     InvalidRoleException: status.HTTP_400_BAD_REQUEST,
     AdminSelfRegistrationException: status.HTTP_400_BAD_REQUEST,
+    SupplierProfileNotFoundException: status.HTTP_404_NOT_FOUND,
+    SupplierAlreadyReviewedException: status.HTTP_409_CONFLICT,
+    InvalidSupplierStatusException: status.HTTP_400_BAD_REQUEST,
 }
 
 
