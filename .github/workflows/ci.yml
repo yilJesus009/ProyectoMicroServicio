@@ -32,7 +32,7 @@ jobs:
     name: Estructura y documentación
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Verificar archivos obligatorios
         shell: bash
@@ -98,7 +98,7 @@ jobs:
           - negociacion
           - notificaciones
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Detectar si el servicio existe
         id: check
@@ -153,7 +153,7 @@ jobs:
     name: Identidad (Django)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Detectar si el servicio existe
         id: check
@@ -213,7 +213,7 @@ jobs:
     name: Catalogo (NestJS)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Detectar si el servicio existe
         id: check
@@ -255,7 +255,7 @@ jobs:
     name: Pedidos (Spring Boot)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Detectar si el servicio existe
         id: check
@@ -288,7 +288,7 @@ jobs:
     name: Frontend (Angular)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Detectar si el frontend existe
         id: check
