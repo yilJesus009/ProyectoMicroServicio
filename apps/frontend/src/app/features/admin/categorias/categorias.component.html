@@ -1,0 +1,122 @@
+<section class="categorias">
+  <header class="cabecera">
+    <h2>Categorías</h2>
+  </header>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+  @if (aviso()) {
+    <p class="aviso" role="status">{{ aviso() }}</p>
+  }
+
+  <mat-card class="tarjeta alta">
+    <mat-card-header>
+      <mat-card-title>Nueva categoría</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form class="formulario" [formGroup]="formAlta" (ngSubmit)="crear()">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" />
+          @if (formAlta.controls.name.invalid && formAlta.controls.name.touched) {
+            <mat-error>Ingresa el nombre</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Descripción</mat-label>
+          <input matInput formControlName="description" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Ícono</mat-label>
+          <input matInput formControlName="icon" placeholder="brake" />
+        </mat-form-field>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="accion"
+          [disabled]="accionando()"
+        >
+          Crear categoría
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  @if (cargando()) {
+    <p class="cargando">Cargando categorías…</p>
+  }
+
+  <div class="lista">
+    @for (categoria of lista(); track categoria.id) {
+      <mat-card class="tarjeta">
+        @if (editandoId() === categoria.id) {
+          <form class="formulario" [formGroup]="formEdicion" (ngSubmit)="guardarEdicion(categoria)">
+            <mat-form-field appearance="outline">
+              <mat-label>Nombre</mat-label>
+              <input matInput formControlName="name" />
+              @if (formEdicion.controls.name.invalid && formEdicion.controls.name.touched) {
+                <mat-error>Ingresa el nombre</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Descripción</mat-label>
+              <input matInput formControlName="description" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Ícono</mat-label>
+              <input matInput formControlName="icon" />
+            </mat-form-field>
+
+            <div class="botones">
+              <button mat-button type="button" (click)="cancelarEdicion()">Cancelar</button>
+              <button
+                mat-flat-button
+                color="primary"
+                type="submit"
+                [disabled]="accionando()"
+              >
+                Guardar cambios
+              </button>
+            </div>
+          </form>
+        } @else {
+          <mat-card-header>
+            <mat-card-title>{{ categoria.name }}</mat-card-title>
+            <mat-card-subtitle>
+              {{ categoria.description || 'Sin descripción' }}
+            </mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content>
+            <span class="estado" [class.inactiva]="!categoria.active">
+              {{ categoria.active ? 'Activa' : 'Inactiva' }}
+            </span>
+          </mat-card-content>
+
+          <mat-card-actions align="end">
+            <button mat-button type="button" (click)="abrirEdicion(categoria)">Editar</button>
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="accionando()"
+              (click)="alternar(categoria)"
+            >
+              {{ categoria.active ? 'Desactivar' : 'Activar' }}
+            </button>
+          </mat-card-actions>
+        }
+      </mat-card>
+    } @empty {
+      @if (!cargando()) {
+        <p class="vacia">Aún no hay categorías.</p>
+      }
+    }
+  </div>
+</section>
