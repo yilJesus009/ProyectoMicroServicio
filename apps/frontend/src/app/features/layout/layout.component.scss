@@ -1,0 +1,54 @@
+.layout {
+  height: 100vh;
+}
+
+/*
+ * Barra superior: en Material 3 (Angular Material 20) el input `color` de
+ * mat-toolbar ya no pinta el fondo, así que se colorea a mano con los tokens
+ * del tema.
+ */
+.barra {
+  position: sticky;
+  top: 0;
+  background-color: var(--mat-sys-primary, #1976d2);
+  color: var(--mat-sys-on-primary, #fff);
+  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+}
+
+.barra button {
+  color: inherit;
+}
+
+.menu-lateral {
+  width: 15rem;
+  background-color: var(--mat-sys-surface-container-low, #fff);
+  border-right: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+}
+
+.marca {
+  padding: 1rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+/* Menú lateral marcado según la ruta activa */
+:host ::ng-deep .activo {
+  background-color: color-mix(in srgb, var(--mat-sys-primary) 16%, transparent);
+}
+
+.titulo {
+  font-weight: 500;
+}
+
+.espacio {
+  flex: 1 1 auto;
+}
+
+.sesion {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.contenido {
+  padding: 1.5rem;
+}
