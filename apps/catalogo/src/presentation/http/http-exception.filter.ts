@@ -1,6 +1,9 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import { CategoryNotFoundError } from '../../domain/errors/category-not-found.error';
+import { CategoryNameConflictError } from '../../domain/errors/category-name-conflict.error';
+import { VehicleNotFoundError } from '../../domain/errors/vehicle-not-found.error';
+import { VehicleForbiddenError } from '../../domain/errors/vehicle-forbidden.error';
 
 /** Traduce cualquier error a HTTP con el sobre {status, msg, data} (docs/convenciones.md). */
 @Catch()
@@ -10,8 +13,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const res = host.switchToHttp().getResponse<Response>();
 
-    if (exception instanceof CategoryNotFoundError) {
+    if (exception instanceof CategoryNotFoundError || exception instanceof VehicleNotFoundError) {
       res.status(404).json({ status: 404, msg: exception.message, data: null });
+      return;
+    }
+
+    if (exception instanceof CategoryNameConflictError) {
+      res.status(409).json({ status: 409, msg: exception.message, data: null });
+      return;
+    }
+
+    if (exception instanceof VehicleForbiddenError) {
+      res.status(403).json({ status: 403, msg: exception.message, data: null });
       return;
     }
 

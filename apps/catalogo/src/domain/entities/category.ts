@@ -15,4 +15,16 @@ export class Category {
   static createSeed(name: string, icon: string): Category {
     return new Category(null, name, null, icon, true, null);
   }
+
+  static create(name: string, description: string | null, icon: string | null): Category {
+    return new Category(null, name, description, icon, true, null);
+  }
+
+  withEdits(name: string, description: string | null, icon: string | null): Category {
+    return new Category(this.id, name, description, icon, this.active, this.createdAt);
+  }
+
+  toggled(): Category {
+    return new Category(this.id, this.name, this.description, this.icon, !this.active, this.createdAt);
+  }
 }
