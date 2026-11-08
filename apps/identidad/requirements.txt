@@ -1,7 +1,7 @@
 # Identity Service - dependencias (Django 5.2 LTS: Python 3.11 en CI y 3.14 local)
 Django>=5.2,<6.0
 djangorestframework>=3.16
-djangorestframework-simplejwt>=5.4
+djangorestframework-simplejwt>=5.5.1
 # Hash de contraseñas: contrato pide bcrypt (contratos-api.md L43)
 bcrypt>=4.1
 pika>=1.3
