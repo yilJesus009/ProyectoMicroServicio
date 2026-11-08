@@ -1,5 +1,6 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { CategoryOrmEntity } from '../persistence/category.orm-entity';
+import { VehicleOrmEntity } from '../persistence/vehicle.orm-entity';
 
 /**
  * Un solo PostgreSQL compartido ("repuestosya"); este servicio solo toca
@@ -14,7 +15,7 @@ export function buildTypeOrmConfig(): TypeOrmModuleOptions {
     password: process.env.DB_CATALOGO_PASSWORD,
     database: process.env.DB_NAME,
     schema: 'catalogo',
-    entities: [CategoryOrmEntity],
+    entities: [CategoryOrmEntity, VehicleOrmEntity],
     // docs/arquitectura.md permite sincronizacion o migrations para NestJS;
     // sin un runner de migraciones todavia, se sincroniza el esquema al boot.
     synchronize: true,

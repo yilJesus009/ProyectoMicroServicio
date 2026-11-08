@@ -107,7 +107,7 @@ Ejemplo de pedido:
 | Método | Ruta | Quién | Qué hace |
 |---|---|---|---|
 | GET | `/categories` | 🔑 | Categorías activas |
-| GET | `/categories/{id}` | 🔑 | Una categoría. La usa Negociación para validar |
+| GET | `/categories/{id}` | 🔑 | Una categoría, **incluida inactiva**. Devuelve `active` siempre; lo usa Negociación para rechazar solicitudes con categoría desactivada |
 | GET | `/admin/categories` | 🛡️ | Todas, incluidas las inactivas |
 | POST | `/admin/categories` | 🛡️ | Crea: `name`, `description`, `icon` |
 | PUT | `/admin/categories/{id}` | 🛡️ | Edita |
