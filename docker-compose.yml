@@ -16,8 +16,7 @@
 # Orden de arranque: healthcheck + `condition: service_healthy` garantiza que
 # nadie arrance antes que la base o RabbitMQ (decisiones.md D4).
 #
-# Los servicios que faltan en esta fase se agregan aqui en su propio PR:
-#   - frontend  -> Bloque B
+# Los servicios que faltan en esta fase se agregan aqui en su propio PR.
 # =============================================================================
 
 name: repuestos-marketplace
@@ -274,6 +273,30 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # FRONTEND (Angular) - puerto 4200, UNICO aparte del Gateway que se expone
+  # El navegador habla con el Gateway por localhost:4000 (environment.ts), no
+  # con este contenedor: dentro de Docker solo sirve los archivos estaticos.
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: marketplace-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-4200}:4200"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      # wget viene de busybox en nginx:alpine. "/" sirve index.html.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4200/ >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
 
 volumes:
   postgres_data:
