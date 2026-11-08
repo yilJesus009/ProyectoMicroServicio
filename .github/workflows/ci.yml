@@ -114,7 +114,7 @@ jobs:
             echo "::notice::El servicio ${{ matrix.service }} aún no existe. Se omite."
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.check.outputs.exists == 'true'
         with:
           node-version: 20
@@ -226,7 +226,7 @@ jobs:
             echo "::notice::catalogo aún no existe. Se omite."
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.check.outputs.exists == 'true'
         with:
           node-version: 20
@@ -301,7 +301,7 @@ jobs:
             echo "::notice::El frontend aún no existe. Se omite."
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.check.outputs.exists == 'true'
         with:
           node-version: 20
