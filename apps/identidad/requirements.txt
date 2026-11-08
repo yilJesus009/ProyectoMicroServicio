@@ -5,5 +5,5 @@ djangorestframework-simplejwt>=5.4
 # Hash de contraseñas: contrato pide bcrypt (contratos-api.md L43)
 bcrypt>=4.1
 pika>=1.3
-python-dotenv>=1.0
+python-dotenv>=1.2.4
 psycopg2-binary>=2.9.9
