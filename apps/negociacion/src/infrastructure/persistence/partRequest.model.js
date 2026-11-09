@@ -17,6 +17,8 @@ module.exports = (sequelize) =>
       id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
       userId: { type: DataTypes.INTEGER, allowNull: false, field: 'user_id' },
       userEmail: { type: DataTypes.STRING, allowNull: true, field: 'user_email' },
+      categoryId: { type: DataTypes.INTEGER, allowNull: false, field: 'category_id' },
+      categoryName: { type: DataTypes.STRING, allowNull: false, field: 'category_name' },
       vehicleBrand: { type: DataTypes.STRING, allowNull: false, field: 'vehicle_brand' },
       vehicleModel: { type: DataTypes.STRING, allowNull: false, field: 'vehicle_model' },
       vehicleYear: { type: DataTypes.INTEGER, allowNull: false, field: 'vehicle_year' },

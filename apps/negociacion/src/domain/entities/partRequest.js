@@ -14,6 +14,8 @@ class PartRequest {
     id = null,
     userId,
     userEmail = null,
+    categoryId,
+    categoryName,
     vehicleBrand,
     vehicleModel,
     vehicleYear,
@@ -28,6 +30,8 @@ class PartRequest {
     this.id = id;
     this.userId = userId;
     this.userEmail = userEmail;
+    this.categoryId = categoryId;
+    this.categoryName = categoryName;
     this.vehicleBrand = vehicleBrand;
     this.vehicleModel = vehicleModel;
     this.vehicleYear = vehicleYear;
@@ -38,6 +42,16 @@ class PartRequest {
     this.photo = photo;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+  }
+
+  /** "Toyota Corolla 2018" — para el payload de eventos (docs/eventos.md). */
+  get vehicleLabel() {
+    return `${this.vehicleBrand} ${this.vehicleModel} ${this.vehicleYear}`;
+  }
+
+  /** Solo el dueño o un proveedor aprobado pueden ver el detalle/foto (docs/contratos-api.md). */
+  canBeViewedBy(requesterId, isApprovedSupplier) {
+    return this.userId === requesterId || isApprovedSupplier === true;
   }
 
   /**

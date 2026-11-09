@@ -8,11 +8,15 @@
  */
 const ERROR_STATUS = {
   ValidationException: 400,
+  CategoryNotFoundException: 400,
   ForbiddenException: 403,
   PartRequestNotFoundException: 404,
+  PartRequestPhotoNotFoundException: 404,
   PartRequestStatusConflictException: 409,
   InvalidPartRequestTransitionException: 422,
   EventDrivenStatusException: 422,
+  CategoryInactiveException: 422,
+  CatalogUnavailableException: 503,
   MulterError: 400, // límite de tamaño u otros errores de subida
 };
 

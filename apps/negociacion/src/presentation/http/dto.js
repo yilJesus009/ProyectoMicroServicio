@@ -1,7 +1,7 @@
 'use strict';
 
 const { ValidationException } = require('../../domain/errors');
-const { Urgency, PartRequestStatus } = require('../../domain/enums');
+const { Urgency } = require('../../domain/enums');
 
 /**
  * Validación de DTOs (entrada HTTP).
@@ -15,11 +15,16 @@ const { Urgency, PartRequestStatus } = require('../../domain/enums');
  * @returns {Object} data en camelCase, lista para el caso de uso
  */
 function validateCreateRequestDto(body = {}) {
-  const required = ['vehicle_brand', 'vehicle_model', 'vehicle_year', 'description', 'city'];
+  const required = ['category_id', 'vehicle_brand', 'vehicle_model', 'vehicle_year', 'description', 'city'];
   for (const field of required) {
     if (body[field] === undefined || body[field] === null || String(body[field]).trim() === '') {
       throw new ValidationException(`El campo '${field}' es obligatorio`);
     }
+  }
+
+  const categoryId = Number(body.category_id);
+  if (!Number.isInteger(categoryId)) {
+    throw new ValidationException(`El campo 'category_id' debe ser un número entero`);
   }
 
   const vehicleYear = Number(body.vehicle_year);
@@ -35,6 +40,7 @@ function validateCreateRequestDto(body = {}) {
   }
 
   return {
+    categoryId,
     vehicleBrand: String(body.vehicle_brand).trim(),
     vehicleModel: String(body.vehicle_model).trim(),
     vehicleYear,
@@ -44,44 +50,21 @@ function validateCreateRequestDto(body = {}) {
   };
 }
 
-/** PATCH .../status */
-function validateStatusDto(body = {}) {
-  if (!body.status) {
-    throw new ValidationException(`El campo 'status' es obligatorio`);
-  }
-  if (!Object.values(PartRequestStatus).includes(body.status)) {
-    throw new ValidationException(
-      `El campo 'status' debe ser ${Object.values(PartRequestStatus).join(' | ')}`
-    );
-  }
-  return body.status;
-}
-
-/** GET con filtros de query */
-function validateSearchFilters(query = {}) {
+/** GET /part-requests/open?city=&category_id= */
+function validateOpenFilters(query = {}) {
   const filters = {};
 
   if (query.city) filters.city = String(query.city);
 
-  if (query.status) {
-    if (!Object.values(PartRequestStatus).includes(query.status)) {
-      throw new ValidationException(
-        `El filtro 'status' debe ser ${Object.values(PartRequestStatus).join(' | ')}`
-      );
+  if (query.category_id !== undefined) {
+    const categoryId = Number(query.category_id);
+    if (!Number.isInteger(categoryId)) {
+      throw new ValidationException(`El filtro 'category_id' debe ser un número entero`);
     }
-    filters.status = query.status;
-  }
-
-  if (query.urgency) {
-    if (!Object.values(Urgency).includes(query.urgency)) {
-      throw new ValidationException(
-        `El filtro 'urgency' debe ser ${Object.values(Urgency).join(' | ')}`
-      );
-    }
-    filters.urgency = query.urgency;
+    filters.categoryId = categoryId;
   }
 
   return filters;
 }
 
-module.exports = { validateCreateRequestDto, validateStatusDto, validateSearchFilters };
+module.exports = { validateCreateRequestDto, validateOpenFilters };

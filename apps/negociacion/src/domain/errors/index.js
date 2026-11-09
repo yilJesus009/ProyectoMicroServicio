@@ -6,11 +6,15 @@
  * El errorHandler de presentation/ los mapea a HTTP por `error.name`:
  *
  *   ValidationException                    → 400
+ *   CategoryNotFoundException              → 400
  *   ForbiddenException                     → 403
  *   PartRequestNotFoundException          → 404
+ *   PartRequestPhotoNotFoundException     → 404
  *   PartRequestStatusConflictException    → 409
  *   InvalidPartRequestTransitionException → 422
  *   EventDrivenStatusException            → 422
+ *   CategoryInactiveException             → 422
+ *   CatalogUnavailableException           → 503
  *
  * Cualquier otro error → 500 sin exponer el stack trace.
  */
@@ -72,6 +76,38 @@ class EventDrivenStatusException extends Error {
   }
 }
 
+/** category_id no existe en Catálogo. */
+class CategoryNotFoundException extends Error {
+  constructor(categoryId) {
+    super(`La categoría ${categoryId} no existe`);
+    this.name = 'CategoryNotFoundException';
+  }
+}
+
+/** category_id existe pero está desactivada (Catálogo: active = false). */
+class CategoryInactiveException extends Error {
+  constructor(categoryId) {
+    super(`La categoría ${categoryId} está desactivada`);
+    this.name = 'CategoryInactiveException';
+  }
+}
+
+/** Catálogo no respondió o falló: no es un 500 de Negociación, es una dependencia caída. */
+class CatalogUnavailableException extends Error {
+  constructor() {
+    super('Catálogo no disponible');
+    this.name = 'CatalogUnavailableException';
+  }
+}
+
+/** La solicitud no tiene foto, o no existe el archivo. */
+class PartRequestPhotoNotFoundException extends Error {
+  constructor(id) {
+    super(`La solicitud ${id} no tiene fotografía`);
+    this.name = 'PartRequestPhotoNotFoundException';
+  }
+}
+
 module.exports = {
   PartRequestNotFoundException,
   InvalidPartRequestTransitionException,
@@ -79,4 +115,8 @@ module.exports = {
   EventDrivenStatusException,
   ForbiddenException,
   ValidationException,
+  CategoryNotFoundException,
+  CategoryInactiveException,
+  CatalogUnavailableException,
+  PartRequestPhotoNotFoundException,
 };

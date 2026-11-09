@@ -8,6 +8,33 @@ const { ChangePartRequestStatus } = require('../../src/application/commands/chan
 const { CreatePartRequest } = require('../../src/application/commands/createPartRequest');
 const { GetPartRequestById } = require('../../src/application/queries/getPartRequestById');
 const { PartRequestEvent, Topic } = require('../../src/application/contracts');
+const { CategoryNotFoundException, CategoryInactiveException } = require('../../src/domain/errors');
+
+/** Fake del puerto hacia Catálogo (application/ports/categoryGateway.js). */
+class FakeCategoryGateway {
+  constructor(categories = {}) {
+    this.categories = categories; // { [id]: { id, name, active } }
+    this.calledWith = [];
+  }
+
+  async findById(categoryId, token) {
+    this.calledWith.push({ categoryId, token });
+    const category = this.categories[categoryId];
+    if (!category) throw new CategoryNotFoundException(categoryId);
+    return category;
+  }
+}
+
+/** Fake de la copia local de proveedores, sin semántica transaccional (solo lectura en estos casos de uso). */
+class FakeSupplierRepository {
+  constructor(suppliers = {}) {
+    this.suppliers = suppliers; // { [supplierId]: { approved } }
+  }
+
+  async findBySupplierId(supplierId) {
+    return this.suppliers[supplierId] ?? null;
+  }
+}
 
 /**
  * Repositorio en memoria CON semántica transaccional real: las escrituras
@@ -139,6 +166,8 @@ function seedRequest(overrides = {}) {
     id: 7,
     userId: OWNER_ID,
     userEmail: 'juan@taller.com',
+    categoryId: 1,
+    categoryName: 'Frenos',
     vehicleBrand: 'Toyota',
     vehicleModel: 'Hilux',
     vehicleYear: 2019,
@@ -157,11 +186,12 @@ function makeChangeStatusUseCase({ repository, outbox }) {
   });
 }
 
-function makeCreateUseCase({ repository, outbox }) {
+function makeCreateUseCase({ repository, outbox, categoryGateway }) {
   return new CreatePartRequest({
     partRequestRepository: repository,
     outboxRepository: outbox,
     unitOfWork: new FakeUnitOfWork([repository, outbox]),
+    categoryGateway: categoryGateway ?? new FakeCategoryGateway({ 1: { id: 1, name: 'Frenos', active: true } }),
     producer: PRODUCER,
   });
 }
@@ -326,15 +356,18 @@ test('si falla el guardado en outbox_events, la solicitud tampoco queda guardada
   assert.equal(outbox.committed.length, 0);
 });
 
-test('crear solicitud encola PART_REQUEST_CREATED con el payload del contrato', async () => {
+test('crear solicitud valida la categoria contra Catalogo y encola PART_REQUEST_CREATED con el payload del contrato', async () => {
   const repository = new TransactionalInMemoryRepository();
   const outbox = new TransactionalInMemoryOutboxRepository();
-  const useCase = makeCreateUseCase({ repository, outbox });
+  const categoryGateway = new FakeCategoryGateway({ 1: { id: 1, name: 'Frenos', active: true } });
+  const useCase = makeCreateUseCase({ repository, outbox, categoryGateway });
 
   const saved = await useCase.execute({
     userId: OWNER_ID,
     userEmail: 'juan@taller.com',
+    token: 'jwt-de-juan',
     data: {
+      categoryId: 1,
       vehicleBrand: 'Toyota',
       vehicleModel: 'Hilux',
       vehicleYear: 2019,
@@ -345,6 +378,7 @@ test('crear solicitud encola PART_REQUEST_CREATED con el payload del contrato', 
   });
 
   assert.equal(saved.status, 'PUBLISHED');
+  assert.deepEqual(categoryGateway.calledWith, [{ categoryId: 1, token: 'jwt-de-juan' }]);
   assert.equal(outbox.committed.length, 1);
 
   const envelope = outbox.committed[0];
@@ -354,15 +388,66 @@ test('crear solicitud encola PART_REQUEST_CREATED con el payload del contrato', 
   assert.equal(envelope.version, 1);
   assert.equal(typeof envelope.event_id, 'string');
   assert.deepEqual(envelope.payload, {
-    request_id: 1,
-    user_id: OWNER_ID,
-    user_email: 'juan@taller.com',
-    vehicle_brand: 'Toyota',
-    vehicle_model: 'Hilux',
-    vehicle_year: 2019,
+    part_request_id: 1,
+    buyer_id: OWNER_ID,
+    category_id: 1,
+    category_name: 'Frenos',
+    vehicle_label: 'Toyota Hilux 2019',
+    description: 'Filtro de aceite',
     city: 'La Paz',
     urgency: 'ALTA',
   });
+});
+
+test('categoria inexistente → CategoryNotFoundException (400), nada se guarda', async () => {
+  const repository = new TransactionalInMemoryRepository();
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  const useCase = makeCreateUseCase({ repository, outbox, categoryGateway: new FakeCategoryGateway({}) });
+
+  await assert.rejects(
+    useCase.execute({
+      userId: OWNER_ID,
+      data: {
+        categoryId: 999,
+        vehicleBrand: 'Toyota',
+        vehicleModel: 'Hilux',
+        vehicleYear: 2019,
+        description: 'Filtro de aceite',
+        city: 'La Paz',
+      },
+    }),
+    (err) => {
+      assert.equal(err.name, 'CategoryNotFoundException');
+      return true;
+    }
+  );
+  assert.equal(repository.committedRows.length, 0);
+});
+
+test('categoria desactivada → CategoryInactiveException (422), nada se guarda', async () => {
+  const repository = new TransactionalInMemoryRepository();
+  const outbox = new TransactionalInMemoryOutboxRepository();
+  const categoryGateway = new FakeCategoryGateway({ 1: { id: 1, name: 'Frenos', active: false } });
+  const useCase = makeCreateUseCase({ repository, outbox, categoryGateway });
+
+  await assert.rejects(
+    useCase.execute({
+      userId: OWNER_ID,
+      data: {
+        categoryId: 1,
+        vehicleBrand: 'Toyota',
+        vehicleModel: 'Hilux',
+        vehicleYear: 2019,
+        description: 'Filtro de aceite',
+        city: 'La Paz',
+      },
+    }),
+    (err) => {
+      assert.equal(err.name, 'CategoryInactiveException');
+      return true;
+    }
+  );
+  assert.equal(repository.committedRows.length, 0);
 });
 
 test('si falla el outbox al crear, la solicitud tampoco queda guardada', async () => {
@@ -376,6 +461,7 @@ test('si falla el outbox al crear, la solicitud tampoco queda guardada', async (
       userId: OWNER_ID,
       userEmail: 'juan@taller.com',
       data: {
+        categoryId: 1,
         vehicleBrand: 'Toyota',
         vehicleModel: 'Hilux',
         vehicleYear: 2019,
@@ -392,9 +478,39 @@ test('si falla el outbox al crear, la solicitud tampoco queda guardada', async (
 test('consultar solicitud inexistente → PartRequestNotFoundException (404)', async () => {
   const query = new GetPartRequestById({
     partRequestRepository: new TransactionalInMemoryRepository(),
+    supplierRepository: new FakeSupplierRepository(),
   });
   await assert.rejects(query.execute(42), (err) => {
     assert.equal(err.name, 'PartRequestNotFoundException');
+    return true;
+  });
+});
+
+test('el dueño puede ver el detalle', async () => {
+  const query = new GetPartRequestById({
+    partRequestRepository: new TransactionalInMemoryRepository([seedRequest()]),
+    supplierRepository: new FakeSupplierRepository(),
+  });
+  const result = await query.execute(7, { requesterId: OWNER_ID });
+  assert.equal(result.id, 7);
+});
+
+test('un proveedor APROBADO puede ver el detalle aunque no sea el dueño', async () => {
+  const query = new GetPartRequestById({
+    partRequestRepository: new TransactionalInMemoryRepository([seedRequest()]),
+    supplierRepository: new FakeSupplierRepository({ 55: { approved: true } }),
+  });
+  const result = await query.execute(7, { requesterId: 55 });
+  assert.equal(result.id, 7);
+});
+
+test('ni dueño ni proveedor aprobado → ForbiddenException (403)', async () => {
+  const query = new GetPartRequestById({
+    partRequestRepository: new TransactionalInMemoryRepository([seedRequest()]),
+    supplierRepository: new FakeSupplierRepository({ 60: { approved: false } }),
+  });
+  await assert.rejects(query.execute(7, { requesterId: 60 }), (err) => {
+    assert.equal(err.name, 'ForbiddenException');
     return true;
   });
 });

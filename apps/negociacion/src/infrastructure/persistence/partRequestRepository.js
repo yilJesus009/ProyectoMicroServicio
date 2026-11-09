@@ -1,5 +1,6 @@
 'use strict';
 
+const { Op } = require('sequelize');
 const { IPartRequestRepository } = require('../../domain/repositories/partRequestRepository');
 const { PartRequest } = require('../../domain/entities/partRequest');
 
@@ -25,6 +26,8 @@ class SequelizePartRequestRepository extends IPartRequestRepository {
       id: r.id,
       userId: r.userId,
       userEmail: r.userEmail,
+      categoryId: r.categoryId,
+      categoryName: r.categoryName,
       vehicleBrand: r.vehicleBrand,
       vehicleModel: r.vehicleModel,
       vehicleYear: r.vehicleYear,
@@ -43,11 +46,21 @@ class SequelizePartRequestRepository extends IPartRequestRepository {
     return SequelizePartRequestRepository.toEntity(row);
   }
 
+  /**
+   * @param {Object} [filters]
+   * @param {number} [filters.userId] Mis solicitudes (GET /mine)
+   * @param {string[]} [filters.statuses] GET /open: PUBLISHED | RECEIVING_OFFERS
+   * @param {string} [filters.city] Sin distinguir mayúsculas (docs/contratos-api.md)
+   * @param {number} [filters.categoryId]
+   */
   async findAll(filters = {}) {
     const where = {};
-    if (filters.city) where.city = filters.city;
-    if (filters.status) where.status = filters.status;
+    if (filters.userId !== undefined) where.userId = filters.userId;
+    if (filters.statuses) where.status = { [Op.in]: filters.statuses };
+    else if (filters.status) where.status = filters.status;
     if (filters.urgency) where.urgency = filters.urgency;
+    if (filters.categoryId !== undefined) where.categoryId = filters.categoryId;
+    if (filters.city) where.city = { [Op.iLike]: filters.city };
 
     const rows = await this.model.findAll({ where, order: [['createdAt', 'DESC']] });
     return rows.map(SequelizePartRequestRepository.toEntity);
@@ -57,6 +70,8 @@ class SequelizePartRequestRepository extends IPartRequestRepository {
     const data = {
       userId: partRequest.userId,
       userEmail: partRequest.userEmail,
+      categoryId: partRequest.categoryId,
+      categoryName: partRequest.categoryName,
       vehicleBrand: partRequest.vehicleBrand,
       vehicleModel: partRequest.vehicleModel,
       vehicleYear: partRequest.vehicleYear,
