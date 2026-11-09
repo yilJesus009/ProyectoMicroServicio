@@ -1,7 +1,8 @@
-"""Sobre estándar del publisher (docs/eventos.md).
+"""Sobre estándar y reintento simple del publisher (docs/eventos.md).
 
-El sobre DEBE llevar `event_id` (llave de idempotencia de los
-consumidores) y `version`.
+El sobre DEBE llevar `event_id` (llave de idempotencia de los consumidores)
+y `version`; y el publish tiene 3 intentos antes de rendirse, sin lanzar
+jamás hacia arriba (fire-and-forget).
 """
 import json
 import uuid
@@ -57,3 +58,38 @@ class EnvelopeTests(SimpleTestCase):
         channel = connection.channel.return_value
         sobre = json.loads(channel.basic_publish.call_args.kwargs["body"])
         uuid.UUID(sobre["correlation_id"])
+
+
+class ReintentosTests(SimpleTestCase):
+    @patch("accounts.events.publisher.time.sleep")
+    @patch(
+        "accounts.events.publisher.messaging.get_connection",
+        side_effect=RuntimeError("bus caido"),
+    )
+    def test_si_el_bus_falla_reintenta_tres_veces_sin_lanzar(
+        self, mock_get, mock_sleep
+    ):
+        publisher.publish("identity_events", "USER_CREATED", {"user_id": 1})
+
+        self.assertEqual(mock_get.call_count, 3)
+        self.assertEqual(mock_sleep.call_count, 2)  # espera entre intentos
+
+    @patch("accounts.events.publisher.time.sleep")
+    def test_se_publica_en_el_tercer_intento(self, mock_sleep):
+        connection_ok = MagicMock()
+        mock_get = MagicMock(
+            side_effect=[
+                RuntimeError("bus caido"),
+                RuntimeError("bus caido"),
+                connection_ok,
+            ]
+        )
+        with patch(
+            "accounts.events.publisher.messaging.get_connection", mock_get
+        ):
+            publisher.publish("identity_events", "USER_CREATED", {"user_id": 1})
+
+        self.assertEqual(mock_get.call_count, 3)
+        channel = connection_ok.channel.return_value
+        channel.basic_publish.assert_called_once()
+        connection_ok.close.assert_called_once()
