@@ -108,6 +108,11 @@ class SequelizePartRequestRepository extends IPartRequestRepository {
     );
     return affected > 0;
   }
+
+  async lockById(id, { transaction } = {}) {
+    const row = await this.model.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+    return SequelizePartRequestRepository.toEntity(row);
+  }
 }
 
 module.exports = { SequelizePartRequestRepository };

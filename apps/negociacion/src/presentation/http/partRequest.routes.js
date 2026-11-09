@@ -8,7 +8,7 @@ const upload = require('./upload.middleware');
  * Rutas según docs/contratos-api.md (Negociación).
  * Prefijo montado en server.js: /api/v1/part-requests
  */
-function createPartRequestRoutes(controller) {
+function createPartRequestRoutes(controller, offerController) {
   const router = express.Router();
 
   router.post('/', authenticate, requireRole('COMPRADOR'), upload, controller.create);
@@ -17,6 +17,8 @@ function createPartRequestRoutes(controller) {
   router.get('/:id', authenticate, controller.getById);
   router.get('/:id/photo', authenticate, controller.photo);
   router.patch('/:id/cancel', authenticate, requireRole('COMPRADOR'), controller.cancel);
+  router.get('/:id/offers', authenticate, requireRole('COMPRADOR'), offerController.listForPartRequest);
+  router.post('/:id/offers', authenticate, requireRole('PROVEEDOR'), offerController.submit);
 
   return router;
 }
