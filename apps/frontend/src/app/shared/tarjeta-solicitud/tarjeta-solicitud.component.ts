@@ -5,7 +5,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { Solicitud } from '../../facades/solicitudes.facade';
 
 /** Textos en español de los estados (docs/frontend.md → "Estados en pantalla"). */
-const ETIQUETA_ESTADO: Record<string, string> = {
+const ETIQUETA_ESTADO: Record<string, string | undefined> = {
   PUBLISHED: 'Publicada',
   RECEIVING_OFFERS: 'Recibiendo ofertas',
   OFFER_ACCEPTED: 'Oferta aceptada',
@@ -13,7 +13,7 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   CANCELLED: 'Cancelada',
 };
 
-const ETIQUETA_URGENCIA: Record<string, string> = {
+const ETIQUETA_URGENCIA: Record<string, string | undefined> = {
   BAJA: 'Urgencia baja',
   MEDIA: 'Urgencia media',
   ALTA: 'Urgencia alta',
