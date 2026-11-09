@@ -78,7 +78,7 @@ class ChangePartRequestStatus {
         producer: this.producer,
         correlationId,
         payload: {
-          request_id: saved.id,
+          part_request_id: saved.id,
           previous_status: previousStatus,
           new_status: saved.status,
         },

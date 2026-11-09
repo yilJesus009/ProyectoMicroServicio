@@ -270,7 +270,7 @@ test('cambio de estado exitoso encola PART_REQUEST_STATUS_CHANGED con event_id y
   assert.equal(envelope.producer, PRODUCER);
   assert.equal(envelope.correlation_id, 'corr-123');
   assert.deepEqual(envelope.payload, {
-    request_id: 7,
+    part_request_id: 7,
     previous_status: 'PUBLISHED',
     new_status: 'CANCELLED',
   });
