@@ -5,7 +5,9 @@ Reglas (docs/contratos-api.md + docs/modelo-datos.md):
   - Un perfil por proveedor (OneToOne); GET devuelve 404 si no existe.
   - Cada PUT crea o actualiza y VUELVE A PENDING: quien cambia datos debe
     volver a pasar la revisión del admin.
-  - Aprobar/rechazar solo sobre un perfil PENDIENTE (si no → 409).
+  - Aprobar/rechazar solo sobre un perfil PENDIENTE (si no → 409); la
+    revisión se decide bajo candado de fila para que dos admins no
+    aprueben dos veces.
   - Los eventos se publican DESPUÉS de persistir (transaction.on_commit),
     nunca antes; el publisher es fire-and-forget y jamás revierte el cambio
     (docs/eventos.md regla 3).
@@ -112,42 +114,49 @@ def _require_pending(profile):
 
 def approve(profile, *, admin, correlation_id=None):
     """POST /admin/suppliers/{id}/approve → SUPPLIER_APPROVED."""
-    _require_pending(profile)
     with transaction.atomic():
-        profile.status = SupplierProfileStatus.APPROVED
-        profile.rejection_reason = None
-        profile.reviewed_by = admin
-        profile.reviewed_at = timezone.now()
-        profile.save()
+        # Candado de fila: si dos admins deciden a la vez, el segundo
+        # espera y al releer ve APPROVED → 409. El check vive DENTRO del
+        # candado (select_for_update no tiene efecto en SQLite de tests;
+        # el candado real es el de PostgreSQL en Docker).
+        perfil = SupplierProfile.objects.select_for_update().get(pk=profile.pk)
+        _require_pending(perfil)
+        perfil.status = SupplierProfileStatus.APPROVED
+        perfil.rejection_reason = None
+        perfil.reviewed_by = admin
+        perfil.reviewed_at = timezone.now()
+        perfil.save()
 
     _publish_after_commit(
         SUPPLIER_APPROVED,
         {
             # supplier_id = user_id del proveedor (docs/eventos.md)
-            "supplier_id": profile.user_id,
-            "business_name": profile.business_name,
-            "city": profile.city,
-            "category_ids": list(profile.category_ids),
+            "supplier_id": perfil.user_id,
+            "business_name": perfil.business_name,
+            "city": perfil.city,
+            "category_ids": list(perfil.category_ids),
         },
         correlation_id=correlation_id,
     )
-    return profile
+    return perfil
 
 
 def reject(profile, *, reason, admin, correlation_id=None):
     """POST /admin/suppliers/{id}/reject → SUPPLIER_REJECTED."""
-    _require_pending(profile)
     with transaction.atomic():
-        profile.status = SupplierProfileStatus.REJECTED
-        profile.rejection_reason = reason
-        profile.reviewed_by = admin
-        profile.reviewed_at = timezone.now()
-        profile.save()
+        # Mismo candado que approve: la revisión es exclusiva.
+        perfil = SupplierProfile.objects.select_for_update().get(pk=profile.pk)
+        _require_pending(perfil)
+        perfil.status = SupplierProfileStatus.REJECTED
+        perfil.rejection_reason = reason
+        perfil.reviewed_by = admin
+        perfil.reviewed_at = timezone.now()
+        perfil.save()
 
     _publish_after_commit(
         SUPPLIER_REJECTED,
         # supplier_id = user_id del proveedor (docs/eventos.md)
-        {"supplier_id": profile.user_id, "reason": reason},
+        {"supplier_id": perfil.user_id, "reason": reason},
         correlation_id=correlation_id,
     )
-    return profile
+    return perfil

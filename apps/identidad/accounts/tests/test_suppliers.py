@@ -11,11 +11,13 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from accounts.exceptions import SupplierAlreadyReviewedException
 from accounts.models import (
     SupplierProfile,
     SupplierProfileStatus,
     User,
 )
+from accounts.services import supplier_service
 
 SUPPLIERS_URL = "/api/v1/suppliers/me"
 ADMIN_SUPPLIERS_URL = "/api/v1/admin/suppliers"
@@ -296,6 +298,38 @@ class AdminSupplierDecisionTests(SupplierTestCase):
 
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["status"], 409)
+
+    def test_aprobar_relee_el_estado_de_la_bd_bajo_candado(self):
+        """Carrera clásica: otro admin ya decidió pero el objeto que se
+        tiene en memoria sigue viendo PENDING. El check corre DENTRO de
+        transaction.atomic + select_for_update → 409 y nada cambia."""
+        profile = self.make_profile()
+        SupplierProfile.objects.filter(pk=profile.pk).update(
+            status=SupplierProfileStatus.APPROVED
+        )
+        self.assertEqual(profile.status, SupplierProfileStatus.PENDING)
+
+        with self.assertRaises(SupplierAlreadyReviewedException):
+            supplier_service.approve(profile, admin=self.admin)
+
+        profile.refresh_from_db()
+        self.assertEqual(profile.status, SupplierProfileStatus.APPROVED)
+
+    def test_rechazar_relee_el_estado_de_la_bd_bajo_candado(self):
+        """Mismo candado en reject: si ya estaba decidido, no se repite."""
+        profile = self.make_profile()
+        SupplierProfile.objects.filter(pk=profile.pk).update(
+            status=SupplierProfileStatus.REJECTED,
+            rejection_reason="ya rechazado",
+        )
+
+        with self.assertRaises(SupplierAlreadyReviewedException):
+            supplier_service.reject(
+                profile, reason="otro motivo", admin=self.admin
+            )
+
+        profile.refresh_from_db()
+        self.assertEqual(profile.rejection_reason, "ya rechazado")
 
     def test_rechazar_guarda_el_motivo_y_publica_supplier_rejected(self):
         profile = self.make_profile()
