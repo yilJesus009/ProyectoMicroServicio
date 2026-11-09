@@ -2,7 +2,7 @@
 Productor RabbitMQ del Identity Service.
 
 Envelope de docs/eventos.md:
-  {event_name, occurred_at, correlation_id, producer, payload}
+  {event_id, event_name, version, occurred_at, correlation_id, producer, payload}
 
 Reglas:
   - Exchange tipo "topic", durable; routing_key = nombre del evento.
@@ -29,7 +29,9 @@ def publish(topic, event_name, payload, correlation_id=None):
         channel.exchange_declare(exchange=topic, exchange_type="topic", durable=True)
 
         message = {
+            "event_id": str(uuid.uuid4()),
             "event_name": event_name,
+            "version": 1,
             "occurred_at": datetime.now(timezone.utc).isoformat(),
             "correlation_id": correlation_id or str(uuid.uuid4()),
             "producer": "identity-service",
