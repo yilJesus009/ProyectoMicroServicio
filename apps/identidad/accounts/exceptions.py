@@ -27,3 +27,36 @@ class AdminSelfRegistrationException(Exception):
             "Use COMPRADOR o PROVEEDOR; el ADMIN se crea desde el panel de "
             "administración"
         )
+
+
+class SupplierProfileNotFoundException(Exception):
+    """GET /suppliers/me sin perfil → 404 (contrato)."""
+
+    def __init__(self):
+        super().__init__(
+            "El proveedor no tiene un perfil comercial. "
+            "Complete su perfil con PUT /suppliers/me"
+        )
+
+
+class SupplierAlreadyReviewedException(Exception):
+    """Aprobar/rechazar un perfil que no está PENDING → 409.
+
+    El único camino de vuelta a PENDING es un nuevo PUT del proveedor
+    (contrato: cada PUT vuelve a PENDIENTE).
+    """
+
+    def __init__(self, status_actual):
+        super().__init__(
+            f"El perfil ya fue revisado (estado actual: {status_actual}). "
+            "Solo se aprueba o rechaza un perfil PENDIENTE"
+        )
+
+
+class InvalidSupplierStatusException(Exception):
+    """Filtro ?status= inválido en GET /admin/suppliers → 400."""
+
+    def __init__(self, valor):
+        super().__init__(
+            f"Estado no válido: {valor}. Use PENDING, APPROVED o REJECTED"
+        )

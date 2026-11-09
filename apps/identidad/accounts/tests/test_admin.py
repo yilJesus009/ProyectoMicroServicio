@@ -7,7 +7,7 @@ administrador.
 """
 from django.test import Client, TestCase
 
-from accounts.models import User
+from accounts.models import SupplierProfile, SupplierProfileStatus, User
 
 
 class AdminPanelTests(TestCase):
@@ -49,3 +49,56 @@ class AdminPanelTests(TestCase):
         nuevo = User.objects.get(email="operador@taller.com")
         self.assertEqual(nuevo.rol, "ADMIN")
         self.assertTrue(nuevo.check_password("clave-operador-456"))
+
+
+class SupplierProfileAdminTests(TestCase):
+    """`status` es solo lectura en el panel: el estado lo decide el
+    servicio (API o acción de aprobar), nunca el formulario."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            email="admin@taller.com",
+            password="clave-admin-123",
+            nombre="Administrador",
+        )
+        self.client = Client()
+        self.client.force_login(self.admin)
+        self.proveedor = User.objects.create_user(
+            email="proveedor@taller.com",
+            password="clave-prov-123",
+            nombre="Proveedor",
+            rol="PROVEEDOR",
+        )
+        self.profile = SupplierProfile.objects.create(
+            user=self.proveedor,
+            business_name="Taller del Barrio",
+            city="Santa Cruz",
+            phone="70000000",
+            category_ids=[1],
+        )
+        self.url = f"/admin/accounts/supplierprofile/{self.profile.id}/change/"
+
+    def test_formulario_no_muestra_status_como_campo_editable(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        # Editable sería <select name="status">; solo lectura no lo tiene.
+        self.assertNotContains(response, 'name="status"')
+
+    def test_enviar_status_en_el_formulario_no_lo_modifica(self):
+        response = self.client.post(
+            self.url,
+            {
+                "user": self.proveedor.id,
+                "business_name": "Taller del Barrio",
+                "city": "Santa Cruz",
+                "phone": "70000000",
+                "category_ids": "[1]",
+                "status": "APPROVED",
+                "_save": "Guardar",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)  # guardó sin status
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.status, SupplierProfileStatus.PENDING)

@@ -47,6 +47,10 @@ sabe quién lo escucha.
 
 ## Payloads
 
+> En los eventos de proveedor, **`supplier_id` = `user_id` del proveedor**
+> (el mismo id de `User`/JWT que usan los demás servicios), no el id de la
+> fila del perfil.
+
 ```jsonc
 // SUPPLIER_PROFILE_SUBMITTED
 { "supplier_id": 55, "business_name": "AutoParts Center" }

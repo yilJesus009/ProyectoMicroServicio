@@ -62,3 +62,45 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} ({self.rol})"
+
+
+class SupplierProfileStatus(models.TextChoices):
+    """docs/modelo-datos.md → supplier_profiles.status."""
+    PENDING = "PENDING", "Pendiente"
+    APPROVED = "APPROVED", "Aprobado"
+    REJECTED = "REJECTED", "Rechazado"
+
+
+class SupplierProfile(models.Model):
+    """Perfil comercial de un proveedor (docs/modelo-datos.md).
+
+    Un perfil por usuario (OneToOne): el proveedor completa sus datos y el
+    admin lo aprueba o rechaza. Cada PUT vuelve a PENDING (contrato
+    docs/contratos-api.md): quien cambia datos debe volver a pasar revisión.
+    """
+
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="supplier_profile"
+    )
+    business_name = models.CharField(max_length=120)
+    city = models.CharField(max_length=80)
+    phone = models.CharField(max_length=20)
+    # Ids de categorías de Catálogo (esquema ajeno: números sin FK, AGENTS.md §5).
+    # jsonb en Postgres y JSON en SQLite: los tests del CI corren en SQLite
+    # (settings TESTING), así el mismo campo funciona en ambos.
+    category_ids = models.JSONField(default=list, blank=True)
+    status = models.CharField(
+        max_length=10,
+        choices=SupplierProfileStatus.choices,
+        default=SupplierProfileStatus.PENDING,
+    )
+    rejection_reason = models.TextField(blank=True, null=True)
+    reviewed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.business_name} ({self.status})"

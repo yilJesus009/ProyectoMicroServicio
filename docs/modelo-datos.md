@@ -20,7 +20,7 @@ referencia a otra de un esquema distinto:** los ids ajenos (`buyer_id`,
 | `business_name` | varchar | Nombre comercial |
 | `city` | varchar | |
 | `phone` | varchar | |
-| `category_ids` | int[] | Ids de Catálogo que atiende |
+| `category_ids` | jsonb | Ids de Catálogo que atiende (lista de enteros; jsonb para que las pruebas corran también en SQLite, ver `settings.py` TESTING) |
 | `status` | `PENDING` \| `APPROVED` \| `REJECTED` | |
 | `rejection_reason` | text, nulo | |
 | `reviewed_by`, `reviewed_at` | nulo | Admin que decidió |
