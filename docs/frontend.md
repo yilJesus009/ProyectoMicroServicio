@@ -66,6 +66,15 @@ Al aceptar una oferta, la app muestra "Generando tu pedido…" y consulta
 `GET /orders/by-offer/{offerId}` cada 2 s hasta que exista. Luego lleva a la
 pantalla de pago.
 
+**Foto de la solicitud:** en `/comprador/solicitudes/nueva` el campo es
+`multipart/form-data` (`photo`), opcional, JPEG/PNG/WEBP, máx. 5 MB.
+`GET /part-requests/{id}/photo` exige el mismo `Authorization: Bearer` que
+el detalle (dueño o proveedor aprobado) — por eso **no sirve un `<img src="...">`
+directo** (el navegador no manda el header). Pedirla con el `HttpClient`
+(el interceptor ya agrega el token), armar un `Blob` con
+`URL.createObjectURL()` y usarlo como `src`; revocar la URL al salir de la
+pantalla.
+
 ### Proveedor
 | Ruta | Pantalla |
 |---|---|
