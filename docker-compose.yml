@@ -125,6 +125,8 @@ services:
       DB_NEGOCIACION_PASSWORD: ${DB_NEGOCIACION_PASSWORD:-negociacion_pass}
       JWT_SECRET: ${JWT_SECRET:-cambia-este-secreto-en-produccion-min-32-caracteres}
       NEGOCIACION_PORT: ${NEGOCIACION_PORT:-4001}
+      # Catálogo: valida category_id al crear una solicitud (HTTP interno)
+      CATALOGO_SERVICE_URL: ${CATALOGO_SERVICE_URL:-http://catalogo:4004}
       # RabbitMQ
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: "5672"
@@ -136,6 +138,8 @@ services:
       postgres:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      catalogo:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${NEGOCIACION_PORT:-4001}/health >/dev/null 2>&1 || exit 1"]
