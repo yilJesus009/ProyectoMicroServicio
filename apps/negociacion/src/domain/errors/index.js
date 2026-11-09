@@ -15,6 +15,11 @@
  *   EventDrivenStatusException            → 422
  *   CategoryInactiveException             → 422
  *   CatalogUnavailableException           → 503
+ *   OfferNotFoundException                → 404
+ *   PartRequestNotAcceptingOffersException → 422
+ *   InvalidOfferTransitionException       → 422
+ *   ActiveOfferConflictException          → 409
+ *   OfferAlreadyAcceptedException         → 409
  *
  * Cualquier otro error → 500 sin exponer el stack trace.
  */
@@ -108,6 +113,46 @@ class PartRequestPhotoNotFoundException extends Error {
   }
 }
 
+/** La oferta no existe. */
+class OfferNotFoundException extends Error {
+  constructor(id) {
+    super(`La oferta ${id} no existe`);
+    this.name = 'OfferNotFoundException';
+  }
+}
+
+/** La solicitud no está PUBLISHED ni RECEIVING_OFFERS: no se puede ofertar ni retirar. */
+class PartRequestNotAcceptingOffersException extends Error {
+  constructor(partRequestId, status) {
+    super(`La solicitud ${partRequestId} no acepta ofertas en su estado actual (${status})`);
+    this.name = 'PartRequestNotAcceptingOffersException';
+  }
+}
+
+/** Transición de oferta no permitida (p.ej. aceptar una ya retirada). */
+class InvalidOfferTransitionException extends Error {
+  constructor(offerId, from, to) {
+    super(`La oferta ${offerId} no puede pasar de ${from} a ${to}`);
+    this.name = 'InvalidOfferTransitionException';
+  }
+}
+
+/** El proveedor ya tiene una oferta activa (SUBMITTED) en esta solicitud. */
+class ActiveOfferConflictException extends Error {
+  constructor(partRequestId) {
+    super(`Ya tienes una oferta activa en la solicitud ${partRequestId}`);
+    this.name = 'ActiveOfferConflictException';
+  }
+}
+
+/** La solicitud ya tiene otra oferta ACCEPTED (segunda aceptación). */
+class OfferAlreadyAcceptedException extends Error {
+  constructor(partRequestId) {
+    super(`La solicitud ${partRequestId} ya tiene una oferta aceptada`);
+    this.name = 'OfferAlreadyAcceptedException';
+  }
+}
+
 module.exports = {
   PartRequestNotFoundException,
   InvalidPartRequestTransitionException,
@@ -119,4 +164,9 @@ module.exports = {
   CategoryInactiveException,
   CatalogUnavailableException,
   PartRequestPhotoNotFoundException,
+  OfferNotFoundException,
+  PartRequestNotAcceptingOffersException,
+  InvalidOfferTransitionException,
+  ActiveOfferConflictException,
+  OfferAlreadyAcceptedException,
 };

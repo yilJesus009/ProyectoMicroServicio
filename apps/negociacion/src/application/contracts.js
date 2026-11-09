@@ -28,6 +28,12 @@ const SupplierEvent = Object.freeze({
   REJECTED: 'SUPPLIER_REJECTED',
 });
 
+const OfferEvent = Object.freeze({
+  SUBMITTED: 'OFFER_SUBMITTED',
+  ACCEPTED: 'OFFER_ACCEPTED',
+  REJECTED: 'OFFER_REJECTED',
+});
+
 /**
  * Estados que este servicio NO acepta desde una petición HTTP (PATCH
  * .../status): los asigna un caso de uso interno o un consumidor de
@@ -46,4 +52,4 @@ const EVENT_DRIVEN_STATUS = Object.freeze({
   COMPLETED: 'ORDER_STATUS_CHANGED',
 });
 
-module.exports = { Topic, PartRequestEvent, SupplierEvent, EVENT_DRIVEN_STATUS };
+module.exports = { Topic, PartRequestEvent, SupplierEvent, OfferEvent, EVENT_DRIVEN_STATUS };

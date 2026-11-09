@@ -1,7 +1,7 @@
 'use strict';
 
 const { PartRequestStatus, Urgency, canTransition } = require('../enums');
-const { InvalidPartRequestTransitionException } = require('../errors');
+const { InvalidPartRequestTransitionException, PartRequestNotAcceptingOffersException } = require('../errors');
 
 /**
  * Entidad PartRequest.
@@ -52,6 +52,17 @@ class PartRequest {
   /** Solo el dueño o un proveedor aprobado pueden ver el detalle/foto (docs/contratos-api.md). */
   canBeViewedBy(requesterId, isApprovedSupplier) {
     return this.userId === requesterId || isApprovedSupplier === true;
+  }
+
+  /** PUBLISHED o RECEIVING_OFFERS: acepta nuevas ofertas, se puede retirar una. */
+  acceptsOffers() {
+    return this.status === PartRequestStatus.PUBLISHED || this.status === PartRequestStatus.RECEIVING_OFFERS;
+  }
+
+  assertAcceptsOffers() {
+    if (!this.acceptsOffers()) {
+      throw new PartRequestNotAcceptingOffersException(this.id, this.status);
+    }
   }
 
   /**
