@@ -6,12 +6,13 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthFacade } from '../../facades/auth.facade';
+import { CampanitaComponent } from '../../shared/campanita/campanita.component';
 import { ItemMenu, MENU_POR_ROL, NOMBRE_ROL } from './menu';
 
 /**
- * Layout común a los tres roles: barra superior con la marca, quién es la
- * persona y el botón de salir; menú lateral distinto según el rol; y el
- * contenido de la ruta activa.
+ * Layout común a los tres roles: barra superior con la marca, la campanita
+ * de avisos, quién es la persona y el botón de salir; menú lateral distinto
+ * según el rol; y el contenido de la ruta activa.
  *
  * Smart mínimo: solo lee la sesión y el menú de la facade. Los enlaces son
  * rutas reales de docs/frontend.md.
@@ -19,6 +20,7 @@ import { ItemMenu, MENU_POR_ROL, NOMBRE_ROL } from './menu';
 @Component({
   selector: 'app-layout',
   imports: [
+    CampanitaComponent,
     MatButtonModule,
     MatListModule,
     MatSidenavModule,

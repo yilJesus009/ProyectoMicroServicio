@@ -1,0 +1,96 @@
+.campanita {
+  position: relative;
+}
+
+.campanita-boton {
+  position: relative;
+}
+
+.conteo {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 1.1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: #b3261e;
+  color: #fff;
+  font-size: 0.7rem;
+  line-height: 1.1rem;
+  text-align: center;
+}
+
+.panel {
+  position: absolute;
+  top: 3rem;
+  right: 0;
+  z-index: 20;
+  width: 22rem;
+  max-width: calc(100vw - 2rem);
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  padding: 0.5rem;
+}
+
+.panel-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.aviso {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: #f5f7fa;
+  cursor: pointer;
+}
+
+.aviso:hover {
+  background: #e3f2fd;
+}
+
+.aviso.leido {
+  opacity: 0.65;
+}
+
+.mensaje {
+  font-size: 0.85rem;
+  color: #546e7a;
+}
+
+.fecha {
+  font-size: 0.75rem;
+  color: #78909c;
+}
+
+.cargando,
+.vacio {
+  color: #546e7a;
+  font-size: 0.9rem;
+  margin: 0.5rem;
+}
+
+.error {
+  color: #b3261e;
+  margin: 0.5rem;
+  font-size: 0.9rem;
+}
