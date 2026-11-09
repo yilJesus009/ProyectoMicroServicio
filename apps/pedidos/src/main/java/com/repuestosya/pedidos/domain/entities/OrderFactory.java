@@ -30,6 +30,7 @@ public final class OrderFactory {
                         payload.estimatedDays(),
                         OrderStatus.PENDING_PAYMENT,
                         List.of(OrderStatusHistoryEntry.initial(payload.buyerId(), now)),
+                        null,
                         now,
                         now);
         return order;

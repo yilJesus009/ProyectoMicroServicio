@@ -12,6 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
@@ -78,6 +79,9 @@ public class OrderJpaEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("changedAt ASC")
     private List<OrderStatusHistoryJpaEntity> history = new ArrayList<>();
+
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private PaymentJpaEntity payment;
 
     protected OrderJpaEntity() {}
 
@@ -208,5 +212,14 @@ public class OrderJpaEntity {
     public void addHistory(OrderStatusHistoryJpaEntity entry) {
         entry.setOrder(this);
         history.add(entry);
+    }
+
+    public PaymentJpaEntity getPayment() {
+        return payment;
+    }
+
+    public void attachPayment(PaymentJpaEntity payment) {
+        payment.setOrder(this);
+        this.payment = payment;
     }
 }

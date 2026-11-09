@@ -1,9 +1,10 @@
 # Defensa — Fase 3, Pedidos (bloque A1)
 
-> Esta fase se dividió en dos entregas (acordado con el equipo). Este
-> documento cubre la **Entrega 1 — consumidor de `OFFER_ACCEPTED` y
-> estados**. El pago simulado (Entrega 2) se documentará aparte cuando
-> esté hecho.
+## Entrega 1 — consumidor de OFFER_ACCEPTED y estados
+
+> Esta fase se dividió en dos entregas (acordado con el equipo):
+> **Entrega 1** (consumidor de `OFFER_ACCEPTED` y estados) y **Entrega 2**
+> (pago simulado), ambas en este documento.
 
 ## Qué se hizo
 
@@ -111,15 +112,98 @@ genérico (`500`) en vez de a uno específico. Se agregó
 `@ExceptionHandler(HttpMessageNotReadableException.class)` → `400`, y se
 confirmó en Docker antes y después del fix.
 
-## Limitaciones de esta entrega
+## Limitaciones de la Entrega 1 (resueltas en la Entrega 2)
 
-- No se puede llegar a `COMPLETED` por el Gateway de punta a punta
-  todavía: `PENDING_PAYMENT → PREPARING` lo hace el pago simulado
-  (Entrega 2, `POST /orders/{id}/payment`, pendiente). Para probar
-  `AdvanceOrderStatus`/`ConfirmReceipt` en Docker se forzó ese único paso
-  directo en la base de datos (solo para la prueba, no es código de
-  producción).
+- ~~No se puede llegar a `COMPLETED` por el Gateway de punta a punta~~:
+  resuelto abajo con `POST /orders/{id}/payment`.
 - `ORDER_CREATED` y `ORDER_STATUS_CHANGED` se publican al exchange
   `order_events`, pero todavía no hay ninguna cola enganchada ahí:
   Negociación (cerrar la solicitud en `COMPLETED`) y Notificaciones son
-  la Fase 3, bloque A2, que viene después de la Entrega 2 de pago.
+  la Fase 3, bloque A2, que viene después de esta entrega.
+
+---
+
+## Entrega 2 — pago simulado
+
+### Qué se hizo
+
+- **`POST /orders/{id}/payment`**: solo el comprador dueño (**403** si
+  no), solo si el pedido está en `PENDING_PAYMENT` (**422** si no), y
+  nunca un segundo pago (**409**, ver abajo). Body: `{ "method": "QR" |
+  "CARD" }` — nunca se reciben datos de tarjeta (`AGENTS.md` regla 6).
+- **Adapter**: `PaymentGateway` (puerto, en `application/ports/`) con un
+  solo adaptador hoy, `SimulatedPaymentGateway`, que siempre "aprueba". El
+  día que haya un gateway de pagos real, es el único archivo que cambia —
+  ni el caso de uso (`PayOrder`) ni el dominio se enteran.
+- **Strategy**: `PaymentMethod` (`QR`, `CARD`) genera su propia referencia
+  simulada (`PAY-AAAAMMDD-NNNNNN`), igual patrón que `DeliveryType` en la
+  Entrega 1 — hoy las dos ramas arman el mismo formato, pero cada una es
+  el punto de extensión si el día de mañana QR y CARD necesitan generarla
+  distinto.
+- El pago pasa a ser parte del agregado `Order` (como ya era `history`):
+  `Order.registerPayment(...)` hace, en este orden, los mismos dos
+  chequeos que la segunda aceptación de oferta en Negociación — **409
+  antes que 422**: primero "¿ya hay un pago?" (en memoria), después
+  `changeStatus(PREPARING, ...)`, que ya sabe rechazar con **422** si el
+  pedido no estaba en `PENDING_PAYMENT`.
+- Todo en una transacción (`PayOrder`, `@Transactional`): la fila de
+  `payments`, el cambio de estado, la fila del historial y el outbox de
+  `ORDER_STATUS_CHANGED`.
+- Mismo patrón de doble red de seguridad que `offer_id` en la Entrega 1:
+  si dos pagos casi simultáneos pasan el chequeo en memoria, el índice
+  único `uq_payments_order_id` (migración `V3`, mismo truco de renombrar
+  la restricción para detectarla por nombre) hace fallar el segundo
+  `INSERT`, y se traduce a **409**, no a un `500`.
+
+### El hallazgo que pidió el equipo verificar: los campos extra del pago
+
+La duda era legítima: `@JsonIgnoreProperties(ignoreUnknown = false)` en
+el DTO depende de que Jackson no tenga ya desactivado
+`FAIL_ON_UNKNOWN_PROPERTIES` a nivel global (Spring Boot sí lo tiene
+desactivado por defecto). Para no depender de esa configuración, 
+`PaymentRequest` usa `@JsonAnySetter` en un método que **lanza** apenas
+Jackson intenta asignarle cualquier campo que no sea `method` —
+funciona sin importar la config global, porque Jackson llama a ese
+método para *cualquier* propiedad no reconocida, se ignoren o no las
+demás.
+
+Se escribió una prueba real con `MockMvc` (`OrderControllerPaymentTest`,
+sin contexto de Spring) que manda exactamente
+`{ "method": "CARD", "card_number": "4111111111111111" }` contra el
+controller real: **400**, con el mensaje nombrando el campo rechazado.
+Se confirmó además en Docker, contra el servicio real por el Gateway.
+
+### Cómo se probó
+
+- **15 pruebas unitarias nuevas** (48 en total en el módulo):
+  `PaymentMethodTest` (formato de la referencia para las dos estrategias);
+  `OrderTest` (`registerPayment` feliz, segundo pago → 409, pedido no
+  `PENDING_PAYMENT` → 422); `PayOrderTest` (404, 403, 422, 409 en memoria
+  y por conflicto de base, éxito con el evento encolado);
+  `OrderControllerPaymentTest` (`MockMvc`: rechaza `card_number` con 400,
+  acepta el body normal).
+- **Verificación real en Docker, con base limpia** (`docker compose down
+  -v && docker compose up --build`; Flyway corrió las migraciones V1 a V3
+  de una sola vez): por el Gateway, sin tocar la base a mano — registrar
+  comprador y proveedor, aprobar, publicar solicitud, ofertar con
+  `delivery_type: PICKUP` (la rama que la Entrega 1 no había probado en
+  vivo), aceptar, y desde ahí:
+  1. El proveedor intentó pagar → **403**.
+  2. El comprador pagó con `QR` → **200**, `PREPARING`, referencia
+     `PAY-20261109-049166`.
+  3. Pagar una segunda vez (`CARD`) → **409**.
+  4. Pagar mandando `card_number` → **400**.
+  5. `READY_FOR_PICKUP` → `DELIVERED` → `confirm-receipt` → **`COMPLETED`**.
+  6. En la base: una sola fila en `payments`, sin ningún campo de
+     tarjeta; 5 eventos en el outbox (`ORDER_CREATED` + 4
+     `ORDER_STATUS_CHANGED`), todos publicados.
+
+### Limitaciones
+
+- `ORDER_CREATED`/`ORDER_STATUS_CHANGED` siguen sin ningún consumidor
+  (bloque A2, pendiente): Negociación no cierra todavía la solicitud en
+  `COMPLETED`, y Notificaciones no avisa de estos eventos.
+- El "segundo pago por conflicto de base" (`uq_payments_order_id`) se
+  probó con un mock que lanza la excepción (`PayOrderTest`), no con dos
+  requests concurrentes reales contra Postgres — igual que se documentó
+  para `offer_id` en la Entrega 1.

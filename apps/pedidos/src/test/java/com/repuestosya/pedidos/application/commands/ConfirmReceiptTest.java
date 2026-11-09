@@ -33,7 +33,7 @@ class ConfirmReceiptTest {
         return new Order(
                 1L, 10L, 20L, 30L, 40L, "AutoParts Center", "Frenos delanteros", "Toyota Corolla 2018",
                 new BigDecimal("620"), "BOB", DeliveryType.DELIVERY, 3, status,
-                List.of(OrderStatusHistoryEntry.initial(30L, now)), now, now);
+                List.of(OrderStatusHistoryEntry.initial(30L, now)), null, now, now);
     }
 
     @Test

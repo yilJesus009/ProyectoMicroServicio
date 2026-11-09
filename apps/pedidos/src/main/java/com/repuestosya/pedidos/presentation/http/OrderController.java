@@ -2,17 +2,20 @@ package com.repuestosya.pedidos.presentation.http;
 
 import com.repuestosya.pedidos.application.commands.AdvanceOrderStatus;
 import com.repuestosya.pedidos.application.commands.ConfirmReceipt;
+import com.repuestosya.pedidos.application.commands.PayOrder;
 import com.repuestosya.pedidos.application.queries.GetOrderByOfferId;
 import com.repuestosya.pedidos.application.queries.GetOrderById;
 import com.repuestosya.pedidos.application.queries.ListMyOrders;
 import com.repuestosya.pedidos.application.queries.ListSupplierOrders;
 import com.repuestosya.pedidos.domain.entities.Order;
 import com.repuestosya.pedidos.domain.enums.OrderStatus;
+import com.repuestosya.pedidos.domain.enums.PaymentMethod;
 import com.repuestosya.pedidos.domain.errors.ForbiddenException;
 import com.repuestosya.pedidos.domain.errors.ValidationException;
 import com.repuestosya.pedidos.infrastructure.config.JwtAuthFilter;
 import com.repuestosya.pedidos.presentation.http.dto.ChangeStatusRequest;
 import com.repuestosya.pedidos.presentation.http.dto.OrderResponse;
+import com.repuestosya.pedidos.presentation.http.dto.PaymentRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -35,6 +38,7 @@ public class OrderController {
     private final GetOrderByOfferId getOrderByOfferId;
     private final AdvanceOrderStatus advanceOrderStatus;
     private final ConfirmReceipt confirmReceipt;
+    private final PayOrder payOrder;
 
     public OrderController(
             ListMyOrders listMyOrders,
@@ -42,13 +46,15 @@ public class OrderController {
             GetOrderById getOrderById,
             GetOrderByOfferId getOrderByOfferId,
             AdvanceOrderStatus advanceOrderStatus,
-            ConfirmReceipt confirmReceipt) {
+            ConfirmReceipt confirmReceipt,
+            PayOrder payOrder) {
         this.listMyOrders = listMyOrders;
         this.listSupplierOrders = listSupplierOrders;
         this.getOrderById = getOrderById;
         this.getOrderByOfferId = getOrderByOfferId;
         this.advanceOrderStatus = advanceOrderStatus;
         this.confirmReceipt = confirmReceipt;
+        this.payOrder = payOrder;
     }
 
     @GetMapping("/mine")
@@ -87,6 +93,19 @@ public class OrderController {
         return ApiResponse.ok(OrderResponse.from(order), "Pedido encontrado");
     }
 
+    @PostMapping("/{id}/payment")
+    public ApiResponse<OrderResponse> pay(
+            @PathVariable Long id,
+            @RequestBody PaymentRequest body,
+            @RequestAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE) Number userId,
+            @RequestAttribute(JwtAuthFilter.ROL_ATTRIBUTE) String rol,
+            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId) {
+        requireRole(rol, "COMPRADOR");
+        PaymentMethod method = parseMethod(body.getMethod());
+        Order order = payOrder.execute(id, method, userId.longValue(), correlationId);
+        return ApiResponse.ok(OrderResponse.from(order), "Pago registrado");
+    }
+
     @PatchMapping("/{id}/status")
     public ApiResponse<OrderResponse> changeStatus(
             @PathVariable Long id,
@@ -123,6 +142,17 @@ public class OrderController {
             return OrderStatus.valueOf(raw);
         } catch (IllegalArgumentException e) {
             throw new ValidationException("El estado '" + raw + "' no existe");
+        }
+    }
+
+    private static PaymentMethod parseMethod(String raw) {
+        if (raw == null) {
+            throw new ValidationException("El campo 'method' es obligatorio");
+        }
+        try {
+            return PaymentMethod.valueOf(raw);
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("El método de pago '" + raw + "' no existe");
         }
     }
 }

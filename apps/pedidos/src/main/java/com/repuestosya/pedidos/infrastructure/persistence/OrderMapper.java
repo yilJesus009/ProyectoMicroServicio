@@ -2,6 +2,7 @@ package com.repuestosya.pedidos.infrastructure.persistence;
 
 import com.repuestosya.pedidos.domain.entities.Order;
 import com.repuestosya.pedidos.domain.entities.OrderStatusHistoryEntry;
+import com.repuestosya.pedidos.domain.entities.Payment;
 import java.util.List;
 
 /** Traduce entre la entidad de dominio (pura) y las entidades de JPA. */
@@ -18,6 +19,17 @@ final class OrderMapper {
                                                 h.getId(), h.getFromStatus(), h.getToStatus(), h.getChangedBy(), h.getChangedAt()))
                         .toList();
 
+        Payment payment =
+                row.getPayment() == null
+                        ? null
+                        : new Payment(
+                                row.getPayment().getId(),
+                                row.getId(),
+                                row.getPayment().getMethod(),
+                                row.getPayment().getReference(),
+                                row.getPayment().getAmount(),
+                                row.getPayment().getPaidAt());
+
         return new Order(
                 row.getId(),
                 row.getOfferId(),
@@ -33,6 +45,7 @@ final class OrderMapper {
                 row.getEstimatedDays(),
                 row.getStatus(),
                 history,
+                payment,
                 row.getCreatedAt(),
                 row.getUpdatedAt());
     }
@@ -62,6 +75,13 @@ final class OrderMapper {
                         new OrderStatusHistoryJpaEntity(
                                 entry.fromStatus(), entry.toStatus(), entry.changedBy(), entry.changedAt()));
             }
+        }
+
+        // El pago nunca se actualiza una vez registrado: solo se agrega si es nuevo.
+        Payment payment = order.getPayment();
+        if (payment != null && target.getPayment() == null) {
+            target.attachPayment(
+                    new PaymentJpaEntity(payment.method(), payment.reference(), payment.amount(), payment.paidAt()));
         }
     }
 }

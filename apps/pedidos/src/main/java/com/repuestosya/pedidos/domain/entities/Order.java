@@ -3,6 +3,7 @@ package com.repuestosya.pedidos.domain.entities;
 import com.repuestosya.pedidos.domain.enums.DeliveryType;
 import com.repuestosya.pedidos.domain.enums.OrderStatus;
 import com.repuestosya.pedidos.domain.errors.InvalidOrderTransitionException;
+import com.repuestosya.pedidos.domain.errors.PaymentAlreadyExistsException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class Order {
     private final int estimatedDays;
     private OrderStatus status;
     private final List<OrderStatusHistoryEntry> history;
+    private Payment payment;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -45,6 +47,7 @@ public class Order {
             int estimatedDays,
             OrderStatus status,
             List<OrderStatusHistoryEntry> history,
+            Payment payment,
             Instant createdAt,
             Instant updatedAt) {
         this.id = id;
@@ -61,6 +64,7 @@ public class Order {
         this.estimatedDays = estimatedDays;
         this.status = status;
         this.history = new ArrayList<>(history);
+        this.payment = payment;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -80,6 +84,23 @@ public class Order {
         this.status = target;
         this.updatedAt = changedAt;
         this.history.add(OrderStatusHistoryEntry.of(previous, target, changedBy, changedAt));
+    }
+
+    /**
+     * Registra el pago simulado y pasa a PREPARING. El orden importa (igual
+     * que en Negociación con la segunda aceptación): primero se pregunta si
+     * YA hay un pago (409, "segundo pago") y recién después se valida el
+     * estado con {@link #changeStatus} (422 si no estaba en PENDING_PAYMENT).
+     *
+     * @throws PaymentAlreadyExistsException si el pedido ya tiene un pago
+     * @throws InvalidOrderTransitionException si el pedido no estaba en PENDING_PAYMENT
+     */
+    public void registerPayment(Payment payment, Long changedBy, Instant changedAt) {
+        if (this.payment != null) {
+            throw new PaymentAlreadyExistsException(id);
+        }
+        changeStatus(OrderStatus.PREPARING, changedBy, changedAt);
+        this.payment = payment;
     }
 
     public boolean isOwnedByBuyer(Long userId) {
@@ -152,6 +173,10 @@ public class Order {
 
     public List<OrderStatusHistoryEntry> getHistory() {
         return List.copyOf(history);
+    }
+
+    public Payment getPayment() {
+        return payment;
     }
 
     public Instant getCreatedAt() {

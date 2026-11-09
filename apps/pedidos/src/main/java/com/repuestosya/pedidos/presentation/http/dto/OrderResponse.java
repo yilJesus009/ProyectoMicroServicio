@@ -29,10 +29,14 @@ public record OrderResponse(
         Instant updatedAt) {
 
     public static OrderResponse from(Order order) {
-        return from(order, null);
-    }
+        PaymentResponse payment =
+                order.getPayment() == null
+                        ? null
+                        : new PaymentResponse(
+                                order.getPayment().method().name(),
+                                order.getPayment().reference(),
+                                order.getPayment().paidAt());
 
-    public static OrderResponse from(Order order, PaymentResponse payment) {
         List<HistoryEntryResponse> history =
                 order.getHistory().stream()
                         .map(
