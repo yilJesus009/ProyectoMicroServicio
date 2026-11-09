@@ -12,6 +12,8 @@ function createNotificationsRoutes(controller) {
 
   router.get('/mine', authenticate, controller.mine);
   router.get('/unread-count', authenticate, controller.unreadCount);
+  router.patch('/read-all', authenticate, controller.readAll);
+  router.patch('/:id/read', authenticate, controller.read);
 
   return router;
 }
