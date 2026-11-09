@@ -78,4 +78,42 @@ function canTransition(from, to) {
   return Array.isArray(allowed) && allowed.includes(to);
 }
 
-module.exports = { PartRequestStatus, Urgency, PART_REQUEST_TRANSITIONS, canTransition };
+/**
+ * Estados de una oferta (docs/flujo-principal.md, sección "Oferta").
+ * Solo SUBMITTED es un estado vivo; las otras tres son terminales.
+ */
+const OfferStatus = Object.freeze({
+  SUBMITTED: 'SUBMITTED',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+  WITHDRAWN: 'WITHDRAWN',
+});
+
+const OFFER_TRANSITIONS = Object.freeze({
+  [OfferStatus.SUBMITTED]: [OfferStatus.ACCEPTED, OfferStatus.REJECTED, OfferStatus.WITHDRAWN],
+  [OfferStatus.ACCEPTED]: [],
+  [OfferStatus.REJECTED]: [],
+  [OfferStatus.WITHDRAWN]: [],
+});
+
+function canTransitionOffer(from, to) {
+  const allowed = OFFER_TRANSITIONS[from];
+  return Array.isArray(allowed) && allowed.includes(to);
+}
+
+const OfferCondition = Object.freeze({ NEW: 'NEW', USED: 'USED', REFURBISHED: 'REFURBISHED' });
+const OfferAvailability = Object.freeze({ IN_STOCK: 'IN_STOCK', ON_ORDER: 'ON_ORDER' });
+const DeliveryType = Object.freeze({ PICKUP: 'PICKUP', DELIVERY: 'DELIVERY' });
+
+module.exports = {
+  PartRequestStatus,
+  Urgency,
+  PART_REQUEST_TRANSITIONS,
+  canTransition,
+  OfferStatus,
+  OFFER_TRANSITIONS,
+  canTransitionOffer,
+  OfferCondition,
+  OfferAvailability,
+  DeliveryType,
+};

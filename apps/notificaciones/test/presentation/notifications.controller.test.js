@@ -67,3 +67,43 @@ test('GET unread-count responde {count}', async () => {
 
   assert.deepEqual(res.body, { status: 200, msg: 'Conteo de avisos sin leer', data: { count: 5 } });
 });
+
+test('PATCH :id/read responde con el aviso ya marcado', async () => {
+  const aviso = new Notification({ id: 1, type: 'X', title: 't', message: 'm', readAt: new Date() });
+  let received = null;
+  const markNotificationRead = {
+    execute: async (params) => {
+      received = params;
+      return aviso;
+    },
+  };
+  const controller = createNotificationsController({
+    listMyNotifications: {},
+    countUnreadNotifications: {},
+    markNotificationRead,
+    markAllNotificationsRead: {},
+  });
+
+  const req = { user: { id: 12, rol: 'COMPRADOR' }, params: { id: '1' } };
+  const res = makeRes();
+  await controller.read(req, res, (err) => assert.fail(err));
+
+  assert.deepEqual(received, { id: 1, userId: 12, role: 'COMPRADOR' });
+  assert.equal(res.body.data.read, true);
+});
+
+test('PATCH read-all responde con el conteo', async () => {
+  const markAllNotificationsRead = { execute: async () => 3 };
+  const controller = createNotificationsController({
+    listMyNotifications: {},
+    countUnreadNotifications: {},
+    markNotificationRead: {},
+    markAllNotificationsRead,
+  });
+
+  const req = { user: { id: 12, rol: 'COMPRADOR' } };
+  const res = makeRes();
+  await controller.readAll(req, res, (err) => assert.fail(err));
+
+  assert.deepEqual(res.body, { status: 200, msg: 'Avisos marcados como leídos', data: { count: 3 } });
+});

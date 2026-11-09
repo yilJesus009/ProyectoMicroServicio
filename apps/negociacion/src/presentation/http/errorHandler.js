@@ -8,11 +8,20 @@
  */
 const ERROR_STATUS = {
   ValidationException: 400,
+  CategoryNotFoundException: 400,
   ForbiddenException: 403,
   PartRequestNotFoundException: 404,
+  PartRequestPhotoNotFoundException: 404,
   PartRequestStatusConflictException: 409,
   InvalidPartRequestTransitionException: 422,
   EventDrivenStatusException: 422,
+  CategoryInactiveException: 422,
+  CatalogUnavailableException: 503,
+  OfferNotFoundException: 404,
+  PartRequestNotAcceptingOffersException: 422,
+  InvalidOfferTransitionException: 422,
+  ActiveOfferConflictException: 409,
+  OfferAlreadyAcceptedException: 409,
   MulterError: 400, // límite de tamaño u otros errores de subida
 };
 

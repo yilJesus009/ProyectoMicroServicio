@@ -32,11 +32,12 @@ class SequelizeNotificationRepository extends INotificationRepository {
     return { [Op.or]: [{ userId }, { role }] };
   }
 
+  /** Del más nuevo al más viejo, máximo 50 (ajuste del equipo, 2026-11-09). */
   async findMine({ userId, role, unreadOnly = false }) {
     const where = SequelizeNotificationRepository.destinatarioWhere(userId, role);
     if (unreadOnly) where.readAt = null;
 
-    const rows = await this.model.findAll({ where, order: [['createdAt', 'DESC']] });
+    const rows = await this.model.findAll({ where, order: [['createdAt', 'DESC']], limit: 50 });
     return rows.map(SequelizeNotificationRepository.toEntity);
   }
 
@@ -44,6 +45,39 @@ class SequelizeNotificationRepository extends INotificationRepository {
     return this.model.count({
       where: { ...SequelizeNotificationRepository.destinatarioWhere(userId, role), readAt: null },
     });
+  }
+
+  async create(notification, { transaction } = {}) {
+    const created = await this.model.create(
+      {
+        userId: notification.userId,
+        role: notification.role,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        link: notification.link,
+      },
+      { transaction }
+    );
+    return SequelizeNotificationRepository.toEntity(created);
+  }
+
+  async findById(id) {
+    const row = await this.model.findByPk(id);
+    return SequelizeNotificationRepository.toEntity(row);
+  }
+
+  async markRead(id) {
+    const [affected] = await this.model.update({ readAt: new Date() }, { where: { id, readAt: null } });
+    return affected > 0;
+  }
+
+  async markAllRead({ userId, role }) {
+    const [affected] = await this.model.update(
+      { readAt: new Date() },
+      { where: { ...SequelizeNotificationRepository.destinatarioWhere(userId, role), readAt: null } }
+    );
+    return affected;
   }
 }
 

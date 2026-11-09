@@ -74,3 +74,42 @@ test('ciclo OFFER_ACCEPTED → PUBLISHED está prohibido', () => {
     false
   );
 });
+
+test('vehicleLabel combina marca, modelo y año para el payload de eventos', () => {
+  const request = new PartRequest({ ...base, vehicleBrand: 'Toyota', vehicleModel: 'Corolla', vehicleYear: 2018 });
+  assert.equal(request.vehicleLabel, 'Toyota Corolla 2018');
+});
+
+test('canBeViewedBy: el dueño siempre puede verla', () => {
+  const request = new PartRequest(base); // userId: 12
+  assert.equal(request.canBeViewedBy(12, false), true);
+});
+
+test('canBeViewedBy: un proveedor aprobado puede verla aunque no sea el dueño', () => {
+  const request = new PartRequest(base);
+  assert.equal(request.canBeViewedBy(999, true), true);
+});
+
+test('canBeViewedBy: ni dueño ni proveedor aprobado → false (403)', () => {
+  const request = new PartRequest(base);
+  assert.equal(request.canBeViewedBy(999, false), false);
+});
+
+test('acceptsOffers: PUBLISHED y RECEIVING_OFFERS aceptan ofertas', () => {
+  assert.equal(new PartRequest({ ...base, status: 'PUBLISHED' }).acceptsOffers(), true);
+  assert.equal(new PartRequest({ ...base, status: 'RECEIVING_OFFERS' }).acceptsOffers(), true);
+});
+
+test('acceptsOffers: CANCELLED, OFFER_ACCEPTED y COMPLETED no aceptan ofertas', () => {
+  assert.equal(new PartRequest({ ...base, status: 'CANCELLED' }).acceptsOffers(), false);
+  assert.equal(new PartRequest({ ...base, status: 'OFFER_ACCEPTED' }).acceptsOffers(), false);
+  assert.equal(new PartRequest({ ...base, status: 'COMPLETED' }).acceptsOffers(), false);
+});
+
+test('assertAcceptsOffers lanza PartRequestNotAcceptingOffersException (→ 422) si no acepta', () => {
+  const request = new PartRequest({ ...base, status: 'CANCELLED' });
+  assert.throws(() => request.assertAcceptsOffers(), (err) => {
+    assert.equal(err.name, 'PartRequestNotAcceptingOffersException');
+    return true;
+  });
+});

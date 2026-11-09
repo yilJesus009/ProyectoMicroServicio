@@ -7,6 +7,8 @@
  */
 const ERROR_STATUS = {
   ValidationException: 400,
+  ForbiddenException: 403,
+  NotificationNotFoundException: 404,
 };
 
 function errorHandler(err, _req, res, _next) {
