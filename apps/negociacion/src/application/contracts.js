@@ -21,6 +21,13 @@ const PartRequestEvent = Object.freeze({
   STATUS_CHANGED: 'PART_REQUEST_STATUS_CHANGED',
 });
 
+/** Eventos de Identidad que consume la copia local de proveedores (docs/eventos.md). */
+const SupplierEvent = Object.freeze({
+  PROFILE_SUBMITTED: 'SUPPLIER_PROFILE_SUBMITTED',
+  APPROVED: 'SUPPLIER_APPROVED',
+  REJECTED: 'SUPPLIER_REJECTED',
+});
+
 /**
  * Estados que este servicio NO acepta desde una petición HTTP (PATCH
  * .../status): los asigna un caso de uso interno o un consumidor de
@@ -39,4 +46,4 @@ const EVENT_DRIVEN_STATUS = Object.freeze({
   COMPLETED: 'ORDER_STATUS_CHANGED',
 });
 
-module.exports = { Topic, PartRequestEvent, EVENT_DRIVEN_STATUS };
+module.exports = { Topic, PartRequestEvent, SupplierEvent, EVENT_DRIVEN_STATUS };

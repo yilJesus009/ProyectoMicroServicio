@@ -5,8 +5,8 @@
  *
  * Capas:
  *   domain/           regla de negocio pura (entidad, enums, errores, interfaces)
- *   application/      casos de uso (commands/queries) y puertos (unitOfWork, outbox)
- *   infrastructure/   PostgreSQL (Sequelize) y RabbitMQ
+ *   application/      casos de uso (commands/queries) y puertos (unitOfWork, outbox, categoryGateway)
+ *   infrastructure/   PostgreSQL (Sequelize), RabbitMQ y el cliente HTTP hacia Catálogo
  *   presentation/http controllers delgados, middleware, rutas
  */
 
@@ -22,16 +22,23 @@ const sequelize = require('./src/infrastructure/config/db.config');
 const createPartRequestModel = require('./src/infrastructure/persistence/partRequest.model');
 const createOutboxEventModel = require('./src/infrastructure/persistence/outboxEvent.model');
 const createProcessedEventModel = require('./src/infrastructure/persistence/processedEvent.model');
+const createSupplierModel = require('./src/infrastructure/persistence/supplier.model');
 const { SequelizePartRequestRepository } = require('./src/infrastructure/persistence/partRequestRepository');
 const { SequelizeOutboxRepository } = require('./src/infrastructure/persistence/outboxRepository');
+const { SequelizeProcessedEventRepository } = require('./src/infrastructure/persistence/processedEventRepository');
+const { SequelizeSupplierRepository } = require('./src/infrastructure/persistence/supplierRepository');
 const { SequelizeUnitOfWork } = require('./src/infrastructure/persistence/sequelizeUnitOfWork');
 const { RabbitMqEventPublisher } = require('./src/infrastructure/messaging/rabbitMqEventPublisher');
 const { startOutboxPublisherWorker } = require('./src/infrastructure/messaging/outboxPublisherWorker');
+const { startSupplierEventsConsumer } = require('./src/infrastructure/messaging/supplierEventsConsumer');
+const { CatalogHttpClient } = require('./src/infrastructure/http/catalogHttpClient');
 
 const { CreatePartRequest } = require('./src/application/commands/createPartRequest');
 const { ChangePartRequestStatus } = require('./src/application/commands/changePartRequestStatus');
+const { ApplySupplierEvent } = require('./src/application/commands/applySupplierEvent');
 const { GetPartRequestById } = require('./src/application/queries/getPartRequestById');
-const { SearchPartRequests } = require('./src/application/queries/searchPartRequests');
+const { ListMyPartRequests } = require('./src/application/queries/listMyPartRequests');
+const { ListOpenPartRequests } = require('./src/application/queries/listOpenPartRequests');
 
 const { createPartRequestController } = require('./src/presentation/http/partRequest.controller');
 const { createPartRequestRoutes } = require('./src/presentation/http/partRequest.routes');
@@ -46,11 +53,18 @@ async function main() {
   // ---------------------------------------------------------------------
   const PartRequestModel = createPartRequestModel(sequelize);
   const OutboxEventModel = createOutboxEventModel(sequelize);
-  createProcessedEventModel(sequelize); // tabla lista; el primer consumidor llega en fase 2
+  const ProcessedEventModel = createProcessedEventModel(sequelize);
+  const SupplierModel = createSupplierModel(sequelize);
 
   const partRequestRepository = new SequelizePartRequestRepository(PartRequestModel);
   const outboxRepository = new SequelizeOutboxRepository(OutboxEventModel);
+  const processedEventRepository = new SequelizeProcessedEventRepository(ProcessedEventModel);
+  const supplierRepository = new SequelizeSupplierRepository(SupplierModel);
   const unitOfWork = new SequelizeUnitOfWork(sequelize);
+
+  const categoryGateway = new CatalogHttpClient({
+    baseUrl: process.env.CATALOGO_SERVICE_URL || 'http://catalogo:4004',
+  });
 
   const amqpUrl = `amqp://${process.env.RABBITMQ_USER || 'guest'}:${
     process.env.RABBITMQ_PASS || 'guest'
@@ -65,6 +79,7 @@ async function main() {
     partRequestRepository,
     outboxRepository,
     unitOfWork,
+    categoryGateway,
     producer: PRODUCER,
   });
   const changePartRequestStatus = new ChangePartRequestStatus({
@@ -73,17 +88,24 @@ async function main() {
     unitOfWork,
     producer: PRODUCER,
   });
-  const getPartRequestById = new GetPartRequestById({ partRequestRepository });
-  const searchPartRequests = new SearchPartRequests({ partRequestRepository });
+  const applySupplierEvent = new ApplySupplierEvent({
+    supplierRepository,
+    processedEventRepository,
+    unitOfWork,
+  });
+  const getPartRequestById = new GetPartRequestById({ partRequestRepository, supplierRepository });
+  const listMyPartRequests = new ListMyPartRequests({ partRequestRepository });
+  const listOpenPartRequests = new ListOpenPartRequests({ partRequestRepository, supplierRepository });
 
   // ---------------------------------------------------------------------
   // Presentation
   // ---------------------------------------------------------------------
   const controller = createPartRequestController({
     createPartRequest,
-    changePartRequestStatus,
+    cancelPartRequest: changePartRequestStatus,
     getPartRequestById,
-    searchPartRequests,
+    listMyPartRequests,
+    listOpenPartRequests,
   });
 
   const app = express();
@@ -112,6 +134,7 @@ async function main() {
   }
 
   const outboxWorker = startOutboxPublisherWorker({ outboxRepository, eventPublisher });
+  const supplierConsumer = await startSupplierEventsConsumer({ url: amqpUrl, applySupplierEvent });
 
   const server = app.listen(PORT, () => {
     console.log(`[http] negociacion en http://localhost:${PORT}`);
@@ -120,6 +143,7 @@ async function main() {
   const shutdown = async () => {
     console.log('\n[http] Cerrando...');
     outboxWorker.stop();
+    await supplierConsumer.close();
     server.close();
     await eventPublisher.close();
     await sequelize.close();
