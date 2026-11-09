@@ -81,7 +81,15 @@ class SupplierProfileAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "city")
     search_fields = ("business_name", "user__email", "city")
-    readonly_fields = ("reviewed_by", "reviewed_at", "created_at", "updated_at")
+    # status solo lectura: el estado lo decide el servicio (API o acción),
+    # nunca el formulario del panel (revisión del PR #30).
+    readonly_fields = (
+        "status",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+        "updated_at",
+    )
     ordering = ("-created_at",)
     actions = ("aprobar_seleccionados",)
 
