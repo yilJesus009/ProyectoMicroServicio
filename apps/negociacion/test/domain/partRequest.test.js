@@ -94,3 +94,22 @@ test('canBeViewedBy: ni dueño ni proveedor aprobado → false (403)', () => {
   const request = new PartRequest(base);
   assert.equal(request.canBeViewedBy(999, false), false);
 });
+
+test('acceptsOffers: PUBLISHED y RECEIVING_OFFERS aceptan ofertas', () => {
+  assert.equal(new PartRequest({ ...base, status: 'PUBLISHED' }).acceptsOffers(), true);
+  assert.equal(new PartRequest({ ...base, status: 'RECEIVING_OFFERS' }).acceptsOffers(), true);
+});
+
+test('acceptsOffers: CANCELLED, OFFER_ACCEPTED y COMPLETED no aceptan ofertas', () => {
+  assert.equal(new PartRequest({ ...base, status: 'CANCELLED' }).acceptsOffers(), false);
+  assert.equal(new PartRequest({ ...base, status: 'OFFER_ACCEPTED' }).acceptsOffers(), false);
+  assert.equal(new PartRequest({ ...base, status: 'COMPLETED' }).acceptsOffers(), false);
+});
+
+test('assertAcceptsOffers lanza PartRequestNotAcceptingOffersException (→ 422) si no acepta', () => {
+  const request = new PartRequest({ ...base, status: 'CANCELLED' });
+  assert.throws(() => request.assertAcceptsOffers(), (err) => {
+    assert.equal(err.name, 'PartRequestNotAcceptingOffersException');
+    return true;
+  });
+});

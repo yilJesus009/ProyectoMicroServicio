@@ -3,7 +3,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { validateCreateRequestDto, validateOpenFilters } = require('../../src/presentation/http/dto');
+const { validateCreateRequestDto, validateOpenFilters, validateSubmitOfferDto, validateOffersSort } = require('../../src/presentation/http/dto');
 
 const validBody = {
   category_id: '1',
@@ -91,4 +91,70 @@ test('filtros de /open: category_id se valida como entero', () => {
 
 test('filtros de /open sin query devuelve objeto vacío', () => {
   assert.deepEqual(validateOpenFilters(), {});
+});
+
+const validOfferBody = {
+  price: '620.00',
+  brand: 'KYB',
+  condition: 'NEW',
+  availability: 'IN_STOCK',
+  delivery_type: 'DELIVERY',
+  estimated_days: '2',
+};
+
+test('DTO de oferta válido se convierte a camelCase', () => {
+  assert.deepEqual(validateSubmitOfferDto(validOfferBody), {
+    price: 620,
+    brand: 'KYB',
+    condition: 'NEW',
+    availability: 'IN_STOCK',
+    deliveryType: 'DELIVERY',
+    estimatedDays: 2,
+    notes: null,
+  });
+});
+
+test('oferta: price <= 0 → ValidationException (400)', () => {
+  assert.throws(() => validateSubmitOfferDto({ ...validOfferBody, price: '0' }), (err) => {
+    assert.equal(err.name, 'ValidationException');
+    return true;
+  });
+  assert.throws(() => validateSubmitOfferDto({ ...validOfferBody, price: '-5' }), (err) => {
+    assert.equal(err.name, 'ValidationException');
+    return true;
+  });
+});
+
+test('oferta: condition/availability/delivery_type fuera del contrato → ValidationException (400)', () => {
+  assert.throws(() => validateSubmitOfferDto({ ...validOfferBody, condition: 'BROKEN' }), (err) => {
+    assert.equal(err.name, 'ValidationException');
+    return true;
+  });
+  assert.throws(() => validateSubmitOfferDto({ ...validOfferBody, availability: 'MAYBE' }), (err) => {
+    assert.equal(err.name, 'ValidationException');
+    return true;
+  });
+  assert.throws(() => validateSubmitOfferDto({ ...validOfferBody, delivery_type: 'TELEPORT' }), (err) => {
+    assert.equal(err.name, 'ValidationException');
+    return true;
+  });
+});
+
+test('oferta: campo obligatorio ausente → ValidationException (400)', () => {
+  const { brand, ...withoutBrand } = validOfferBody;
+  assert.throws(() => validateSubmitOfferDto(withoutBrand), (err) => {
+    assert.equal(err.name, 'ValidationException');
+    assert.match(err.message, /brand/);
+    return true;
+  });
+});
+
+test('sort de ofertas: price | days validos, cualquier otro valor → ValidationException (400)', () => {
+  assert.equal(validateOffersSort({ sort: 'price' }), 'price');
+  assert.equal(validateOffersSort({ sort: 'days' }), 'days');
+  assert.equal(validateOffersSort({}), undefined);
+  assert.throws(() => validateOffersSort({ sort: 'rating' }), (err) => {
+    assert.equal(err.name, 'ValidationException');
+    return true;
+  });
 });
