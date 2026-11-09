@@ -1,0 +1,92 @@
+<section class="proveedores">
+  <header class="cabecera">
+    <h2>Proveedores</h2>
+
+    <mat-form-field appearance="outline" class="filtro">
+      <mat-label>Estado</mat-label>
+      <mat-select [value]="filtro()" (selectionChange)="cambiarFiltro($event.value)">
+        <mat-option value="PENDING">Pendientes</mat-option>
+        <mat-option value="APPROVED">Aprobados</mat-option>
+        <mat-option value="REJECTED">Rechazados</mat-option>
+        <mat-option value="">Todos</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </header>
+
+  @if (cargando()) {
+    <p class="cargando">Cargando proveedores…</p>
+  }
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+  @if (aviso()) {
+    <p class="aviso" role="status">{{ aviso() }}</p>
+  }
+
+  <div class="lista">
+    @for (perfil of lista(); track perfil.id) {
+      <mat-card class="tarjeta">
+        <mat-card-header>
+          <mat-card-title>{{ perfil.business_name }}</mat-card-title>
+          <mat-card-subtitle>{{ perfil.city }} · {{ perfil.phone }}</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <app-estado-perfil [estado]="perfil.status" [motivo]="perfil.rejection_reason" />
+          <p class="categorias">{{ nombresCategorias(perfil) }}</p>
+        </mat-card-content>
+
+        @if (perfil.status === 'PENDING') {
+          <mat-card-actions align="end">
+            @if (rechazandoId() === perfil.id) {
+              <div class="rechazo">
+                <mat-form-field appearance="outline" class="motivo">
+                  <mat-label>Motivo del rechazo</mat-label>
+                  <textarea matInput [formControl]="motivo" rows="2"></textarea>
+                  @if (motivo.invalid && motivo.touched) {
+                    <mat-error>Escribe el motivo del rechazo</mat-error>
+                  }
+                </mat-form-field>
+                <div class="botones">
+                  <button mat-button type="button" (click)="cancelarRechazo()">Cancelar</button>
+                  <button
+                    mat-flat-button
+                    color="warn"
+                    type="button"
+                    [disabled]="accionando()"
+                    (click)="rechazar(perfil)"
+                  >
+                    Confirmar rechazo
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                class="aprobar"
+                [disabled]="accionando()"
+                (click)="aprobar(perfil)"
+              >
+                Aprobar
+              </button>
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="accionando()"
+                (click)="abrirRechazo(perfil)"
+              >
+                Rechazar
+              </button>
+            }
+          </mat-card-actions>
+        }
+      </mat-card>
+    } @empty {
+      @if (!cargando()) {
+        <p class="vacia">No hay proveedores con ese estado.</p>
+      }
+    }
+  </div>
+</section>

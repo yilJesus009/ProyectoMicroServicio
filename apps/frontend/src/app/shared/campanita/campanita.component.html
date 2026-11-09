@@ -1,0 +1,61 @@
+<div class="campanita">
+  <button
+    mat-icon-button
+    type="button"
+    class="campanita-boton"
+    aria-label="Avisos"
+    (click)="alternar()"
+  >
+    <mat-icon>notifications</mat-icon>
+    @if (conteo() > 0) {
+      <span class="conteo">{{ conteo() }}</span>
+    }
+  </button>
+
+  @if (abierto()) {
+    <div class="panel">
+      <div class="panel-cabecera">
+        <strong>Avisos</strong>
+        <button
+          mat-button
+          type="button"
+          class="todas"
+          [disabled]="accionando()"
+          (click)="marcarTodas()"
+        >
+          Marcar todas como leídas
+        </button>
+      </div>
+
+      @if (cargandoLista()) {
+        <p class="cargando">Cargando avisos…</p>
+      }
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+
+      <ul class="lista">
+        @for (aviso of avisos(); track aviso.id) {
+          <li>
+            <button
+              type="button"
+              class="aviso"
+              [class.leido]="aviso.read"
+              (click)="abrirAviso(aviso)"
+            >
+              <strong>{{ aviso.title }}</strong>
+              <span class="mensaje">{{ aviso.message }}</span>
+              <time class="fecha" [attr.datetime]="aviso.created_at">
+                {{ aviso.created_at | date: 'dd/MM/yyyy HH:mm' }}
+              </time>
+            </button>
+          </li>
+        } @empty {
+          @if (!cargandoLista() && !error()) {
+            <li class="vacio">No tienes avisos.</li>
+          }
+        }
+      </ul>
+    </div>
+  }
+</div>

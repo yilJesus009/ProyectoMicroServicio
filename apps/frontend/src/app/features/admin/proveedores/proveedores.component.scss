@@ -1,0 +1,62 @@
+.proveedores {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+h2 {
+  margin: 0;
+}
+
+.filtro {
+  min-width: 14rem;
+}
+
+.cargando,
+.vacia {
+  color: #546e7a;
+}
+
+.error {
+  color: #b3261e;
+  margin: 0;
+}
+
+.aviso {
+  color: #1e6b34;
+  margin: 0;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.categorias {
+  margin: 0.5rem 0 0;
+  color: #546e7a;
+  font-size: 0.9rem;
+}
+
+.rechazo {
+  width: 100%;
+}
+
+.motivo {
+  width: 100%;
+}
+
+.botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

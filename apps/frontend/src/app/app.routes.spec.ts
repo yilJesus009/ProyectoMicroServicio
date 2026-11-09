@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   ActivatedRouteSnapshot,
@@ -14,6 +15,14 @@ import { authGuard, soloPublicoGuard } from './core/auth/auth.guard';
 import { routes } from './app.routes';
 import { PANEL, Rol, Usuario } from './core/auth/session.model';
 import { AuthFacade } from './facades/auth.facade';
+import { AdminCategoriasComponent } from './features/admin/categorias/categorias.component';
+import { AdminProveedoresComponent } from './features/admin/proveedores/proveedores.component';
+import { MisSolicitudesComponent } from './features/comprador/mis-solicitudes/mis-solicitudes.component';
+import { NuevaSolicitudComponent } from './features/comprador/nueva-solicitud/nueva-solicitud.component';
+import { VehiculosComponent } from './features/comprador/vehiculos/vehiculos.component';
+import { PerfilProveedorComponent } from './features/proveedor/perfil/perfil.component';
+import { SolicitudesAbiertasComponent } from './features/proveedor/solicitudes/solicitudes-abiertas.component';
+import { PaginaVaciaComponent } from './shared/pagina-vacia/pagina-vacia.component';
 
 /** Todas las rutas del árbol, aplanadas y con la raíz al frente. */
 function aplanar(rutas: Routes, prefijo = ''): string[] {
@@ -100,6 +109,38 @@ describe('tabla de rutas', () => {
 
   it('tiene exactamente las rutas de docs/frontend.md', () => {
     expect(registradas.slice().sort()).toEqual(RUTAS_DE_DOCUMENTACION.slice().sort());
+  });
+
+  it('las pantallas de la fase 2 montan su componente real', () => {
+    const FASE_2: Record<string, Type<unknown>> = {
+      'comprador/solicitudes': MisSolicitudesComponent,
+      'comprador/solicitudes/nueva': NuevaSolicitudComponent,
+      'comprador/vehiculos': VehiculosComponent,
+      'proveedor/perfil': PerfilProveedorComponent,
+      'proveedor/solicitudes': SolicitudesAbiertasComponent,
+      'admin/proveedores': AdminProveedoresComponent,
+      'admin/categorias': AdminCategoriasComponent,
+    };
+
+    for (const [ruta, componente] of Object.entries(FASE_2)) {
+      expect(pantallas.find((pantalla) => pantalla.path === ruta)?.component).toBe(componente);
+    }
+
+    // Las de la fase 3 siguen esperando pantalla.
+    const FASE_3 = [
+      'comprador/solicitudes/:id',
+      'comprador/pedidos',
+      'comprador/pedidos/:id',
+      'comprador/pedidos/:id/pago',
+      'proveedor/solicitudes/:id/ofertar',
+      'proveedor/ofertas',
+      'proveedor/pedidos',
+    ];
+    for (const ruta of FASE_3) {
+      expect(pantallas.find((pantalla) => pantalla.path === ruta)?.component).toBe(
+        PaginaVaciaComponent,
+      );
+    }
   });
 
   it('las públicas están protegidas por soloPublicoGuard', () => {

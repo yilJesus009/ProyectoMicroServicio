@@ -1,0 +1,37 @@
+<section class="mias">
+  <header class="cabecera">
+    <h2>Mis solicitudes</h2>
+    <a mat-flat-button color="primary" routerLink="/comprador/solicitudes/nueva">
+      Nueva solicitud
+    </a>
+  </header>
+
+  @if (cargando()) {
+    <p class="cargando">Cargando solicitudes…</p>
+  }
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <div class="lista">
+    @for (solicitud of lista(); track solicitud.id) {
+      <app-tarjeta-solicitud [solicitud]="solicitud" />
+    } @empty {
+      @if (!cargando()) {
+        <mat-card class="vacia">
+          <mat-card-header>
+            <mat-card-title>Aún no publicaste solicitudes</mat-card-title>
+            <mat-card-subtitle>
+              Publica lo que necesitas y los proveedores te envían ofertas.
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-actions align="end">
+            <a mat-stroked-button routerLink="/comprador/solicitudes/nueva">
+              Crear mi primera solicitud
+            </a>
+          </mat-card-actions>
+        </mat-card>
+      }
+    }
+  </div>
+</section>

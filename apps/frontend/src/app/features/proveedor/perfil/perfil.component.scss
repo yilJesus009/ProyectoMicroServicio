@@ -1,0 +1,39 @@
+.perfil {
+  display: flex;
+  justify-content: center;
+}
+
+.tarjeta {
+  width: 100%;
+  max-width: 40rem;
+}
+
+.cargando,
+.sin-perfil {
+  color: #546e7a;
+}
+
+.estado {
+  margin-bottom: 1rem;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.error {
+  color: #b3261e;
+  margin: 0.25rem 0;
+}
+
+.aviso {
+  color: #1e6b34;
+  margin: 0.25rem 0;
+}
+
+.accion {
+  margin-top: 0.5rem;
+  align-self: flex-start;
+}

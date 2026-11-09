@@ -1,9 +1,16 @@
 import { Routes } from '@angular/router';
 
 import { authGuard, roleGuard, soloPublicoGuard } from './core/auth/auth.guard';
+import { AdminCategoriasComponent } from './features/admin/categorias/categorias.component';
+import { AdminProveedoresComponent } from './features/admin/proveedores/proveedores.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegistroComponent } from './features/auth/registro/registro.component';
+import { MisSolicitudesComponent } from './features/comprador/mis-solicitudes/mis-solicitudes.component';
+import { NuevaSolicitudComponent } from './features/comprador/nueva-solicitud/nueva-solicitud.component';
+import { VehiculosComponent } from './features/comprador/vehiculos/vehiculos.component';
 import { LayoutComponent } from './features/layout/layout.component';
+import { PerfilProveedorComponent } from './features/proveedor/perfil/perfil.component';
+import { SolicitudesAbiertasComponent } from './features/proveedor/solicitudes/solicitudes-abiertas.component';
 import { PaginaVaciaComponent } from './shared/pagina-vacia/pagina-vacia.component';
 
 /**
@@ -11,11 +18,12 @@ import { PaginaVaciaComponent } from './shared/pagina-vacia/pagina-vacia.compone
  *
  * - `/login` y `/registro` son públicas.
  * - Todo lo demás cuelga de un layout con sesión y con el menú de su rol.
- * - En la fase 1 cada ruta apunta a PaginaVaciaComponent; en la fase 2 se
- *   cambia SOLO el `component` de cada una.
+ * - Las pantallas de la fase 2 (perfil, solicitudes, admin, vehículos) ya
+ *   apuntan a su componente real; las de la fase 3 siguen en
+ *   PaginaVaciaComponent hasta que existan.
  *
  * `title` es lo que se ve en la pestaña; `data.titulo` es lo que muestra la
- * pantalla vacía. Se mantienen iguales a propósito.
+ * pantalla. Se mantienen iguales a propósito.
  */
 export const routes: Routes = [
   { path: 'login', title: 'Iniciar sesión', component: LoginComponent, canActivate: [soloPublicoGuard] },
@@ -35,14 +43,14 @@ export const routes: Routes = [
         path: 'comprador/solicitudes',
         title: 'Mis solicitudes',
         data: { titulo: 'Mis solicitudes' },
-        component: PaginaVaciaComponent,
+        component: MisSolicitudesComponent,
         canActivate: [roleGuard('COMPRADOR')],
       },
       {
         path: 'comprador/solicitudes/nueva',
         title: 'Nueva solicitud',
         data: { titulo: 'Nueva solicitud' },
-        component: PaginaVaciaComponent,
+        component: NuevaSolicitudComponent,
         canActivate: [roleGuard('COMPRADOR')],
       },
       {
@@ -77,7 +85,7 @@ export const routes: Routes = [
         path: 'comprador/vehiculos',
         title: 'Mis vehículos',
         data: { titulo: 'Mis vehículos' },
-        component: PaginaVaciaComponent,
+        component: VehiculosComponent,
         canActivate: [roleGuard('COMPRADOR')],
       },
 
@@ -86,14 +94,14 @@ export const routes: Routes = [
         path: 'proveedor/perfil',
         title: 'Perfil comercial',
         data: { titulo: 'Perfil comercial' },
-        component: PaginaVaciaComponent,
+        component: PerfilProveedorComponent,
         canActivate: [roleGuard('PROVEEDOR')],
       },
       {
         path: 'proveedor/solicitudes',
         title: 'Solicitudes abiertas',
         data: { titulo: 'Solicitudes abiertas' },
-        component: PaginaVaciaComponent,
+        component: SolicitudesAbiertasComponent,
         canActivate: [roleGuard('PROVEEDOR')],
       },
       {
@@ -123,14 +131,14 @@ export const routes: Routes = [
         path: 'admin/proveedores',
         title: 'Proveedores pendientes',
         data: { titulo: 'Proveedores pendientes' },
-        component: PaginaVaciaComponent,
+        component: AdminProveedoresComponent,
         canActivate: [roleGuard('ADMIN')],
       },
       {
         path: 'admin/categorias',
         title: 'Categorías',
         data: { titulo: 'Categorías' },
-        component: PaginaVaciaComponent,
+        component: AdminCategoriasComponent,
         canActivate: [roleGuard('ADMIN')],
       },
     ],

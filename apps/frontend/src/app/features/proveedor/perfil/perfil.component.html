@@ -1,0 +1,83 @@
+<section class="perfil">
+  <mat-card class="tarjeta">
+    <mat-card-header>
+      <mat-card-title>Perfil comercial</mat-card-title>
+      <mat-card-subtitle>
+        Tus datos para que el comprador te encuentre. Cada cambio vuelve a
+        pasar la revisión del administrador.
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (cargando()) {
+        <p class="cargando">Cargando tu perfil…</p>
+      } @else {
+        <div class="estado">
+          @if (perfil(); as p) {
+            <app-estado-perfil [estado]="p.status" [motivo]="p.rejection_reason" />
+          } @else {
+            <p class="sin-perfil">
+              Aún no completas tu perfil. Al guardarlo queda
+              <strong>pendiente de aprobación</strong> del administrador.
+            </p>
+          }
+        </div>
+
+        <form class="formulario" [formGroup]="form" (ngSubmit)="guardar()">
+          <mat-form-field appearance="outline">
+            <mat-label>Nombre comercial</mat-label>
+            <input matInput formControlName="business_name" autocomplete="organization" />
+            @if (form.controls.business_name.invalid && form.controls.business_name.touched) {
+              <mat-error>Ingresa el nombre de tu negocio</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Ciudad</mat-label>
+            <input matInput formControlName="city" autocomplete="address-level2" />
+            @if (form.controls.city.invalid && form.controls.city.touched) {
+              <mat-error>Ingresa tu ciudad</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Teléfono</mat-label>
+            <input matInput formControlName="phone" autocomplete="tel" />
+            @if (form.controls.phone.invalid && form.controls.phone.touched) {
+              <mat-error>Ingresa un teléfono de contacto</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Categorías que atiendes</mat-label>
+            <mat-select formControlName="category_ids" multiple>
+              @for (categoria of categorias(); track categoria.id) {
+                <mat-option [value]="categoria.id">{{ categoria.name }}</mat-option>
+              }
+            </mat-select>
+            @if (form.controls.category_ids.invalid && form.controls.category_ids.touched) {
+              <mat-error>Elige al menos una categoría</mat-error>
+            }
+          </mat-form-field>
+
+          @if (error()) {
+            <p class="error" role="alert">{{ error() }}</p>
+          }
+          @if (aviso()) {
+            <p class="aviso" role="status">{{ aviso() }}</p>
+          }
+
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            class="accion"
+            [disabled]="guardando()"
+          >
+            {{ guardando() ? 'Guardando…' : 'Guardar perfil' }}
+          </button>
+        </form>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

@@ -43,7 +43,14 @@ describe('LayoutComponent', () => {
 
     fixture = TestBed.createComponent(LayoutComponent);
     fixture.detectChanges();
-    await fixture.whenStable();
+
+    // No se usa whenStable() aquí: la campanita del layout tiene un
+    // intervalo de 15 s que mantiene inestable la zona de Angular, y
+    // whenStable() nunca resolvería. Ceder el turno a las microtareas
+    // alcanza para asentar la sesión y el menú.
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve();
+    }
     fixture.detectChanges();
   }
 
