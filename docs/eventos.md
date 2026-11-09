@@ -34,7 +34,7 @@ sabe quién lo escucha.
 | Evento | Publica | Consume | Para qué |
 |---|---|---|---|
 | `USER_CREATED` | Identidad | — | Informativo |
-| `SUPPLIER_PROFILE_SUBMITTED` | Identidad | Notificaciones | Avisar a los admins |
+| `SUPPLIER_PROFILE_SUBMITTED` | Identidad | Negociación, Notificaciones | Negociación: el proveedor queda sin aprobar en la copia local hasta un nuevo `SUPPLIER_APPROVED`; Notificaciones: avisar a los admins |
 | `SUPPLIER_APPROVED` | Identidad | Negociación, Notificaciones | Copia local de proveedores aprobados; avisar al proveedor |
 | `SUPPLIER_REJECTED` | Identidad | Negociación, Notificaciones | Quitar de la copia; avisar al proveedor |
 | `PART_REQUEST_CREATED` | Negociación | Notificaciones | Avisar a proveedores aprobados de esa categoría y ciudad |

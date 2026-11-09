@@ -37,6 +37,18 @@ class IPartRequestRepository {
   async updateStatusIfCurrent(id, expectedStatus, newStatus, options = {}) {
     throw new Error('not implemented');
   }
+
+  /**
+   * `SELECT ... FOR UPDATE`: bloquea la fila hasta que termine la
+   * transacción. Lo usan enviar, retirar y aceptar oferta (AGENTS.md §4.1,
+   * la regla crítica) para que ninguna de las tres pise a otra sobre la
+   * misma solicitud.
+   *
+   * @param {Object} options @param {unknown} options.transaction Obligatorio
+   */
+  async lockById(id, options = {}) {
+    throw new Error('not implemented');
+  }
 }
 
 module.exports = { IPartRequestRepository };

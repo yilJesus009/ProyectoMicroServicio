@@ -16,8 +16,10 @@ function authenticate(req, res, next) {
     return res.status(401).json({ status: 401, msg: 'Token no proporcionado', data: null });
   }
 
+  const token = header.slice(7);
   try {
-    const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    req.token = token; // crudo, para reenviar a otros servicios (p.ej. Catálogo)
     req.user = {
       id: payload.user_id ?? payload.sub,
       // El claim del token manda; el header del Gateway es respaldo.
