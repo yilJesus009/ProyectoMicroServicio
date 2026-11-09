@@ -23,6 +23,24 @@ class INotificationRepository {
   async countUnread({ userId, role }) {
     throw new Error('not implemented');
   }
+
+  /** @param {Object} [options] @param {unknown} [options.transaction] */
+  async create(notification, options = {}) {
+    throw new Error('not implemented');
+  }
+
+  async findById(id) {
+    throw new Error('not implemented');
+  }
+
+  /** @returns {Promise<boolean>} true si marcó algo */
+  async markRead(id) {
+    throw new Error('not implemented');
+  }
+
+  async markAllRead({ userId, role }) {
+    throw new Error('not implemented');
+  }
 }
 
 module.exports = { INotificationRepository };
