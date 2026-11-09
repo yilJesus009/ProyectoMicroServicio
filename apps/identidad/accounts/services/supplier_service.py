@@ -89,7 +89,8 @@ def save_profile(
 
     _publish_after_commit(
         SUPPLIER_PROFILE_SUBMITTED,
-        {"supplier_id": profile.id, "business_name": profile.business_name},
+        # supplier_id = user_id del proveedor (docs/eventos.md)
+        {"supplier_id": profile.user_id, "business_name": profile.business_name},
         correlation_id=correlation_id,
     )
     return profile
@@ -122,7 +123,8 @@ def approve(profile, *, admin, correlation_id=None):
     _publish_after_commit(
         SUPPLIER_APPROVED,
         {
-            "supplier_id": profile.id,
+            # supplier_id = user_id del proveedor (docs/eventos.md)
+            "supplier_id": profile.user_id,
             "business_name": profile.business_name,
             "city": profile.city,
             "category_ids": list(profile.category_ids),
@@ -144,7 +146,8 @@ def reject(profile, *, reason, admin, correlation_id=None):
 
     _publish_after_commit(
         SUPPLIER_REJECTED,
-        {"supplier_id": profile.id, "reason": reason},
+        # supplier_id = user_id del proveedor (docs/eventos.md)
+        {"supplier_id": profile.user_id, "reason": reason},
         correlation_id=correlation_id,
     )
     return profile

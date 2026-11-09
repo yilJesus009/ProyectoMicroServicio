@@ -134,7 +134,7 @@ class SupplierMeTests(SupplierTestCase):
         self.assertEqual(kwargs["event_name"], "SUPPLIER_PROFILE_SUBMITTED")
         self.assertEqual(
             kwargs["payload"],
-            {"supplier_id": response.json()["data"]["id"],
+            {"supplier_id": response.json()["data"]["user_id"],
              "business_name": "AutoParts Center"},
         )
 
@@ -280,7 +280,7 @@ class AdminSupplierDecisionTests(SupplierTestCase):
         self.assertEqual(
             kwargs["payload"],
             {
-                "supplier_id": profile.id,
+                "supplier_id": profile.user_id,
                 "business_name": "Taller del Barrio",
                 "city": "Santa Cruz",
                 "category_ids": [1, 3],
@@ -318,7 +318,7 @@ class AdminSupplierDecisionTests(SupplierTestCase):
         self.assertEqual(kwargs["event_name"], "SUPPLIER_REJECTED")
         self.assertEqual(
             kwargs["payload"],
-            {"supplier_id": profile.id, "reason": "Datos incompletos"},
+            {"supplier_id": profile.user_id, "reason": "Datos incompletos"},
         )
 
     def test_rechazar_sin_motivo_devuelve_400(self):
