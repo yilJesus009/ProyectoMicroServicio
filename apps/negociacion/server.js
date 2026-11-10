@@ -33,11 +33,13 @@ const { SequelizeUnitOfWork } = require('./src/infrastructure/persistence/sequel
 const { RabbitMqEventPublisher } = require('./src/infrastructure/messaging/rabbitMqEventPublisher');
 const { startOutboxPublisherWorker } = require('./src/infrastructure/messaging/outboxPublisherWorker');
 const { startSupplierEventsConsumer } = require('./src/infrastructure/messaging/supplierEventsConsumer');
+const { startOrderEventsConsumer } = require('./src/infrastructure/messaging/orderEventsConsumer');
 const { CatalogHttpClient } = require('./src/infrastructure/http/catalogHttpClient');
 
 const { CreatePartRequest } = require('./src/application/commands/createPartRequest');
 const { ChangePartRequestStatus } = require('./src/application/commands/changePartRequestStatus');
 const { ApplySupplierEvent } = require('./src/application/commands/applySupplierEvent');
+const { ApplyOrderStatusChanged } = require('./src/application/commands/applyOrderStatusChanged');
 const { SubmitOffer } = require('./src/application/commands/submitOffer');
 const { WithdrawOffer } = require('./src/application/commands/withdrawOffer');
 const { AcceptOffer } = require('./src/application/commands/acceptOffer');
@@ -103,6 +105,13 @@ async function main() {
     supplierRepository,
     processedEventRepository,
     unitOfWork,
+  });
+  const applyOrderStatusChanged = new ApplyOrderStatusChanged({
+    partRequestRepository,
+    outboxRepository,
+    processedEventRepository,
+    unitOfWork,
+    producer: PRODUCER,
   });
   const getPartRequestById = new GetPartRequestById({ partRequestRepository, supplierRepository });
   const listMyPartRequests = new ListMyPartRequests({ partRequestRepository });
@@ -173,6 +182,7 @@ async function main() {
 
   const outboxWorker = startOutboxPublisherWorker({ outboxRepository, eventPublisher });
   const supplierConsumer = await startSupplierEventsConsumer({ url: amqpUrl, applySupplierEvent });
+  const orderConsumer = await startOrderEventsConsumer({ url: amqpUrl, applyOrderStatusChanged });
 
   const server = app.listen(PORT, () => {
     console.log(`[http] negociacion en http://localhost:${PORT}`);
@@ -182,6 +192,7 @@ async function main() {
     console.log('\n[http] Cerrando...');
     outboxWorker.stop();
     await supplierConsumer.close();
+    await orderConsumer.close();
     server.close();
     await eventPublisher.close();
     await sequelize.close();

@@ -207,6 +207,50 @@ test('OFFER_ACCEPTED avisa al ganador, OFFER_REJECTED avisa al no elegido', asyn
   assert.equal(envB.notificationRepository.committed[0].userId, 60);
 });
 
+test('ORDER_CREATED: avisa al comprador (pagar) y al proveedor (pedido generado)', async () => {
+  const { command, notificationRepository } = buildEnv();
+
+  await command.execute(
+    envelope('ORDER_CREATED', {
+      order_id: 12,
+      offer_id: 78,
+      part_request_id: 34,
+      buyer_id: 7,
+      supplier_id: 55,
+      total: 620,
+      currency: 'BOB',
+      status: 'PENDING_PAYMENT',
+    })
+  );
+
+  assert.equal(notificationRepository.committed.length, 2);
+  const toBuyer = notificationRepository.committed.find((n) => n.userId === 7);
+  const toSupplier = notificationRepository.committed.find((n) => n.userId === 55);
+  assert.ok(toBuyer, 'debe avisar al comprador');
+  assert.match(toBuyer.message, /listo para pagar/);
+  assert.equal(toBuyer.link, '/comprador/pedidos/12/pago');
+  assert.ok(toSupplier, 'debe avisar al proveedor');
+  assert.match(toSupplier.message, /pedido #12/);
+});
+
+test('ORDER_STATUS_CHANGED: DELIVERED → COMPLETED avisa al proveedor', async () => {
+  const { command, notificationRepository } = buildEnv();
+
+  await command.execute(
+    envelope('ORDER_STATUS_CHANGED', {
+      order_id: 12,
+      part_request_id: 34,
+      buyer_id: 7,
+      supplier_id: 55,
+      previous_status: 'DELIVERED',
+      new_status: 'COMPLETED',
+    })
+  );
+
+  assert.equal(notificationRepository.committed.length, 1);
+  assert.equal(notificationRepository.committed[0].userId, 55);
+});
+
 test('el mismo event_id aplicado dos veces no duplica el aviso (idempotencia)', async () => {
   const { command, notificationRepository } = buildEnv();
   const msg = envelope('SUPPLIER_APPROVED', { supplier_id: 55, business_name: 'X', city: 'LP', category_ids: [1] });

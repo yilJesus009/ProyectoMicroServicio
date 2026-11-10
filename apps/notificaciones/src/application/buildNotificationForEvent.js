@@ -62,9 +62,75 @@ function buildNotificationForEvent(eventName, payload) {
         link: '/proveedor/ofertas',
       };
 
+    case 'ORDER_STATUS_CHANGED':
+      return buildOrderStatusChangedNotification(payload);
+
     default:
       return null;
   }
+}
+
+/**
+ * ORDER_STATUS_CHANGED: el destinatario depende de QUIÉN hizo el cambio,
+ * y eso ya lo fija la máquina de estados de Pedidos (docs/flujo-principal.md):
+ * pagar (PENDING_PAYMENT → PREPARING) y confirmar recepción
+ * (DELIVERED → COMPLETED) los hace el comprador → avisa al proveedor;
+ * cualquier otro avance lo hace el proveedor → avisa al comprador. No hace
+ * falta leer `changed_by`.
+ *
+ * El aviso de DELIVERED pide la acción explícitamente (ajuste del equipo,
+ * 2026-11-10): es el único paso donde el comprador tiene que hacer algo
+ * (confirmar recepción) para que la solicitud llegue a COMPLETED.
+ */
+function buildOrderStatusChangedNotification(payload) {
+  const { order_id: orderId, previous_status: previousStatus, new_status: newStatus, buyer_id: buyerId, supplier_id: supplierId } = payload;
+
+  if (previousStatus === 'PENDING_PAYMENT' && newStatus === 'PREPARING') {
+    return {
+      userId: supplierId,
+      title: 'Pedido pagado',
+      message: `El comprador pagó el pedido #${orderId}: prepáralo.`,
+      link: '/proveedor/pedidos',
+    };
+  }
+
+  if (newStatus === 'IN_TRANSIT') {
+    return {
+      userId: buyerId,
+      title: 'Pedido en camino',
+      message: `Tu pedido #${orderId} va en camino.`,
+      link: `/comprador/pedidos/${orderId}`,
+    };
+  }
+
+  if (newStatus === 'READY_FOR_PICKUP') {
+    return {
+      userId: buyerId,
+      title: 'Pedido listo para retirar',
+      message: `Tu pedido #${orderId} está listo para retirar.`,
+      link: `/comprador/pedidos/${orderId}`,
+    };
+  }
+
+  if (newStatus === 'DELIVERED') {
+    return {
+      userId: buyerId,
+      title: 'Pedido entregado',
+      message: `Tu pedido #${orderId} fue entregado. Confírmalo para cerrar la compra.`,
+      link: `/comprador/pedidos/${orderId}`,
+    };
+  }
+
+  if (newStatus === 'COMPLETED') {
+    return {
+      userId: supplierId,
+      title: 'Recepción confirmada',
+      message: `El comprador confirmó la recepción del pedido #${orderId}.`,
+      link: '/proveedor/pedidos',
+    };
+  }
+
+  return null;
 }
 
 module.exports = { buildNotificationForEvent };
