@@ -201,6 +201,25 @@ describe('DetalleSolicitudComponent (comparador)', () => {
     http.expectNone((r) => r.method === 'POST');
   });
 
+  it('una oferta retirada (WITHDRAWN) no ofrece aceptar junto a una SUBMITTED', async () => {
+    await cargar([
+      oferta(),
+      oferta({ id: 79, supplier_name: 'Repuestos SA', price: 700, status: 'WITHDRAWN' }),
+    ]);
+
+    const tarjetas = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('app-offer-card'),
+    );
+    expect(tarjetas.length).toBe(2);
+
+    // Solo la SUBMITTED muestra el botón; la retirada, no (el backend daría 422).
+    const botones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'));
+    const botonesAceptar = botones.filter((b) => b.textContent?.includes('Aceptar oferta'));
+    expect(botonesAceptar.length).toBe(1);
+    expect(texto()).toContain('Retirada');
+    expect(texto()).toContain('Enviada');
+  });
+
   it('sin ofertas avisa al comprador', async () => {
     await cargar([]);
 
