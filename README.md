@@ -49,6 +49,44 @@ docker compose down -v              # apagar y borrar datos
 node scripts/e2e-flujo.mjs          # recorre el flujo completo contra el Gateway
 ```
 
+## Scripts de prueba
+
+Ambos scripts son Node 20 puro (sin dependencias) y solo hablan con el
+Gateway (`http://localhost:4000/api/v1`); nunca tocan la base de datos ni
+RabbitMQ directamente. Requieren Docker arriba y un `.env` real con
+`ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+
+### `node scripts/e2e-flujo.mjs`
+
+Recorre los 13 pasos de `docs/flujo-principal.md` de punta a punta con
+usuarios nuevos (emails con marca de tiempo, por lo que se puede correr
+varias veces seguidas sin chocar). Imprime `✓`/`✗` por paso y, si algo
+falla, se detiene en ese paso con el detalle del error (código 1).
+
+Incluye los casos negativos clave: aceptar una segunda oferta (**409**),
+pagar un pedido ya pagado (**409**) y enviar `card_number` en el pago
+(**400**). También verifica que el destinatario correcto reciba el aviso
+esperado (`type` del aviso) en cada paso con evento asíncrono.
+
+### `node scripts/seed-demo.mjs`
+
+Deja listos para la demo (contraseña `Demo12345!` para los tres usuarios):
+
+- `comprador@demo.bo`, `proveedor1@demo.bo`, `proveedor2@demo.bo` —
+  proveedores ya aprobados, en Santa Cruz, con varias categorías.
+- Un vehículo del comprador.
+- **Tres solicitudes** distintas, para no tener que recorrer el flujo a
+  mano en cada pantalla:
+  1. Una **abierta** con dos ofertas, lista para aceptar.
+  2. Una **ya aceptada**, con su pedido en `PENDING_PAYMENT` (para probar
+     la pantalla de pago).
+  3. Una **ya aceptada y pagada**, con el pedido en `PREPARING` (para
+     probar seguimiento y pantallas del proveedor).
+
+Es reejecutable: si el usuario, el perfil o una solicitud en el estado
+correcto ya existen, los reutiliza en vez de duplicarlos. Al terminar
+imprime un resumen con los usuarios, la contraseña y los ids creados.
+
 ## Documentación
 
 Para agentes de IA: leer [`AGENTS.md`](AGENTS.md) primero (fuente de verdad
