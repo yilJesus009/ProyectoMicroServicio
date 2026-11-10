@@ -32,6 +32,15 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASS:guest}
+    # Confirmacion real del broker al publicar (docs/eventos.md): el
+    # OutboxPublisherScheduler usa waitForConfirmsOrDie.
+    publisher-confirm-type: correlated
+    listener:
+      simple:
+        # Cualquier excepcion del @RabbitListener (sin event_id, JSON
+        # invalido, error real) -> nack sin reencolar -> dlq (docs/eventos.md).
+        # Sin esto, por defecto Spring reencola indefinidamente.
+        default-requeue-rejected: false
 
 app:
   jwt:
