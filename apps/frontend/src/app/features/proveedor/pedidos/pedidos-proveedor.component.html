@@ -1,0 +1,35 @@
+<section class="pantalla">
+  <header class="cabecera">
+    <h2>Mis pedidos</h2>
+    <a mat-stroked-button routerLink="/proveedor/ofertas">Mis ofertas</a>
+  </header>
+
+  @if (cargando()) {
+    <p class="estado">Cargando pedidos…</p>
+  } @else if (error(); as mensaje) {
+    <p class="error" role="alert">{{ mensaje }}</p>
+  } @else if (lista().length === 0) {
+    <p class="estado">
+      Todavía no tienes pedidos. Aparecerán aquí cuando un comprador acepte una oferta.
+    </p>
+  } @else {
+    @if (aviso(); as mensaje) {
+      <p class="aviso" role="status">{{ mensaje }}</p>
+    }
+    @if (error(); as mensaje) {
+      <p class="error" role="alert">{{ mensaje }}</p>
+    }
+
+    <ul class="lista">
+      @for (pedido of lista(); track pedido.id) {
+        <li>
+          <app-order-card
+            [pedido]="pedido"
+            [accion]="accionDe(pedido)"
+            (accionEmitida)="avanzar(pedido)"
+          />
+        </li>
+      }
+    </ul>
+  }
+</section>

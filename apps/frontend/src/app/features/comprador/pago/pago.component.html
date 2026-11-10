@@ -1,0 +1,139 @@
+<section class="pantalla">
+  @if (cargando()) {
+    <p class="estado">Cargando pedido…</p>
+  } @else if (error() && !pedido()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  } @else if (pedido(); as pedido) {
+    <div class="volver">
+      <a mat-button routerLink="/comprador/pedidos">← Mis pedidos</a>
+    </div>
+
+    <mat-card class="resumen">
+      <mat-card-header>
+        <mat-card-title>{{ pedido.part_description }}</mat-card-title>
+        <mat-card-subtitle>
+          {{ pedido.supplier_name }} · {{ pedido.vehicle_label || 'Vehículo no especificado' }}
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="precio">{{ pedido.price | number: '1.2-2' }} {{ pedido.currency }}</p>
+        <p class="simulacion" role="note">Simulación: no se realiza ningún cobro</p>
+      </mat-card-content>
+    </mat-card>
+
+    @if (aviso(); as mensaje) {
+      <div class="confirmado" role="status">
+        <p>{{ mensaje }}</p>
+        <a mat-flat-button color="primary" [routerLink]="['/comprador/pedidos', pedido.id]">
+          Ver seguimiento del pedido
+        </a>
+      </div>
+    }
+
+    @if (error(); as mensaje) {
+      <p class="error" role="alert">{{ mensaje }}</p>
+    }
+
+    @if (!aviso() && pedido.status !== 'PENDING_PAYMENT') {
+      <p class="estado">
+        Este pedido ya no está pendiente de pago ({{ ETIQUETA[pedido.status] ?? pedido.status }}).
+      </p>
+      <a mat-stroked-button [routerLink]="['/comprador/pedidos', pedido.id]">Ver seguimiento</a>
+    } @else if (!aviso()) {
+      <div class="pestanas" role="tablist" aria-label="Método de pago simulado">
+        <button
+          type="button"
+          role="tab"
+          class="pestana"
+          [class.activa]="pestana() === 'QR'"
+          [attr.aria-selected]="pestana() === 'QR'"
+          (click)="pestana.set('QR')"
+        >
+          QR
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="pestana"
+          [class.activa]="pestana() === 'CARD'"
+          [attr.aria-selected]="pestana() === 'CARD'"
+          (click)="pestana.set('CARD')"
+        >
+          Tarjeta
+        </button>
+      </div>
+
+      @if (pestana() === 'QR') {
+        <section class="qr" role="tabpanel" aria-label="Pago con QR">
+          <p class="referencia">
+            Referencia: <strong>{{ referenciaQr() }}</strong>
+          </p>
+
+          @if (matrizQr(); as matriz) {
+            <div
+              class="codigo"
+              role="img"
+              [attr.aria-label]="'Código QR con la referencia ' + referenciaQr()"
+              [style.grid-template-columns]="columnasQr()"
+            >
+              @for (fila of matriz; track $index) {
+                @for (modulo of fila; track $index) {
+                  <span [class.oscuro]="modulo"></span>
+                }
+              }
+            </div>
+          }
+
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            [disabled]="pagando()"
+            (click)="pagar()"
+          >
+            {{ pagando() ? 'Confirmando…' : 'Ya pagué' }}
+          </button>
+        </section>
+      } @else {
+        <form class="tarjeta" [formGroup]="formulario" (ngSubmit)="pagar()" role="tabpanel">
+          <p class="demo">
+            Datos de demostración precargados. Se validan solo en tu navegador y
+            <strong>no se envían</strong>: al confirmar viaja únicamente el método de pago.
+          </p>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Número de tarjeta</mat-label>
+            <input matInput formControlName="numero" inputmode="numeric" autocomplete="off" />
+            @if (formulario.controls.numero.invalid && formulario.controls.numero.touched) {
+              <mat-error>Formato: 0000 0000 0000 0000</mat-error>
+            }
+          </mat-form-field>
+
+          <div class="fila">
+            <mat-form-field appearance="outline">
+              <mat-label>Vencimiento</mat-label>
+              <input matInput formControlName="vencimiento" placeholder="MM/AA" autocomplete="off" />
+              @if (formulario.controls.vencimiento.invalid && formulario.controls.vencimiento.touched) {
+                <mat-error>Formato: MM/AA</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>CVV</mat-label>
+              <input matInput formControlName="cvv" inputmode="numeric" autocomplete="off" />
+              @if (formulario.controls.cvv.invalid && formulario.controls.cvv.touched) {
+                <mat-error>3 dígitos</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <div class="acciones">
+            <button mat-flat-button color="primary" type="submit" [disabled]="pagando()">
+              {{ pagando() ? 'Confirmando…' : 'Confirmar pago' }}
+            </button>
+          </div>
+        </form>
+      }
+    }
+  }
+</section>

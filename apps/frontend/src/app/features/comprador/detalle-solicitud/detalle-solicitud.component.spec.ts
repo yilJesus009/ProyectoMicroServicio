@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, Router, provideRouter } from '@angular/router';
 
 import { environment } from '../../../../environments/environment';
 import { DetalleSolicitudComponent } from './detalle-solicitud.component';
@@ -94,7 +94,12 @@ describe('DetalleSolicitudComponent (comparador)', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Destruye PRIMERO: cancela el temporizador del polling by-offer y
+    // revoca el object URL de la foto antes de verificar las peticiones.
+    fixture.destroy();
+    http.verify();
+  });
 
   it('pide el detalle y las ofertas ordenadas por precio por defecto', async () => {
     const peticiones = http.match(() => true);
@@ -260,5 +265,172 @@ describe('DetalleSolicitudComponent (comparador)', () => {
     await ceder();
 
     expect(texto()).toContain('No autorizado');
+  });
+
+  // ---------------------------------------------------------------------
+  // Foto del detalle (blob con token — ítem de la tabla de revisión)
+  // ---------------------------------------------------------------------
+
+  it('si la solicitud tiene foto la pide como blob y la pinta con object URL', async () => {
+    const crearUrl = spyOn(window.URL, 'createObjectURL').and.returnValue('blob:foto-34');
+
+    const peticiones = http.match(() => true);
+    for (const req of peticiones) {
+      if (req.request.url.endsWith('/offers')) {
+        req.flush({ status: 200, msg: 'Ofertas encontradas', data: [oferta()] });
+      } else {
+        req.flush({
+          status: 200,
+          msg: 'Operación exitosa',
+          data: { ...SOLICITUD, photo: '/uploads/requests/34.jpg' },
+        });
+      }
+    }
+    await ceder();
+
+    // Se pide como blob: la cabecera Authorization la agrega el interceptor.
+    const fotoReq = http.expectOne((r) => r.url.endsWith('/photo'));
+    expect(fotoReq.request.method).toBe('GET');
+    expect(fotoReq.request.responseType).toBe('blob');
+    fotoReq.flush(new Blob(['jpeg'], { type: 'image/jpeg' }));
+    await ceder();
+
+    expect(crearUrl).toHaveBeenCalled();
+    const img = (fixture.nativeElement as HTMLElement).querySelector('img');
+    expect(img?.getAttribute('src')).toBe('blob:foto-34');
+    expect(img?.getAttribute('alt')).toContain('Pastillas de freno delanteras');
+  });
+
+  it('revoca el object URL de la foto al destruir la pantalla', async () => {
+    spyOn(window.URL, 'createObjectURL').and.returnValue('blob:foto-34');
+    const revocar = spyOn(window.URL, 'revokeObjectURL');
+
+    const peticiones = http.match(() => true);
+    for (const req of peticiones) {
+      if (req.request.url.endsWith('/offers')) {
+        req.flush({ status: 200, msg: 'Ofertas encontradas', data: [oferta()] });
+      } else {
+        req.flush({
+          status: 200,
+          msg: 'Operación exitosa',
+          data: { ...SOLICITUD, photo: '/uploads/requests/34.jpg' },
+        });
+      }
+    }
+    await ceder();
+    http.expectOne((r) => r.url.endsWith('/photo')).flush(new Blob(['jpeg']));
+    await ceder();
+
+    fixture.destroy();
+
+    expect(revocar).toHaveBeenCalledWith('blob:foto-34');
+  });
+
+  // ---------------------------------------------------------------------
+  // "Generando tu pedido…" — polling by-offer cada 2 s (ítem de la tabla)
+  // ---------------------------------------------------------------------
+
+  /** Acepta la primera oferta y deja el accept respondido. */
+  async function aceptarOferta(): Promise<void> {
+    boton('Aceptar oferta')?.click();
+    await ceder();
+    boton('Sí, aceptar')?.click();
+    await ceder();
+
+    http.expectOne((r) => r.method === 'POST' && r.url.endsWith('/accept')).flush({
+      status: 200,
+      msg: 'Oferta aceptada',
+      data: {
+        offer: { ...oferta(), status: 'ACCEPTED' },
+        part_request: { ...SOLICITUD, status: 'OFFER_ACCEPTED' },
+      },
+    });
+    await ceder();
+  }
+
+  const PEDIDO = {
+    id: 12,
+    offer_id: 78,
+    part_request_id: 34,
+    buyer_id: 7,
+    supplier_id: 55,
+    supplier_name: 'AutoParts Center',
+    part_description: 'Pastillas de freno delanteras',
+    vehicle_label: 'Toyota Corolla 2018',
+    price: 620,
+    currency: 'BOB',
+    delivery_type: 'DELIVERY',
+    estimated_days: 2,
+    status: 'PENDING_PAYMENT',
+    payment: null,
+    history: [],
+    created_at: '2026-11-10T14:00:00Z',
+  };
+
+  it('tras aceptar muestra "Generando tu pedido…" y navega al pago cuando aparece', async () => {
+    jasmine.clock().install();
+    try {
+      const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      await cargar();
+
+      await aceptarOferta();
+
+      expect(texto()).toContain('Generando tu pedido…');
+
+      // 1er intento a los 2 s: el pedido aún no existe (404 = sigue).
+      jasmine.clock().tick(2000);
+      await ceder();
+      http
+        .expectOne((r) => r.url.endsWith('/by-offer/78'))
+        .flush(
+          { status: 404, msg: 'Pedido no encontrado', data: null },
+          { status: 404, statusText: 'Not Found' },
+        );
+      await ceder();
+
+      // 2º intento: ya existe → la pantalla lleva a su pago.
+      jasmine.clock().tick(2000);
+      await ceder();
+      http
+        .expectOne((r) => r.url.endsWith('/by-offer/78'))
+        .flush({ status: 200, msg: 'Pedido encontrado', data: PEDIDO });
+      await ceder();
+
+      expect(navegar).toHaveBeenCalledWith(['/comprador/pedidos', 12, 'pago']);
+      expect(texto()).not.toContain('Generando tu pedido…');
+    } finally {
+      jasmine.clock().uninstall();
+    }
+  });
+
+  it('si el pedido no aparece tras los intentos avisa y se rinde', async () => {
+    jasmine.clock().install();
+    try {
+      await cargar();
+      await aceptarOferta();
+
+      // 15 intentos × 2 s con 404 en cada uno.
+      for (let intento = 0; intento < 15; intento++) {
+        jasmine.clock().tick(2000);
+        await ceder();
+        http
+          .expectOne((r) => r.url.endsWith('/by-offer/78'))
+          .flush(
+            { status: 404, msg: 'Pedido no encontrado', data: null },
+            { status: 404, statusText: 'Not Found' },
+          );
+        await ceder();
+      }
+
+      expect(texto()).toContain('El pedido está tardando más de lo esperado');
+      expect(texto()).not.toContain('Generando tu pedido…');
+
+      // No vuelve a programar intentos.
+      jasmine.clock().tick(2000);
+      await ceder();
+      http.expectNone((r) => r.url.endsWith('/by-offer/78'));
+    } finally {
+      jasmine.clock().uninstall();
+    }
   });
 });
