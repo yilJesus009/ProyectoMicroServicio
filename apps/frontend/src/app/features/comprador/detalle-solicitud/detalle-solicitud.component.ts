@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatRadioModule } from '@angular/material/radio';
@@ -31,7 +31,6 @@ import { TarjetaSolicitudComponent } from '../../../shared/tarjeta-solicitud/tar
 @Component({
   selector: 'app-detalle-solicitud',
   imports: [
-    DatePipe,
     DecimalPipe,
     MatButtonModule,
     MatCardModule,

@@ -67,7 +67,9 @@
               <app-offer-card
                 [oferta]="oferta"
                 [accion]="
-                  solicitud.status === 'PUBLISHED' || solicitud.status === 'RECEIVING_OFFERS'
+                  (solicitud.status === 'PUBLISHED' ||
+                    solicitud.status === 'RECEIVING_OFFERS') &&
+                  oferta.status === 'SUBMITTED'
                     ? 'Aceptar oferta'
                     : null
                 "
