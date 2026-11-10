@@ -36,9 +36,17 @@ public class RabbitMqConfig {
     public static final String DLX_EXCHANGE = "dlx";
     public static final String OFFER_ACCEPTED_DLQ = "pedidos.offer_accepted.dlq";
 
+    /** Exchange donde este servicio PUBLICA (ORDER_CREATED, ORDER_STATUS_CHANGED). */
+    public static final String ORDER_EVENTS_EXCHANGE = "order_events";
+
     @Bean
     public TopicExchange offerEventsExchange() {
         return new TopicExchange(OFFER_EVENTS_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public TopicExchange orderEventsExchange() {
+        return new TopicExchange(ORDER_EVENTS_EXCHANGE, true, false);
     }
 
     @Bean
@@ -85,6 +93,7 @@ public class RabbitMqConfig {
     public ApplicationRunner declareOfferAcceptedQueueOnStartup(
             AmqpAdmin admin,
             TopicExchange offerEventsExchange,
+            TopicExchange orderEventsExchange,
             DirectExchange dlxExchange,
             Queue offerAcceptedDlq,
             Binding offerAcceptedDlqBinding,
@@ -92,6 +101,7 @@ public class RabbitMqConfig {
             Binding offerAcceptedBinding) {
         return (ApplicationArguments args) -> {
             admin.declareExchange(offerEventsExchange);
+            admin.declareExchange(orderEventsExchange);
             admin.declareExchange(dlxExchange);
             admin.declareQueue(offerAcceptedDlq);
             admin.declareBinding(offerAcceptedDlqBinding);

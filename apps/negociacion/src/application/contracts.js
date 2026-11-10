@@ -34,6 +34,11 @@ const OfferEvent = Object.freeze({
   REJECTED: 'OFFER_REJECTED',
 });
 
+/** Eventos de Pedidos que consume el cierre de la solicitud (docs/eventos.md). */
+const OrderEvent = Object.freeze({
+  STATUS_CHANGED: 'ORDER_STATUS_CHANGED',
+});
+
 /**
  * Estados que este servicio NO acepta desde una petición HTTP (PATCH
  * .../status): los asigna un caso de uso interno o un consumidor de
@@ -52,4 +57,4 @@ const EVENT_DRIVEN_STATUS = Object.freeze({
   COMPLETED: 'ORDER_STATUS_CHANGED',
 });
 
-module.exports = { Topic, PartRequestEvent, SupplierEvent, OfferEvent, EVENT_DRIVEN_STATUS };
+module.exports = { Topic, PartRequestEvent, SupplierEvent, OfferEvent, OrderEvent, EVENT_DRIVEN_STATUS };

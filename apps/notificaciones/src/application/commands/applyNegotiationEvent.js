@@ -57,6 +57,11 @@ class ApplyNegotiationEvent {
       return;
     }
 
+    if (eventName === 'ORDER_CREATED') {
+      await this._notifyOrderCreated(payload, transaction);
+      return;
+    }
+
     const built = buildNotificationForEvent(eventName, payload);
     if (!built) return; // no debería pasar: el consumidor solo bindea estos 7 eventos.
 
@@ -68,6 +73,35 @@ class ApplyNegotiationEvent {
         title: built.title,
         message: built.message,
         link: built.link,
+      }),
+      { transaction }
+    );
+  }
+
+  /**
+   * ORDER_CREATED: dos destinatarios fijos (docs/eventos.md: "avisar al
+   * comprador que pague y al proveedor") — por eso no entra en
+   * buildNotificationForEvent.js, que es solo para un destinatario fijo.
+   */
+  async _notifyOrderCreated(payload, transaction) {
+    await this.notificationRepository.create(
+      new Notification({
+        userId: payload.buyer_id,
+        type: 'ORDER_CREATED',
+        title: 'Tu pedido está listo para pagar',
+        message: `Tu pedido de ${payload.total} ${payload.currency} está listo para pagar.`,
+        link: `/comprador/pedidos/${payload.order_id}/pago`,
+      }),
+      { transaction }
+    );
+
+    await this.notificationRepository.create(
+      new Notification({
+        userId: payload.supplier_id,
+        type: 'ORDER_CREATED',
+        title: 'Pedido generado',
+        message: `Se generó el pedido #${payload.order_id} de tu oferta aceptada.`,
+        link: '/proveedor/pedidos',
       }),
       { transaction }
     );

@@ -9,6 +9,7 @@ const Exchange = Object.freeze({
   IDENTITY: 'identity_events',
   PART_REQUEST: 'part_request_events',
   OFFER: 'offer_events',
+  ORDER: 'order_events',
 });
 
 /** routing_key → exchange del que viene (para los bindings de la cola). */
@@ -20,6 +21,8 @@ const EVENT_EXCHANGE = Object.freeze({
   OFFER_SUBMITTED: Exchange.OFFER,
   OFFER_ACCEPTED: Exchange.OFFER,
   OFFER_REJECTED: Exchange.OFFER,
+  ORDER_CREATED: Exchange.ORDER,
+  ORDER_STATUS_CHANGED: Exchange.ORDER,
 });
 
 module.exports = { Exchange, EVENT_EXCHANGE };
