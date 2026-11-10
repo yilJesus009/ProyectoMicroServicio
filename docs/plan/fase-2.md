@@ -143,7 +143,7 @@ backend en Docker. Al final escribe docs/defensa/fase-2-frontend.md
 
 ## Terminado cuando (fase completa)
 
-- [ ] En Docker y desde Angular: un proveedor se registra, completa su perfil y el admin lo aprueba.
-- [ ] El comprador publica una solicitud y el proveedor la ve y oferta.
-- [ ] Por API: el comprador acepta una oferta y las demás quedan `REJECTED`; una segunda aceptación da 409.
-- [ ] Los avisos llegan a la campanita.
+- [x] En Docker y desde Angular: un proveedor se registra, completa su perfil y el admin lo aprueba.
+- [x] El comprador publica una solicitud y el proveedor la ve y oferta.
+- [x] Por API: el comprador acepta una oferta y las demás quedan `REJECTED`; una segunda aceptación da 409.
+- [x] Los avisos llegan a la campanita.
