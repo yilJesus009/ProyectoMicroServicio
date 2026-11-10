@@ -1,0 +1,56 @@
+.pantalla {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 640px;
+}
+
+.volver {
+  align-self: start;
+}
+
+.resumen {
+  background: #f5f7fa;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.entrega {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.etiqueta {
+  font-size: 0.9rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.estado {
+  color: #546e7a;
+}
+
+.error {
+  color: #842029;
+  background: #f8d7da;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
