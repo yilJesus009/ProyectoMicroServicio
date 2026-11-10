@@ -1,0 +1,92 @@
+<section class="pantalla">
+  @if (cargando()) {
+    <p class="estado">Cargando solicitud…</p>
+  } @else if (error() && !solicitud()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  } @else if (solicitud(); as solicitud) {
+    <div class="volver">
+      <a mat-button routerLink="/comprador/solicitudes">← Mis solicitudes</a>
+    </div>
+
+    <app-tarjeta-solicitud [solicitud]="solicitud" />
+
+    <section class="comparador">
+      <header class="cabecera">
+        <h2>Ofertas recibidas ({{ ofertas().length }})</h2>
+
+        <mat-radio-group
+          class="orden"
+          [value]="orden()"
+          (change)="cambiarOrden($any($event.value))"
+          aria-label="Ordenar ofertas por"
+        >
+          <mat-radio-button value="price">Menor precio</mat-radio-button>
+          <mat-radio-button value="days">Menor plazo</mat-radio-button>
+        </mat-radio-group>
+      </header>
+
+      @if (aviso(); as mensaje) {
+        <p class="aviso" role="status">{{ mensaje }}</p>
+      }
+      @if (error(); as mensaje) {
+        <p class="error" role="alert">{{ mensaje }}</p>
+      }
+
+      @if (porConfirmar(); as oferta) {
+        <section class="confirmacion" role="alertdialog" aria-label="Confirmar aceptación">
+          <h3>¿Aceptar esta oferta?</h3>
+          <p>
+            Oferta de <strong>{{ oferta.supplier_name }}</strong> por
+            <strong>{{ oferta.price | number: '1.2-2' }} {{ oferta.currency }}</strong>.
+          </p>
+          <p class="nota">
+            Al aceptar, las demás ofertas quedarán rechazadas y se generará tu
+            pedido. Esta acción no se puede deshacer.
+          </p>
+          <div class="acciones">
+            <button mat-button type="button" (click)="cancelarAceptacion()">Cancelar</button>
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              [disabled]="aceptando() !== null"
+              (click)="aceptar()"
+            >
+              {{ aceptando() !== null ? 'Aceptando…' : 'Sí, aceptar' }}
+            </button>
+          </div>
+        </section>
+      }
+
+      @if (ofertas().length === 0) {
+        <p class="estado">Todavía no hay ofertas para esta solicitud.</p>
+      } @else {
+        <ul class="lista">
+          @for (oferta of ofertas(); track oferta.id) {
+            <li>
+              <app-offer-card
+                [oferta]="oferta"
+                [accion]="
+                  (solicitud.status === 'PUBLISHED' ||
+                    solicitud.status === 'RECEIVING_OFFERS') &&
+                  oferta.status === 'SUBMITTED'
+                    ? 'Aceptar oferta'
+                    : null
+                "
+                [esAceptar]="true"
+                (accionEmitida)="confirmarAceptacion(oferta)"
+              />
+            </li>
+          }
+        </ul>
+      }
+
+      @if (solicitud.status === 'OFFER_ACCEPTED' || solicitud.status === 'COMPLETED') {
+        <p class="cerrada">
+          Esta solicitud ya tiene una oferta aceptada.
+          <a routerLink="/comprador/pedidos">Ver mis pedidos</a>.
+        </p>
+      }
+    </section>
+  }
+</section>

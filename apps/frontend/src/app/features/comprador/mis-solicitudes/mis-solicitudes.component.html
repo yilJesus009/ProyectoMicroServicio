@@ -15,7 +15,16 @@
 
   <div class="lista">
     @for (solicitud of lista(); track solicitud.id) {
-      <app-tarjeta-solicitud [solicitud]="solicitud" />
+      <div class="elemento">
+        <app-tarjeta-solicitud [solicitud]="solicitud" />
+        <a
+          mat-stroked-button
+          class="detalle"
+          [routerLink]="['/comprador/solicitudes', solicitud.id]"
+        >
+          Ver detalle y ofertas
+        </a>
+      </div>
     } @empty {
       @if (!cargando()) {
         <mat-card class="vacia">
