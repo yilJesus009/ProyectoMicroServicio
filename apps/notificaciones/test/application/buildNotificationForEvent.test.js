@@ -73,6 +73,71 @@ test('OFFER_REJECTED: aviso al proveedor no elegido', () => {
   assert.equal(result.link, '/proveedor/ofertas');
 });
 
+test('ORDER_STATUS_CHANGED: PENDING_PAYMENT → PREPARING avisa al proveedor (pagó el comprador)', () => {
+  const result = buildNotificationForEvent('ORDER_STATUS_CHANGED', {
+    order_id: 12,
+    part_request_id: 34,
+    buyer_id: 7,
+    supplier_id: 55,
+    previous_status: 'PENDING_PAYMENT',
+    new_status: 'PREPARING',
+  });
+  assert.equal(result.userId, 55);
+  assert.match(result.message, /pagó el pedido #12/);
+  assert.equal(result.link, '/proveedor/pedidos');
+});
+
+test('ORDER_STATUS_CHANGED: → IN_TRANSIT avisa al comprador', () => {
+  const result = buildNotificationForEvent('ORDER_STATUS_CHANGED', {
+    order_id: 12,
+    buyer_id: 7,
+    supplier_id: 55,
+    previous_status: 'PREPARING',
+    new_status: 'IN_TRANSIT',
+  });
+  assert.equal(result.userId, 7);
+  assert.match(result.message, /en camino/);
+  assert.equal(result.link, '/comprador/pedidos/12');
+});
+
+test('ORDER_STATUS_CHANGED: → READY_FOR_PICKUP avisa al comprador', () => {
+  const result = buildNotificationForEvent('ORDER_STATUS_CHANGED', {
+    order_id: 12,
+    buyer_id: 7,
+    supplier_id: 55,
+    previous_status: 'PREPARING',
+    new_status: 'READY_FOR_PICKUP',
+  });
+  assert.equal(result.userId, 7);
+  assert.match(result.message, /listo para retirar/);
+});
+
+test('ORDER_STATUS_CHANGED: → DELIVERED avisa al comprador pidiéndole que confirme', () => {
+  const result = buildNotificationForEvent('ORDER_STATUS_CHANGED', {
+    order_id: 12,
+    buyer_id: 7,
+    supplier_id: 55,
+    previous_status: 'IN_TRANSIT',
+    new_status: 'DELIVERED',
+  });
+  assert.equal(result.userId, 7);
+  assert.equal(result.message, 'Tu pedido #12 fue entregado. Confírmalo para cerrar la compra.');
+  assert.equal(result.link, '/comprador/pedidos/12');
+});
+
+test('ORDER_STATUS_CHANGED: DELIVERED → COMPLETED avisa al proveedor (confirmó el comprador)', () => {
+  const result = buildNotificationForEvent('ORDER_STATUS_CHANGED', {
+    order_id: 12,
+    buyer_id: 7,
+    supplier_id: 55,
+    previous_status: 'DELIVERED',
+    new_status: 'COMPLETED',
+  });
+  assert.equal(result.userId, 55);
+  assert.match(result.message, /confirmó la recepción/);
+  assert.equal(result.link, '/proveedor/pedidos');
+});
+
 test('evento desconocido devuelve null', () => {
   assert.equal(buildNotificationForEvent('ALGO_RARO', {}), null);
 });
