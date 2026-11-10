@@ -82,8 +82,16 @@ export class PagoComponent implements OnDestroy {
     codigo.make();
 
     const total = codigo.getModuleCount();
-    return Array.from({ length: total }, (_, fila) =>
-      Array.from({ length: total }, (_, columna) => codigo.isDark(fila, columna)),
+    // Quiet zone: el estándar QR exige 4 módulos claros alrededor de la
+    // matriz; sin ellos los escáneres pueden no detectar el código.
+    const margen = 4;
+    const lado = total + margen * 2;
+    return Array.from({ length: lado }, (_, fila) =>
+      Array.from({ length: lado }, (_, columna) => {
+        const f = fila - margen;
+        const c = columna - margen;
+        return f >= 0 && f < total && c >= 0 && c < total && codigo.isDark(f, c);
+      }),
     );
   });
 

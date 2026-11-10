@@ -101,6 +101,27 @@ describe('PagoComponent', () => {
     expect(codigo?.querySelectorAll('span.oscuro').length ?? 0).toBeGreaterThan(50);
   });
 
+  it('rodea el QR con una quiet zone de 4 módulos claros', async () => {
+    await cargar();
+
+    const matriz = fixture.componentInstance.matrizQr();
+    expect(matriz).toBeTruthy();
+    const lados = matriz ?? [];
+    const total = lados.length;
+    expect(total).toBeGreaterThan(8);
+
+    // Los 4 módulos de borde (arriba, abajo, izquierda, derecha) son claros.
+    for (let i = 0; i < 4; i++) {
+      expect(lados[i].every((m) => !m)).toBeTrue();
+      expect(lados[total - 1 - i].every((m) => !m)).toBeTrue();
+      expect(lados.every((fila) => !fila[i])).toBeTrue();
+      expect(lados.every((fila) => !fila[total - 1 - i])).toBeTrue();
+    }
+    // El interior sí tiene módulos oscuros (el QR está dibujado).
+    const interior = lados.slice(4, total - 4).flatMap((fila) => fila.slice(4, total - 4));
+    expect(interior.filter(Boolean).length).toBeGreaterThan(50);
+  });
+
   it('el pago QR envía SOLO { method: "QR" } y muestra la referencia', async () => {
     const navegar = spyOn(TestBed.inject(Router), 'navigate');
     await cargar();
