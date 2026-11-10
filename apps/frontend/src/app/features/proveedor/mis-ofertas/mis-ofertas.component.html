@@ -1,0 +1,32 @@
+<section class="pantalla">
+  <header class="cabecera">
+    <h2>Mis ofertas</h2>
+    <a mat-flat-button color="primary" routerLink="/proveedor/solicitudes">
+      Ver solicitudes abiertas
+    </a>
+  </header>
+
+  @if (cargando()) {
+    <p class="estado">Cargando ofertas…</p>
+  } @else if (error(); as mensaje) {
+    <p class="error" role="alert">{{ mensaje }}</p>
+  } @else if (lista().length === 0) {
+    <p class="estado">Todavía no enviaste ofertas.</p>
+  } @else {
+    @if (aviso(); as mensaje) {
+      <p class="aviso" role="status">{{ mensaje }}</p>
+    }
+
+    <ul class="lista">
+      @for (oferta of lista(); track oferta.id) {
+        <li>
+          <app-offer-card
+            [oferta]="oferta"
+            [accion]="oferta.status === 'SUBMITTED' && !retirando() ? 'Retirar oferta' : null"
+            (accionEmitida)="retirar(oferta)"
+          />
+        </li>
+      }
+    </ul>
+  }
+</section>
