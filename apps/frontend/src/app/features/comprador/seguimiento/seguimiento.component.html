@@ -1,0 +1,79 @@
+<section class="pantalla">
+  @if (cargando()) {
+    <p class="estado">Cargando pedido…</p>
+  } @else if (error() && !pedido()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  } @else if (pedido(); as pedido) {
+    <div class="volver">
+      <a mat-button routerLink="/comprador/pedidos">← Mis pedidos</a>
+    </div>
+
+    <mat-card class="resumen">
+      <mat-card-header>
+        <mat-card-title>{{ pedido.part_description }}</mat-card-title>
+        <mat-card-subtitle>
+          {{ pedido.vehicle_label || 'Vehículo no especificado' }} ·
+          {{ pedido.supplier_name }}
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="precio">
+          {{ pedido.price | number: '1.2-2' }} {{ pedido.currency }}
+        </p>
+        <span class="estado-badge">{{ ETIQUETA[pedido.status] ?? pedido.status }}</span>
+
+        @if (pedido.payment; as pago) {
+          <p class="pago">
+            Pago simulado con <strong>{{ pago.method === 'QR' ? 'QR' : 'tarjeta' }}</strong> ·
+            Referencia: <strong>{{ pago.reference }}</strong>
+          </p>
+        }
+      </mat-card-content>
+      <mat-card-actions align="end">
+        @if (pedido.status === 'PENDING_PAYMENT') {
+          <a mat-flat-button color="primary" [routerLink]="['/comprador/pedidos', pedido.id, 'pago']">
+            Pagar ahora
+          </a>
+        }
+      </mat-card-actions>
+    </mat-card>
+
+    @if (aviso(); as mensaje) {
+      <p class="aviso" role="status">{{ mensaje }}</p>
+    }
+    @if (error(); as mensaje) {
+      <p class="error" role="alert">{{ mensaje }}</p>
+    }
+
+    @if (pedido.status === 'PREPARING' || pedido.status === 'IN_TRANSIT' || pedido.status === 'READY_FOR_PICKUP') {
+      <p class="esperando">
+        Esperando al proveedor: {{ ETIQUETA[pedido.status] }}. Te avisaremos en cada cambio.
+      </p>
+    }
+
+    @if (pedido.status === 'DELIVERED') {
+      <section class="recepcion" role="alertdialog" aria-label="Confirmar recepción">
+        <h3>El pedido fue entregado</h3>
+        <p>Si ya recibiste el repuesto, confirma la recepción para completar el pedido.</p>
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          [disabled]="confirmando()"
+          (click)="confirmarRecepcion()"
+        >
+          {{ confirmando() ? 'Confirmando…' : 'Confirmar recepción' }}
+        </button>
+      </section>
+    }
+
+    @if (pedido.status === 'COMPLETED') {
+      <p class="aviso" role="status">Pedido completado. ¡Gracias!</p>
+    }
+
+    <section class="historial">
+      <h3>Línea de tiempo</h3>
+      <app-order-timeline [historial]="pedido.history" />
+    </section>
+  }
+</section>

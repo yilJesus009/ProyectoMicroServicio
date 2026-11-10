@@ -1,0 +1,26 @@
+<section class="pantalla">
+  <header class="cabecera">
+    <h2>Mis pedidos</h2>
+    <a mat-stroked-button routerLink="/comprador/solicitudes">Mis solicitudes</a>
+  </header>
+
+  @if (cargando()) {
+    <p class="estado">Cargando pedidos…</p>
+  } @else if (error(); as mensaje) {
+    <p class="error" role="alert">{{ mensaje }}</p>
+  } @else if (lista().length === 0) {
+    <p class="estado">
+      Todavía no tienes pedidos. Cuando aceptes una oferta aparecerá aquí.
+    </p>
+  } @else {
+    <ul class="lista">
+      @for (pedido of lista(); track pedido.id) {
+        <li>
+          <a class="enlace" [routerLink]="['/comprador/pedidos', pedido.id]">
+            <app-order-card [pedido]="pedido" />
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</section>

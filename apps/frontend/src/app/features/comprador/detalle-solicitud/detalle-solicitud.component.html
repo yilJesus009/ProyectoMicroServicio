@@ -10,6 +10,12 @@
 
     <app-tarjeta-solicitud [solicitud]="solicitud" />
 
+    @if (fotoUrl(); as url) {
+      <figure class="foto">
+        <img [src]="url" [attr.alt]="'Foto del repuesto: ' + solicitud.description" />
+      </figure>
+    }
+
     <section class="comparador">
       <header class="cabecera">
         <h2>Ofertas recibidas ({{ ofertas().length }})</h2>
@@ -27,6 +33,11 @@
 
       @if (aviso(); as mensaje) {
         <p class="aviso" role="status">{{ mensaje }}</p>
+      }
+      @if (generando()) {
+        <p class="generando" role="status">
+          Generando tu pedido… esto puede tardar unos segundos.
+        </p>
       }
       @if (error(); as mensaje) {
         <p class="error" role="alert">{{ mensaje }}</p>

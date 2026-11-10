@@ -134,6 +134,21 @@ export class SolicitudesFacade {
     return respuesta.data;
   }
 
+  /**
+   * GET /part-requests/{id}/photo — la foto como Blob (misma visibilidad
+   * que el detalle: dueño o proveedor aprobado).
+   *
+   * Se pide como blob y no con `<img src="…">` porque el endpoint exige el
+   * JWT: la cabecera Authorization la pone el interceptor. El componente
+   * convierte el blob en un object URL y lo revoca al destruirse.
+   * Si no hay foto o falla, el detalle sigue siendo usable.
+   */
+  async foto(id: number): Promise<Blob> {
+    return await firstValueFrom(
+      this.http.get(`${this.url}/${id}/photo`, { responseType: 'blob' }),
+    );
+  }
+
   /** GET /part-requests/{id}/offers?sort= — comparador, solo el dueño. */
   async ofertas(id: number, sort?: OrdenOfertas): Promise<Oferta[]> {
     let params = new HttpParams();

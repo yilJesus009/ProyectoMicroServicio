@@ -20,12 +20,15 @@ import { AdminProveedoresComponent } from './features/admin/proveedores/proveedo
 import { MisSolicitudesComponent } from './features/comprador/mis-solicitudes/mis-solicitudes.component';
 import { NuevaSolicitudComponent } from './features/comprador/nueva-solicitud/nueva-solicitud.component';
 import { DetalleSolicitudComponent } from './features/comprador/detalle-solicitud/detalle-solicitud.component';
+import { MisPedidosComponent } from './features/comprador/mis-pedidos/mis-pedidos.component';
+import { PagoComponent } from './features/comprador/pago/pago.component';
+import { SeguimientoComponent } from './features/comprador/seguimiento/seguimiento.component';
 import { VehiculosComponent } from './features/comprador/vehiculos/vehiculos.component';
 import { MisOfertasComponent } from './features/proveedor/mis-ofertas/mis-ofertas.component';
 import { OfertarComponent } from './features/proveedor/ofertar/ofertar.component';
+import { PedidosProveedorComponent } from './features/proveedor/pedidos/pedidos-proveedor.component';
 import { PerfilProveedorComponent } from './features/proveedor/perfil/perfil.component';
 import { SolicitudesAbiertasComponent } from './features/proveedor/solicitudes/solicitudes-abiertas.component';
-import { PaginaVaciaComponent } from './shared/pagina-vacia/pagina-vacia.component';
 
 /** Todas las rutas del árbol, aplanadas y con la raíz al frente. */
 function aplanar(rutas: Routes, prefijo = ''): string[] {
@@ -140,17 +143,16 @@ describe('tabla de rutas', () => {
       expect(pantallas.find((pantalla) => pantalla.path === ruta)?.component).toBe(componente);
     }
 
-    // Las de pedidos siguen esperando pantalla.
-    const FASE_3_PEDIDOS = [
-      'comprador/pedidos',
-      'comprador/pedidos/:id',
-      'comprador/pedidos/:id/pago',
-      'proveedor/pedidos',
-    ];
-    for (const ruta of FASE_3_PEDIDOS) {
-      expect(pantallas.find((pantalla) => pantalla.path === ruta)?.component).toBe(
-        PaginaVaciaComponent,
-      );
+    // Pantallas de la fase 3 entregadas (pedidos).
+    const FASE_3_PEDIDOS: Record<string, Type<unknown>> = {
+      'comprador/pedidos': MisPedidosComponent,
+      'comprador/pedidos/:id': SeguimientoComponent,
+      'comprador/pedidos/:id/pago': PagoComponent,
+      'proveedor/pedidos': PedidosProveedorComponent,
+    };
+
+    for (const [ruta, componente] of Object.entries(FASE_3_PEDIDOS)) {
+      expect(pantallas.find((pantalla) => pantalla.path === ruta)?.component).toBe(componente);
     }
   });
 

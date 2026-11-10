@@ -112,6 +112,19 @@ describe('SolicitudesFacade', () => {
     expect((await peticion).id).toBe(34);
   });
 
+  it('foto pide GET /part-requests/{id}/photo como blob (para el object URL)', async () => {
+    const peticion = facade.foto(34);
+
+    const req = http.expectOne(`${URL}/34/photo`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['datos-de-imagen'], { type: 'image/jpeg' }));
+
+    const blob = await peticion;
+    expect(blob.type).toBe('image/jpeg');
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
   it('ofertas sin orden no manda query y con orden manda sort', async () => {
     const sinOrden = facade.ofertas(34);
     const req1 = http.expectOne(`${URL}/34/offers`);
