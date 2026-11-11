@@ -95,6 +95,6 @@ docs/defensa/fase-3-frontend.md.
 
 ## Terminado cuando (fase completa)
 
-- [ ] Todo el flujo de `docs/flujo-principal.md` funciona desde Angular, en Docker.
-- [ ] La solicitud termina en `COMPLETED` y el pedido en `COMPLETED`.
-- [ ] Cada paso genera su aviso.
+- [x] Todo el flujo de `docs/flujo-principal.md` funciona desde Angular, en Docker.
+- [x] La solicitud termina en `COMPLETED` y el pedido en `COMPLETED`.
+- [x] Cada paso genera su aviso.
