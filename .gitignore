@@ -43,6 +43,11 @@ Thumbs.db
 *.swp
 *.swo
 
+# --- Agentes de IA ---
+# Config/estado local de Claude Code; nunca debe subirse (puede contener
+# transcripciones o configuración de sesión, no reglas del proyecto).
+.claude/
+
 # --- Seguridad ---
 # Duplicados de seguridad por si alguien renombra un .env
 **/*.env.local

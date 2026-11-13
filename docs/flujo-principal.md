@@ -74,12 +74,28 @@ perfil, vuelve a `PENDING`.
 
 ## Casos que siempre deben probarse
 
-- [ ] Aceptar una oferta deja las demás en `REJECTED`.
-- [ ] Aceptar una segunda oferta de la misma solicitud devuelve **409**.
-- [ ] Dos aceptaciones simultáneas: solo una gana (prueba con peticiones en paralelo).
-- [ ] Un proveedor no aprobado no puede ofertar (**403**).
-- [ ] No se puede ofertar en una solicitud cancelada o con oferta aceptada (**422**).
-- [ ] El mismo `OFFER_ACCEPTED` recibido dos veces crea **un** pedido.
-- [ ] Un pedido `PICKUP` no puede pasar a `IN_TRANSIT` (**422**).
-- [ ] Solo el comprador confirma la recepción; solo el proveedor despacha.
-- [ ] Al completarse el pedido, la solicitud queda `COMPLETED`.
+- [x] Aceptar una oferta deja las demás en `REJECTED`.
+      `apps/negociacion/test/application/offers.test.js` → `'AcceptOffer: acepta una oferta, rechaza las demas y la solicitud queda OFFER_ACCEPTED'`
+- [x] Aceptar una segunda oferta de la misma solicitud devuelve **409**.
+      `apps/negociacion/test/application/offers.test.js` → `'AcceptOffer: la SEGUNDA aceptacion da 409, no 422 (orden de las verificaciones)'`
+- [x] Dos aceptaciones simultáneas: solo una gana (prueba con peticiones en paralelo).
+      `scripts/prueba-concurrencia-aceptar.mjs` — no es parte de `npm test` (necesita Postgres real, no un repositorio falso). Se corre con la pila en Docker:
+      ```bash
+      docker compose up -d   # al menos postgres, rabbitmq, identidad, catalogo, negociacion, gateway
+      node scripts/prueba-concurrencia-aceptar.mjs
+      ```
+      Lanza los dos `POST /offers/{id}/accept` exactamente a la vez contra Postgres real y verifica un `200`, un `409` y una sola oferta `ACCEPTED`. Se puede volver a correr las veces que haga falta.
+- [x] Un proveedor no aprobado no puede ofertar (**403**).
+      `apps/negociacion/test/application/offers.test.js` → `'SubmitOffer: proveedor no aprobado → ForbiddenException (403)'`
+- [x] No se puede ofertar en una solicitud cancelada o con oferta aceptada (**422**).
+      `apps/negociacion/test/application/offers.test.js` → `'SubmitOffer: solicitud CANCELLED → PartRequestNotAcceptingOffersException (422)'`
+      (mismo chequeo de dominio para `OFFER_ACCEPTED`/`COMPLETED`: `apps/negociacion/test/domain/partRequest.test.js` → `'acceptsOffers: CANCELLED, OFFER_ACCEPTED y COMPLETED no aceptan ofertas'`)
+- [x] El mismo `OFFER_ACCEPTED` recibido dos veces crea **un** pedido.
+      `apps/pedidos/.../application/commands/CreateOrderFromOfferAcceptedTest.java` → `esIdempotenteConElMismoEventId()` (mismo `event_id`) y `offerIdDuplicadoConEventIdDistintoSeMarcaProcesadoSinCrearOtroPedido()` (mismo pedido, `event_id` distinto)
+- [x] Un pedido `PICKUP` no puede pasar a `IN_TRANSIT` (**422**).
+      `apps/pedidos/.../domain/enums/OrderStatusTest.java` → `retiroPasaPorListoParaRetiro()`
+- [x] Solo el comprador confirma la recepción; solo el proveedor despacha.
+      `apps/pedidos/.../application/commands/ConfirmReceiptTest.java` → `lanza403SiElActorNoEsElCompradorDueño()`
+      `apps/pedidos/.../application/commands/AdvanceOrderStatusTest.java` → `lanza403SiElActorNoEsElProveedorDueño()`
+- [x] Al completarse el pedido, la solicitud queda `COMPLETED`.
+      `apps/negociacion/test/application/applyOrderStatusChanged.test.js` → `'new_status COMPLETED completa la solicitud y encola PART_REQUEST_STATUS_CHANGED'`
