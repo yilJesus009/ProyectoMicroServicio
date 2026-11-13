@@ -140,7 +140,7 @@ Cada microservicio tiene su **propia base PostgreSQL**. No hay bases compartidas
 3. Solicitante compara y acepta UNA oferta
      POST /api/v1/offers/78/accept
      → offer-service:
-         a. bloquea la fila (SELECT ... FOR UPDATE)
+         a. bloquea el slot de aceptación local (SELECT ... FOR UPDATE)
          b. verifica que la solicitud no tenga ya una oferta aceptada
          c. si no tiene: acepta esta, rechaza las demás  (transacción atómica)
          d. publica OFFER_ACCEPTED
@@ -151,7 +151,8 @@ Cada microservicio tiene su **propia base PostgreSQL**. No hay bases compartidas
      → crea el pedido en PENDING y publica ORDER_CREATED
 
 5. Seguimiento hasta la finalización
-     proveedor:  PENDING → PREPARING → SHIPPED → DELIVERED
+     entrega:    PENDING → PREPARING → SHIPPED → DELIVERED
+     retiro:     PENDING → PREPARING → READY_FOR_PICKUP → DELIVERED
      solicitante confirma → COMPLETED
      → cada cambio publica ORDER_STATUS_CHANGED
 ```
@@ -172,7 +173,9 @@ Es el requisito más importante del proyecto. Se defiende en **tres capas**:
    `OfferAlreadyAcceptedException` si la solicitud ya tiene oferta aceptada.
 
 3. **Aplicación** — `AcceptOfferCommandHandler` abre una transacción y bloquea
-   la fila de la solicitud antes de leer, evitando la condición de carrera.
+   el slot local de aceptación de la solicitud (`request_acceptances`) antes
+   de leer, evitando la condición de carrera sin cruzar la persistencia de otro
+   microservicio.
 
 **No se garantiza ocultando botones en el frontend.** El frontend solo
 refleja el estado; la regla vive en el backend.

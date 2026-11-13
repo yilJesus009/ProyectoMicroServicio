@@ -75,9 +75,10 @@ const OrderStatus = Object.freeze({
   PENDING:   'PENDING',     // Creado a partir de OFFER_ACCEPTED.
   PREPARING: 'PREPARING',   // El proveedor lo está preparando.
   SHIPPED:   'SHIPPED',     // En camino.
+  READY_FOR_PICKUP: 'READY_FOR_PICKUP', // Disponible para retiro en tienda.
   DELIVERED: 'DELIVERED',   // Llegó al solicitante.
   COMPLETED: 'COMPLETED',   // El solicitante confirmó la recepción.
-  CANCELLED: 'CANCELLED',   // Cancelado por cualquiera, antes de SHIPPED.
+  CANCELLED: 'CANCELLED',   // Cancelado antes del despacho o retiro.
 });
 
 /**
@@ -86,8 +87,9 @@ const OrderStatus = Object.freeze({
  */
 const ORDER_TRANSITIONS = Object.freeze({
   [OrderStatus.PENDING]:   [OrderStatus.PREPARING, OrderStatus.CANCELLED],
-  [OrderStatus.PREPARING]: [OrderStatus.SHIPPED,   OrderStatus.CANCELLED],
+  [OrderStatus.PREPARING]: [OrderStatus.SHIPPED, OrderStatus.READY_FOR_PICKUP, OrderStatus.CANCELLED],
   [OrderStatus.SHIPPED]:   [OrderStatus.DELIVERED],
+  [OrderStatus.READY_FOR_PICKUP]: [OrderStatus.DELIVERED],
   [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED],
   [OrderStatus.COMPLETED]: [],
   [OrderStatus.CANCELLED]: [],

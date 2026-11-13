@@ -173,8 +173,8 @@ Envía una oferta. Requiere rol `PROVEEDOR`.
 | Campo | Tipo | Obligatorio | Notas |
 |---|---|---|---|
 | `request_id` | int | ✅ | Debe existir y estar `PUBLISHED` |
-| `price` | decimal | ✅ | `[POR ACORDAR]` moneda fija o configurable |
-| `currency` | string | ❌ | default `BOB` |
+| `price` | decimal | ✅ | Mayor que cero, hasta dos decimales |
+| `currency` | string | ❌ | Solo `BOB`; si se omite usa `BOB` |
 | `brand` | string | ✅ | Marca del repuesto ofrecido |
 | `condition` | enum | ✅ | `NEW` \| `USED` \| `REFURBISHED` |
 | `availability` | enum | ✅ | `IN_STOCK` \| `ORDER_REQUIRED` |
@@ -183,9 +183,11 @@ Envía una oferta. Requiere rol `PROVEEDOR`.
 | `notes` | text | ❌ | |
 
 **Errores**
-- `404` la solicitud no existe o no está publicada
-- `409` el proveedor ya envió una oferta para esta solicitud
-  `[POR ACORDAR]` ¿permitimos varias ofertas del mismo proveedor?
+- `404` la solicitud no existe
+- `422` la solicitud no está publicada y no admite nuevas ofertas
+
+Se permiten varias ofertas del mismo proveedor para una solicitud; cada una
+conserva su propio identificador e historial.
 
 **Efecto:** publica `OFFER_SUBMITTED`.
 
@@ -199,7 +201,9 @@ Ofertas enviadas. Requiere rol `PROVEEDOR`.
 **La operación más crítica del proyecto.** Requiere ser el dueño de la solicitud.
 
 **Garantías:**
-- Usa `SELECT ... FOR UPDATE` sobre la solicitud.
+- Serializa la aceptación mediante un bloqueo `SELECT ... FOR UPDATE` de una
+  fila por solicitud en la base propia de Offer Service; no accede a la BD
+  de Part Request Service.
 - Índice `UNIQUE` parcial en BD como defensa final.
 - Acepta esta oferta y rechaza las demás en una **misma transacción**.
 
@@ -210,9 +214,9 @@ Ofertas enviadas. Requiere rol `PROVEEDOR`.
 
 **Efecto:** publica `OFFER_ACCEPTED` y `OFFER_REJECTED` por cada oferta descartada.
 
-### `POST /api/v1/offers/:id/reject`
-Rechazo manual de una oferta. `[POR ACORDAR]` si se expone o el sistema
-rechaza automáticamente las no seleccionadas.
+No se expone endpoint de rechazo manual. Al aceptar una oferta, Offer Service
+marca automáticamente las demás ofertas pendientes de la solicitud como
+`REJECTED`.
 
 ---
 
@@ -231,6 +235,10 @@ Pedidos como comprador.
 ### `GET /api/v1/orders?provider_id=55`
 Pedidos como proveedor.
 
+Las consultas por `buyer_id` o `provider_id` solo permiten consultar los
+pedidos del usuario autenticado; el identificador de la URL/query no concede
+acceso a datos de otro usuario.
+
 ### `PATCH /api/v1/orders/:id/status`
 Cambia el estado del pedido.
 
@@ -241,12 +249,22 @@ Cambia el estado del pedido.
 
 **Validación de transición:**
 ```
-PENDING ─► PREPARING ─► SHIPPED ─► DELIVERED ─► COMPLETED
-   └──────────┴───────────┴───────────┴───► CANCELLED
+Entrega: PENDING ─► PREPARING ─► SHIPPED ─► DELIVERED ─► COMPLETED
+Retiro:  PENDING ─► PREPARING ─► READY_FOR_PICKUP ─► DELIVERED ─► COMPLETED
+              └──────────┴───────────┴────────────────────► CANCELLED
 ```
 Una transición inválida devuelve `422`.
 
 **Efecto:** publica `ORDER_STATUS_CHANGED`.
+
+Para entrega, el proveedor marca `DELIVERED`; para retiro, el comprador
+confirma `DELIVERED` después de que el proveedor marca `READY_FOR_PICKUP`.
+Solo el comprador puede confirmar `DELIVERED -> COMPLETED`. Cualquiera de las
+partes puede cancelar antes del despacho o de quedar listo para retiro.
+
+### `POST /api/v1/orders/:id/complete`
+Confirma la finalización por el comprador propietario del pedido. Equivale a
+la transición `DELIVERED -> COMPLETED`.
 
 ---
 
@@ -284,9 +302,5 @@ Ver `docs/eventos.md` para el payload completo de cada evento y las colas.
 
 ## Pendientes por acordar
 
-- [ ] ¿Una misma solicitud acepta varias ofertas del mismo proveedor?
-- [ ] ¿Precio fijo en BOB o configurable por usuario?
 - [ ] ¿Alcance del catálogo de referencias de repuestos?
-- [ ] ¿Quién confirma `DELIVERED`: el proveedor o el solicitante?
-- [ ] ¿Rechazo manual de ofertas o solo automático?
 - [ ] Formato exacto de la fotografía (límite de tamaño, formatos permitidos).

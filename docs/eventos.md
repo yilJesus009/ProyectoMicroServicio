@@ -105,7 +105,8 @@ eventos; el `payload` cambia según el tipo.
   "condition": "NEW",
   "availability": "IN_STOCK",
   "delivery_type": "DELIVERY",
-  "estimated_delivery_days": 3
+  "estimated_delivery_days": 3,
+  "notes": "Repuesto nuevo, garantía de 6 meses"
 }
 ```
 
@@ -119,9 +120,17 @@ dispara la creación del pedido. Consumen: order-service, part-request, notifica
   "buyer_id": 12,
   "price": 1250.50,
   "currency": "BOB",
-  "delivery_type": "DELIVERY"
+  "brand": "Genérico",
+  "condition": "NEW",
+  "availability": "IN_STOCK",
+  "delivery_type": "DELIVERY",
+  "estimated_delivery_days": 3,
+  "notes": "Repuesto nuevo, garantía de 6 meses"
 }
 ```
+
+El payload contiene una instantánea de las condiciones comerciales aceptadas.
+Order Service la persiste y no depende de volver a consultar Offer Service.
 
 **`OFFER_REJECTED`**
 ```json
@@ -144,6 +153,12 @@ dispara la creación del pedido. Consumen: order-service, part-request, notifica
   "buyer_id": 12,
   "provider_id": 55,
   "total_price": 1250.50,
+  "currency": "BOB",
+  "brand": "Genérico",
+  "condition": "NEW",
+  "availability": "IN_STOCK",
+  "delivery_type": "DELIVERY",
+  "estimated_delivery_days": 3,
   "status": "PENDING"
 }
 ```
@@ -152,6 +167,10 @@ dispara la creación del pedido. Consumen: order-service, part-request, notifica
 ```json
 {
   "order_id": 12,
+  "request_id": 34,
+  "offer_id": 78,
+  "buyer_id": 12,
+  "provider_id": 55,
   "previous_status": "PENDING",
   "new_status": "PREPARING"
 }
@@ -160,9 +179,9 @@ dispara la creación del pedido. Consumen: order-service, part-request, notifica
 ## Máquina de estados del pedido
 
 ```
-PENDING ──► PREPARING ──► SHIPPED ──► DELIVERED ──► COMPLETED
-   │            │            │            │
-   └────────────┴────────────┴────────────┴────► CANCELLED
+Entrega: PENDING ──► PREPARING ──► SHIPPED ──► DELIVERED ──► COMPLETED
+Retiro:  PENDING ──► PREPARING ──► READY_FOR_PICKUP ──► DELIVERED ──► COMPLETED
+              └────────────┴────────────┴────────────────────► CANCELLED
 ```
 
 | Estado | Quién lo cambia |
@@ -170,9 +189,12 @@ PENDING ──► PREPARING ──► SHIPPED ──► DELIVERED ──► COMP
 | `PENDING` | order-service, al crear el pedido |
 | `PREPARING` | Proveedor |
 | `SHIPPED` | Proveedor |
-| `DELIVERED` | Proveedor (o solicitante al recibir) |
+| `READY_FOR_PICKUP` | Proveedor, solo para retiro |
+| `DELIVERED` | Proveedor para entrega; solicitante confirma retiro |
 | `COMPLETED` | Solicitante, confirma la finalización |
-| `CANCELLED` | Cualquiera de las dos partes, antes de `SHIPPED` |
+| `CANCELLED` | Cualquiera de las dos partes antes del despacho/retiro |
+
+Solo el solicitante confirma `COMPLETED`.
 
 **Transiciones inválidas se rechazan con `422`.**
 

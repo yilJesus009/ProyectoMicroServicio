@@ -111,6 +111,20 @@ npm install
 npm run dev
 ```
 
+En terminales separados, iniciar también los servicios de ofertas y pedidos:
+
+```bash
+cd apps/offer-service
+npm install
+npm run dev
+```
+
+```bash
+cd apps/order-service
+npm install
+npm run dev
+```
+
 ### 4. Frontend
 
 ```bash
