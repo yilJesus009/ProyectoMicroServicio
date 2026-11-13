@@ -5,7 +5,7 @@ Las vistas llaman aquí; la lógica no vive en las vistas (AGENTS.md §5).
 """
 from django.contrib.auth import authenticate
 from django.conf import settings
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.events.event_names import TOPIC_IDENTITY, USER_CREATED
@@ -30,8 +30,9 @@ def create_user(
       la carrera entre dos registros simultáneos (IntegrityError de la
       restricción UNIQUE → 409, nunca 500).
     - La contraseña se hashea (bcrypt, contratos-api.md L43), jamás en claro.
-    - Publica USER_CREATED tras persistir; si el bus falla, el registro
-      NO se rompe (docs/eventos.md regla 3).
+    - Publica USER_CREATED con transaction.on_commit: jamás antes del
+      COMMIT (docs/eventos.md regla 3); si el bus falla, el registro
+      NO se rompe.
 
     @param correlation_id `X-Correlation-Id` de la petición: se propaga al
         evento para poder rastrear la operación entre microservicios.
@@ -59,21 +60,28 @@ def create_user(
         # rechaza uno por UNIQUE. Se traduce al 409 del contrato.
         raise EmailAlreadyRegisteredException(email) from exc
 
-    try:
-        publisher.publish(
-            topic=TOPIC_IDENTITY,
-            event_name=USER_CREATED,
-            payload={
-                "user_id": user.id,
-                "email": user.email,
-                "role": user.rol,
-                "city": user.ciudad,
-            },
-            correlation_id=correlation_id,
-        )
-    except Exception:  # noqa: BLE001 - fire-and-forget: el registro ya
-        # persistió; un fallo del bus jamás puede revertirlo (eventos.md 3).
-        pass
+    # Mismo patrón que supplier_service: el evento sale DESPUÉS del commit,
+    # nunca antes (eventos.md 3). Así, si algún día create_user corre dentro
+    # de un transaction.atomic() (p. ej. ATOMIC_REQUESTS), no se anuncia un
+    # usuario que aún no existe en la base.
+    def _emit_user_created():
+        try:
+            publisher.publish(
+                topic=TOPIC_IDENTITY,
+                event_name=USER_CREATED,
+                payload={
+                    "user_id": user.id,
+                    "email": user.email,
+                    "role": user.rol,
+                    "city": user.ciudad,
+                },
+                correlation_id=correlation_id,
+            )
+        except Exception:  # noqa: BLE001 - fire-and-forget: el registro ya
+            # persistió; un fallo del bus jamás puede revertirlo (eventos.md 3).
+            pass
+
+    transaction.on_commit(_emit_user_created)
     return user
 
 

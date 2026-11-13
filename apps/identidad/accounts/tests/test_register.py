@@ -73,7 +73,10 @@ class RegisterTests(TestCase):
 
     @patch("accounts.events.publisher.publish")
     def test_publica_user_created_con_payload_del_contrato(self, mock_publish):
-        self.client.post(REGISTER_URL, VALID_PAYLOAD, format="json")
+        # on_commit: en un TestCase el commit nunca llega, por eso se
+        # capturan y ejecutan los callbacks (mismo patrón que test_suppliers).
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(REGISTER_URL, VALID_PAYLOAD, format="json")
 
         mock_publish.assert_called_once()
         kwargs = mock_publish.call_args.kwargs
@@ -92,10 +95,19 @@ class RegisterTests(TestCase):
     @patch("accounts.events.publisher.publish", side_effect=RuntimeError("bus caido"))
     def test_si_el_bus_falla_el_registro_no_falla(self, mock_publish):
         """eventos.md regla 3: un fallo del bus no bloquea al productor."""
-        response = self.client.post(REGISTER_URL, VALID_PAYLOAD, format="json")
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(REGISTER_URL, VALID_PAYLOAD, format="json")
 
         self.assertEqual(response.status_code, 201)
         self.assertTrue(User.objects.filter(email="juan@taller.com").exists())
+
+    @patch("accounts.events.publisher.publish")
+    def test_user_created_se_publica_solo_despues_del_commit(self, mock_publish):
+        """eventos.md 3: el evento JAMÁS se emite antes del COMMIT."""
+        with self.captureOnCommitCallbacks(execute=False):
+            self.client.post(REGISTER_URL, VALID_PAYLOAD, format="json")
+
+        mock_publish.assert_not_called()
 
     # --- Hallazgos del review ---------------------------------------------
 
@@ -143,12 +155,13 @@ class RegisterTests(TestCase):
     @patch("accounts.events.publisher.publish")
     def test_propaga_correlation_id_del_request(self, mock_publish):
         """El X-Correlation-Id llega al evento para rastrear la operación."""
-        self.client.post(
-            REGISTER_URL,
-            VALID_PAYLOAD,
-            format="json",
-            HTTP_X_CORRELATION_ID="corr-abc-123",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(
+                REGISTER_URL,
+                VALID_PAYLOAD,
+                format="json",
+                HTTP_X_CORRELATION_ID="corr-abc-123",
+            )
 
         mock_publish.assert_called_once()
         self.assertEqual(
