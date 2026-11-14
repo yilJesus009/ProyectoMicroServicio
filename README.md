@@ -32,6 +32,10 @@ demás servicios son internos.
 
 ## Puesta en marcha (Docker)
 
+**Requisitos:** Docker Desktop, Node.js 20+ (solo para los scripts, no corre
+dentro de Docker) y `git`. En Windows, todos los comandos de esta sección
+funcionan igual en **PowerShell** o en **Git Bash**.
+
 ```bash
 git clone https://github.com/yilJesus009/ProyectoMicroServicio.git
 cd ProyectoMicroServicio
@@ -39,22 +43,52 @@ cp .env.example .env
 docker compose up --build
 ```
 
+Con el `.env.example` sin tocar, el admin queda con estas credenciales
+(cambialas en `.env` antes de un despliegue real):
+
+```
+ADMIN_EMAIL=admin@repuestosya.com
+ADMIN_PASSWORD=cambia-esta-password-admin-inicial
+```
+
+Con los 9 contenedores `healthy` (`docker compose ps`), cargá los datos de
+demo y abrí la app:
+
+```bash
+node scripts/seed-demo.mjs
+```
+
+```
+Comprador:   comprador@demo.bo
+Proveedor 1: proveedor1@demo.bo
+Proveedor 2: proveedor2@demo.bo
+Contraseña (los tres): Demo12345!
+```
+
+- Frontend: http://localhost:4200 — entrá con cualquiera de esos usuarios.
 - Gateway: http://localhost:4000
-- Frontend: http://localhost:4200
-- RabbitMQ (UI, solo demo): http://localhost:15672
+- RabbitMQ (UI, solo demo): usuario y contraseña `guest` — http://localhost:15672
 
 ```bash
 docker compose logs -f <servicio>   # ver logs de un servicio
-docker compose down -v              # apagar y borrar datos
 node scripts/e2e-flujo.mjs          # recorre el flujo completo contra el Gateway
+node scripts/prueba-concurrencia-aceptar.mjs   # aceptar dos ofertas a la vez, repetible
+```
+
+**Si algo falla** (un servicio no queda `healthy`, o los datos quedaron en un
+estado raro):
+
+```bash
+docker compose down -v      # apaga todo y BORRA los datos
+docker compose up --build   # vuelve a levantar desde cero
+node scripts/seed-demo.mjs  # vuelve a sembrar
 ```
 
 ## Scripts de prueba
 
-Ambos scripts son Node 20 puro (sin dependencias) y solo hablan con el
-Gateway (`http://localhost:4000/api/v1`); nunca tocan la base de datos ni
-RabbitMQ directamente. Requieren Docker arriba y un `.env` real con
-`ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+Los tres scripts son Node 20 puro (sin dependencias) y hablan solo con el
+Gateway (`http://localhost:4000/api/v1`). Requieren Docker arriba; `e2e-flujo`
+y `seed-demo` además necesitan un `.env` real con `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 ### `node scripts/e2e-flujo.mjs`
 
@@ -86,6 +120,15 @@ Deja listos para la demo (contraseña `Demo12345!` para los tres usuarios):
 Es reejecutable: si el usuario, el perfil o una solicitud en el estado
 correcto ya existen, los reutiliza en vez de duplicarlos. Al terminar
 imprime un resumen con los usuarios, la contraseña y los ids creados.
+
+### `node scripts/prueba-concurrencia-aceptar.mjs`
+
+Prueba la regla más importante del proyecto: crea un comprador y dos
+proveedores nuevos, les publica dos ofertas y lanza los dos
+`POST /offers/{id}/accept` **exactamente a la vez**, contra Postgres real
+(sin mocks). Repetible las veces que haga falta; cada corrida usa emails
+con marca de tiempo. Verifica que el resultado sea siempre un `200`, un
+`409` y una sola oferta `ACCEPTED`.
 
 ## Documentación
 
