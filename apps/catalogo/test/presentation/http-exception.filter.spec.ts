@@ -1,4 +1,4 @@
-import { ArgumentsHost, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ArgumentsHost, BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { HttpExceptionFilter } from '../../src/presentation/http/http-exception.filter';
 import { CategoryNotFoundError } from '../../src/domain/errors/category-not-found.error';
 import { CategoryNameConflictError } from '../../src/domain/errors/category-name-conflict.error';
@@ -74,5 +74,29 @@ describe('HttpExceptionFilter', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ status: 500, msg: 'Error interno del servidor', data: null });
+  });
+
+  it('revision fase 5, hallazgo 3: ValidationPipe con varios mensajes (array) -> msg como un solo string, no un array', () => {
+    const { res, host } = hostWithResponse();
+    const exception = new BadRequestException(['El nombre es obligatorio', 'El ícono debe ser un texto']);
+    new HttpExceptionFilter().catch(exception, host);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    const call = res.json.mock.calls[0][0];
+    expect(typeof call.msg).toBe('string');
+    expect(call.msg).toBe('El nombre es obligatorio; El ícono debe ser un texto');
+  });
+
+  it('revision fase 5, hallazgo 2: un JSON mal formado (SyntaxError con status 400 de body-parser) da 400, no 500', () => {
+    const { res, host } = hostWithResponse();
+    const malformedJson: unknown = Object.assign(new SyntaxError('Unexpected token m in JSON'), { status: 400 });
+    new HttpExceptionFilter().catch(malformedJson, host);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      status: 400,
+      msg: 'El cuerpo de la petición no es JSON válido',
+      data: null,
+    });
   });
 });

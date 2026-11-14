@@ -118,9 +118,27 @@ function validateOffersSort(query = {}) {
   return query.sort;
 }
 
+/**
+ * Valida un :id de ruta (revisión fase 5, hallazgo 1). Sin esto,
+ * `Number('abc')` es `NaN`, llega al repositorio y Postgres responde con un
+ * error de tipo que termina en 500 en vez de 400.
+ *
+ * @param {string} raw `req.params.id`
+ * @param {string} [label] nombre del parámetro, para el mensaje
+ * @returns {number} entero positivo
+ */
+function parseIdParam(raw, label = 'id') {
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new ValidationException(`El parámetro '${label}' debe ser un entero positivo`);
+  }
+  return value;
+}
+
 module.exports = {
   validateCreateRequestDto,
   validateOpenFilters,
   validateSubmitOfferDto,
   validateOffersSort,
+  parseIdParam,
 };

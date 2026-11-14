@@ -11,18 +11,41 @@ const ERROR_STATUS = {
   NotificationNotFoundException: 404,
 };
 
+/**
+ * Un 4xx que viene de una librería (p. ej. el `SyntaxError` de body-parser
+ * ante un JSON mal formado, que trae `status: 400`) antes que el 500
+ * genérico (revisión fase 5, hallazgo 2): si no, un body roto daba 500 en
+ * vez del 400 que pide el contrato.
+ */
+function libraryStatus(err) {
+  for (const candidate of [err.status, err.statusCode]) {
+    if (typeof candidate === 'number' && candidate >= 400 && candidate < 500) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
 function errorHandler(err, _req, res, _next) {
-  const status = ERROR_STATUS[err.name] ?? 500;
+  const mapped = ERROR_STATUS[err.name];
+  const status = mapped ?? libraryStatus(err) ?? 500;
 
   if (status === 500) {
     console.error('[ErrorHandler]', err);
   }
 
-  res.status(status).json({
-    status,
-    msg: status === 500 ? 'Error interno del servidor' : err.message,
-    data: null,
-  });
+  let msg;
+  if (mapped) {
+    msg = err.message;
+  } else if (status === 500) {
+    msg = 'Error interno del servidor';
+  } else if (err instanceof SyntaxError) {
+    msg = 'El cuerpo de la petición no es JSON válido';
+  } else {
+    msg = 'Datos inválidos';
+  }
+
+  res.status(status).json({ status, msg, data: null });
 }
 
 /** 404 para rutas inexistentes, en el mismo envelope. */

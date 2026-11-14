@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { validateCreateRequestDto, validateOpenFilters } = require('./dto');
+const { validateCreateRequestDto, validateOpenFilters, parseIdParam } = require('./dto');
 const { PartRequestStatus } = require('../../domain/enums');
 const { PartRequestPhotoNotFoundException } = require('../../domain/errors');
 
@@ -87,7 +87,7 @@ function createPartRequestController({
     /** GET /api/v1/part-requests/:id */
     getById: async (req, res, next) => {
       try {
-        const request = await getPartRequestById.execute(Number(req.params.id), {
+        const request = await getPartRequestById.execute(parseIdParam(req.params.id), {
           requesterId: req.user.id,
         });
         res.status(200).json({ status: 200, msg: 'Solicitud encontrada', data: toResponse(request) });
@@ -99,7 +99,7 @@ function createPartRequestController({
     /** GET /api/v1/part-requests/:id/photo — misma regla de visibilidad que el detalle. */
     photo: async (req, res, next) => {
       try {
-        const request = await getPartRequestById.execute(Number(req.params.id), {
+        const request = await getPartRequestById.execute(parseIdParam(req.params.id), {
           requesterId: req.user.id,
         });
         if (!request.photo) throw new PartRequestPhotoNotFoundException(request.id);
@@ -117,7 +117,7 @@ function createPartRequestController({
     cancel: async (req, res, next) => {
       try {
         const request = await cancelPartRequest.execute({
-          requestId: Number(req.params.id),
+          requestId: parseIdParam(req.params.id),
           newStatus: PartRequestStatus.CANCELLED,
           actorId: req.user.id,
           correlationId: req.headers['x-correlation-id'],

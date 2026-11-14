@@ -104,8 +104,14 @@ class FakeOfferRepository extends TransactionalRepo {
 class FakeSupplierRepository {
   constructor(suppliers = {}) {
     this.suppliers = suppliers; // { [id]: { approved, businessName } }
+    this.lockCalls = [];
   }
   async findBySupplierId(id) {
+    return this.suppliers[id] ?? null;
+  }
+  /** SELECT ... FOR SHARE (revisión fase 5, hallazgo 8): registra con qué transaccion se pidió. */
+  async lockBySupplierId(id, options = {}) {
+    this.lockCalls.push({ id, transaction: options.transaction });
     return this.suppliers[id] ?? null;
   }
 }
@@ -245,6 +251,24 @@ test('SubmitOffer: proveedor no aprobado → ForbiddenException (403)', async ()
       assert.equal(err.name, 'ForbiddenException');
       return true;
     }
+  );
+});
+
+test('SubmitOffer: bloquea la fila del proveedor dentro de la transaccion, despues del lock de la solicitud', async () => {
+  const env = buildEnv();
+  const command = new SubmitOffer({ ...env, producer: PRODUCER });
+
+  await command.execute({
+    partRequestId: 34,
+    supplierId: SUPPLIER_A,
+    data: { price: 620, brand: 'KYB', condition: 'NEW', availability: 'IN_STOCK', deliveryType: 'DELIVERY', estimatedDays: 2 },
+  });
+
+  assert.equal(env.supplierRepository.lockCalls.length, 1, 'debe pedir el lock del proveedor exactamente una vez');
+  assert.notEqual(
+    env.supplierRepository.lockCalls[0].transaction,
+    undefined,
+    'el proveedor debe leerse CON lock y DENTRO de la misma transaccion que bloqueo la solicitud (no antes, suelto)'
   );
 });
 

@@ -28,6 +28,11 @@ class SequelizeSupplierRepository extends ISupplierRepository {
     return SequelizeSupplierRepository.toEntity(row);
   }
 
+  async lockBySupplierId(supplierId, { transaction } = {}) {
+    const row = await this.model.findByPk(supplierId, { transaction, lock: transaction.LOCK.SHARE });
+    return SequelizeSupplierRepository.toEntity(row);
+  }
+
   async upsert(supplier, { transaction } = {}) {
     await this.model.upsert(
       {
