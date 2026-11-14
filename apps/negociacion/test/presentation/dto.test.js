@@ -3,7 +3,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { validateCreateRequestDto, validateOpenFilters, validateSubmitOfferDto, validateOffersSort } = require('../../src/presentation/http/dto');
+const { validateCreateRequestDto, validateOpenFilters, validateSubmitOfferDto, validateOffersSort, parseIdParam } = require('../../src/presentation/http/dto');
 
 const validBody = {
   category_id: '1',
@@ -157,4 +157,19 @@ test('sort de ofertas: price | days validos, cualquier otro valor → Validation
     assert.equal(err.name, 'ValidationException');
     return true;
   });
+});
+
+test('parseIdParam: entero positivo se acepta y se convierte a number', () => {
+  assert.equal(parseIdParam('34'), 34);
+  assert.equal(parseIdParam('1'), 1);
+});
+
+test('parseIdParam: no numerico, cero, negativo o decimal → ValidationException (400)', () => {
+  for (const raw of ['abc', '0', '-1', '1.5', '', undefined]) {
+    assert.throws(() => parseIdParam(raw, 'id'), (err) => {
+      assert.equal(err.name, 'ValidationException');
+      assert.match(err.message, /id/);
+      return true;
+    }, `esperaba que '${raw}' fallara`);
+  }
 });

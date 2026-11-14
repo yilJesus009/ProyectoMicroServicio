@@ -5,20 +5,20 @@ const MIN_YEAR = 1950;
 const MAX_YEAR = new Date().getFullYear() + 1;
 
 export class CreateVehicleDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'La marca debe ser un texto' })
+  @IsNotEmpty({ message: 'La marca es obligatoria' })
   brand: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'El modelo debe ser un texto' })
+  @IsNotEmpty({ message: 'El modelo es obligatorio' })
   model: string;
 
-  @IsInt()
-  @Min(MIN_YEAR)
-  @Max(MAX_YEAR)
+  @IsInt({ message: 'El año debe ser un número entero' })
+  @Min(MIN_YEAR, { message: `El año debe ser ${MIN_YEAR} o posterior` })
+  @Max(MAX_YEAR, { message: `El año no puede ser posterior a ${MAX_YEAR}` })
   year: number;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'La patente debe ser un texto' })
   plate?: string;
 }

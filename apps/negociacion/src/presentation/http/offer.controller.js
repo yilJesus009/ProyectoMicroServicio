@@ -1,6 +1,6 @@
 'use strict';
 
-const { validateSubmitOfferDto, validateOffersSort } = require('./dto');
+const { validateSubmitOfferDto, validateOffersSort, parseIdParam } = require('./dto');
 
 /**
  * Controller delgado (AGENTS.md §5): valida DTO → llama caso de uso →
@@ -43,7 +43,7 @@ function createOfferController({
       try {
         const data = validateSubmitOfferDto(req.body);
         const offer = await submitOffer.execute({
-          partRequestId: Number(req.params.id),
+          partRequestId: parseIdParam(req.params.id),
           supplierId: req.user.id,
           data,
           correlationId: req.headers['x-correlation-id'],
@@ -58,7 +58,7 @@ function createOfferController({
     listForPartRequest: async (req, res, next) => {
       try {
         const sort = validateOffersSort(req.query);
-        const offers = await listPartRequestOffers.execute(Number(req.params.id), req.user.id, sort);
+        const offers = await listPartRequestOffers.execute(parseIdParam(req.params.id), req.user.id, sort);
         res.status(200).json({ status: 200, msg: 'Ofertas encontradas', data: offers.map(toOfferResponse) });
       } catch (err) {
         next(err);
@@ -78,7 +78,7 @@ function createOfferController({
     /** PATCH /api/v1/offers/:id/withdraw */
     withdraw: async (req, res, next) => {
       try {
-        const offer = await withdrawOffer.execute({ offerId: Number(req.params.id), actorId: req.user.id });
+        const offer = await withdrawOffer.execute({ offerId: parseIdParam(req.params.id), actorId: req.user.id });
         res.status(200).json({ status: 200, msg: 'Oferta retirada', data: toOfferResponse(offer) });
       } catch (err) {
         next(err);
@@ -89,7 +89,7 @@ function createOfferController({
     accept: async (req, res, next) => {
       try {
         const { offer, partRequest } = await acceptOffer.execute({
-          offerId: Number(req.params.id),
+          offerId: parseIdParam(req.params.id),
           actorId: req.user.id,
           correlationId: req.headers['x-correlation-id'],
         });

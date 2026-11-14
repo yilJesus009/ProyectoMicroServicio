@@ -12,6 +12,14 @@ const { buildEventEnvelope } = require('../buildEventEnvelope');
  * Bloquea la solicitud primero (SELECT ... FOR UPDATE), igual que retirar
  * y aceptar (AGENTS.md §4.1): así ninguna de las tres pisa a otra sobre la
  * misma solicitud mientras está en vuelo.
+ *
+ * La aprobación del proveedor se verifica DESPUÉS, dentro de la misma
+ * transacción y con la fila de `suppliers` también bloqueada
+ * (SELECT ... FOR SHARE, revisión fase 5, hallazgo 8): la fila de la
+ * solicitud y la del proveedor son filas distintas, así que bloquear solo
+ * la solicitud no alcanza — un SUPPLIER_REJECTED concurrente toca
+ * `suppliers`, no `part_requests`. Con las dos filas bloqueadas, uno de
+ * los dos (la oferta o el rechazo) espera al otro; nunca se cruzan.
  */
 class SubmitOffer {
   constructor({ partRequestRepository, offerRepository, supplierRepository, outboxRepository, unitOfWork, producer }) {
@@ -31,14 +39,14 @@ class SubmitOffer {
    * @param {string} [params.correlationId]
    */
   async execute({ partRequestId, supplierId, data, correlationId }) {
-    const supplier = await this.supplierRepository.findBySupplierId(supplierId);
-    if (!supplier?.approved) {
-      throw new ForbiddenException('Solo un proveedor aprobado puede enviar ofertas');
-    }
-
     return this.unitOfWork.run(async (transaction) => {
       const partRequest = await this.partRequestRepository.lockById(partRequestId, { transaction });
       if (!partRequest) throw new PartRequestNotFoundException(partRequestId);
+
+      const supplier = await this.supplierRepository.lockBySupplierId(supplierId, { transaction });
+      if (!supplier?.approved) {
+        throw new ForbiddenException('Solo un proveedor aprobado puede enviar ofertas');
+      }
 
       partRequest.assertAcceptsOffers();
 
