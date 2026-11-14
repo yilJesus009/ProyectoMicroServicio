@@ -87,6 +87,9 @@ services:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-cambia-este-django-secret-key-en-produccion}
       JWT_SECRET: ${JWT_SECRET:-cambia-este-secreto-en-produccion-min-32-caracteres}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
+      # DEBUG de Django: false en Docker/demo — la página de debug jamás se
+      # expone fuera de desarrollo local (revisión fase 5, bloque A→B)
+      IDENTITY_DEBUG: ${IDENTITY_DEBUG:-false}
       # Admin creado al iniciar si no existe
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@repuestosya.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-cambia-esta-password-admin-inicial}

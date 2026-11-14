@@ -55,7 +55,11 @@ if not JWT_SECRET:
 
 JWT_EXPIRES_IN = int(os.environ.get("JWT_EXPIRES_IN", "3600"))
 
-DEBUG = os.environ.get("IDENTITY_DEBUG", "true").lower() == "true"
+# Nunca `true` por defecto (revisión fase 5): con DEBUG=True, Django
+# muestra su página de debug interna (stack trace + settings) ante cualquier
+# error que no pase por el handler de DRF. En Docker/demo va en false; se
+# activa a mano con IDENTITY_DEBUG=true solo en desarrollo local.
+DEBUG = os.environ.get("IDENTITY_DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = [
     h.strip()
     for h in os.environ.get("IDENTITY_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")

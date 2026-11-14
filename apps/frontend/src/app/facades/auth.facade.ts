@@ -16,7 +16,8 @@ import {
 
 /**
  * Claves de almacenamiento local. El token vive en el navegador: sin él no
- * hay forma de llamar al Gateway, y al cerrar el navegador se borra solo.
+ * hay forma de llamar al Gateway. localStorage persiste al cerrar el
+ * navegador; se limpia en cerrarSesion() y ante un 401 (auth.interceptor).
  */
 const CLAVE_TOKEN = 'repuestosya_token';
 const CLAVE_USUARIO = 'repuestosya_usuario';
