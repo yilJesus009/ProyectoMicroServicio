@@ -1,43 +1,31 @@
+// La forma, el color y el espaciado base de .barra-superior, .barra-lateral
+// e .item-menu ya salen de src/styles/_globales.scss; acá solo lo propio de
+// este layout.
+
 .layout {
   height: 100vh;
 }
 
-/*
- * Barra superior: en Material 3 (Angular Material 20) el input `color` de
- * mat-toolbar ya no pinta el fondo, así que se colorea a mano con los tokens
- * del tema.
- */
-.barra {
+.barra-superior {
   position: sticky;
   top: 0;
-  background-color: var(--mat-sys-primary, #1976d2);
-  color: var(--mat-sys-on-primary, #fff);
-  border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+  z-index: 10;
 }
 
-.barra button {
-  color: inherit;
+.boton-menu {
+  color: #ffffff;
 }
 
-.menu-lateral {
-  width: 15rem;
-  background-color: var(--mat-sys-surface-container-low, #fff);
-  border-right: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+.marca-barra {
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
-.marca {
-  padding: 1rem;
-  font-size: 1.125rem;
-  font-weight: 500;
-}
-
-/* Menú lateral marcado según la ruta activa */
-:host ::ng-deep .activo {
-  background-color: color-mix(in srgb, var(--mat-sys-primary) 16%, transparent);
-}
-
-.titulo {
-  font-weight: 500;
+.logo-barra {
+  height: 28px;
+  width: auto;
+  display: block;
 }
 
 .espacio {
@@ -45,10 +33,33 @@
 }
 
 .sesion {
-  font-size: 0.875rem;
-  opacity: 0.9;
+  font-size: var(--texto-sm);
+  white-space: nowrap;
+}
+
+.boton-salir {
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  border-radius: var(--radio-control);
+  padding-inline: var(--esp-4);
+}
+
+.marca-lateral {
+  display: flex;
+  align-items: center;
+  height: var(--alto-barra-superior);
+  padding: 0 var(--esp-4);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.lista-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  padding: var(--esp-3);
 }
 
 .contenido {
-  padding: 1.5rem;
+  padding: var(--esp-5);
+  max-width: var(--ancho-contenido);
 }

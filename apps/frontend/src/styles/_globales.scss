@@ -31,15 +31,23 @@
   font-weight: 500;
   text-decoration: none;
 
-  .icono {
+  .icono,
+  mat-icon {
     color: var(--color-tinta-suave);
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
   }
 
   &--activo {
     background-color: var(--color-rojo-tenue);
     color: var(--color-rojo-texto);
 
-    .icono {
+    .icono,
+    mat-icon {
       color: var(--color-rojo-texto);
     }
   }

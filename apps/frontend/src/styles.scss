@@ -7,6 +7,7 @@
 @use '@fontsource/rubik/700.css' as *;
 @use '@fontsource/rubik/800.css' as *;
 @use '@fontsource/rubik/800-italic.css' as *;
+@use '@fontsource/material-icons-round/400.css' as *;
 @use 'styles/tokens';
 @use 'styles/base';
 @use 'styles/globales';
@@ -53,6 +54,20 @@ html {
 
   --mat-sys-outline: var(--color-borde-fuerte);
   --mat-sys-outline-variant: var(--color-borde);
+
+  // mat-toolbar no hereda el color del tema por su cuenta (su fondo por
+  // defecto es --mat-sys-surface, blanco): se fija aparte para la barra
+  // superior roja de 56px (sección 8).
+  --mat-toolbar-container-background-color: var(--color-rojo);
+  --mat-toolbar-container-text-color: #FFFFFF;
+  --mat-toolbar-standard-height: var(--alto-barra-superior);
+  --mat-toolbar-mobile-height: var(--alto-barra-superior);
+
+  // El panel de mat-sidenav hereda border-radius de corner-large (paneles),
+  // pero la barra lateral de DISEÑO.md es recta, con un borde de 1px nada
+  // más (sección 8).
+  --mat-sidenav-container-background-color: var(--color-superficie);
+  --mat-sidenav-container-shape: 0px;
 
   // Radios de controles y paneles (sección 6 y 7: sin !important).
   --mat-sys-corner-extra-small: var(--radio-control);

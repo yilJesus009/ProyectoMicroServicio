@@ -6,7 +6,7 @@
     aria-label="Avisos"
     (click)="alternar()"
   >
-    <mat-icon>notifications</mat-icon>
+    <span class="icono icono--notificaciones"></span>
     @if (conteo() > 0) {
       <span class="conteo">{{ conteo() }}</span>
     }
@@ -39,13 +39,16 @@
           <li>
             <button
               type="button"
-              class="aviso"
-              [class.leido]="aviso.read"
+              class="aviso-item"
+              [class.aviso-item--no-leido]="!aviso.read"
               (click)="abrirAviso(aviso)"
             >
-              <strong>{{ aviso.title }}</strong>
-              <span class="mensaje">{{ aviso.message }}</span>
-              <time class="fecha" [attr.datetime]="aviso.created_at">
+              <span class="aviso-item__punto" aria-hidden="true"></span>
+              <span class="aviso-item__cuerpo">
+                <strong class="aviso-item__titulo">{{ aviso.title }}</strong>
+                <span class="aviso-item__mensaje">{{ aviso.message }}</span>
+              </span>
+              <time class="aviso-item__fecha" [attr.datetime]="aviso.created_at">
                 {{ aviso.created_at | date: 'dd/MM/yyyy HH:mm' }}
               </time>
             </button>

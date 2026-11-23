@@ -97,3 +97,24 @@ h6 {
   outline: none;
   box-shadow: var(--anillo-foco);
 }
+
+// Íconos de Material en estilo redondeado (sección 7), autoalojados con
+// @fontsource/material-icons-round. El paquete solo trae el @font-face; esta
+// clase es la que Google normalmente entrega junto con la fuente.
+.material-icons-round {
+  font-family: 'Material Icons Round';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+}
