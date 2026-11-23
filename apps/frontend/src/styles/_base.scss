@@ -82,6 +82,21 @@ h6 {
   color: var(--color-tinta-suave);
 }
 
+// Enlace de texto (sección 4: rojo oscuro, no el rojo de marca, para que el
+// texto sobre fondo claro cumpla contraste AA).
+a.enlace,
+.enlace {
+  color: var(--color-rojo-oscuro);
+  font-weight: 500;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--color-rojo-texto);
+    text-decoration: underline;
+  }
+}
+
 // Precios, códigos, fechas y cantidades (sección 5).
 .num {
   font-variant-numeric: tabular-nums;

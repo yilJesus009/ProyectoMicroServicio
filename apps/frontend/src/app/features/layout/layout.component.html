@@ -52,7 +52,7 @@
       <app-campanita />
 
       @if (usuario(); as persona) {
-        <span class="sesion">{{ persona.nombre }} · {{ nombreRol() }}</span>
+        <span class="sesion">{{ persona.nombre }}, {{ nombreRol() }}</span>
       }
 
       <button mat-button type="button" class="boton-salir" (click)="salir()">Salir</button>

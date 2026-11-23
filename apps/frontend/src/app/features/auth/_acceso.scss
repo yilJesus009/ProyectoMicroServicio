@@ -1,0 +1,127 @@
+// Layout de dos paneles compartido por login y registro (DISEÑO.md sección 9
+// "Inicio de sesión y registro"): panel rojo con el logo y los pasos a la
+// izquierda, formulario en panel blanco a la derecha.
+
+.pantalla-acceso {
+  display: flex;
+  min-height: 100vh;
+}
+
+.panel-marca {
+  flex: 1 1 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--esp-6);
+  background: var(--color-rojo);
+  color: #ffffff;
+  padding: var(--esp-7);
+}
+
+.panel-marca__logo {
+  height: 40px;
+  width: auto;
+}
+
+.panel-marca__titular {
+  margin: 0;
+  max-width: 18ch;
+}
+
+.panel-marca__pasos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.panel-marca__pasos li {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  font-size: var(--texto-base);
+}
+
+.panel-marca__numero {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radio-pastilla);
+  background: rgba(255, 255, 255, 0.18);
+  font-weight: 700;
+}
+
+.panel-formulario {
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-superficie);
+  padding: var(--esp-6);
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin-top: var(--esp-4);
+}
+
+.accion {
+  margin-top: var(--esp-2);
+  height: var(--alto-control);
+}
+
+.pie {
+  margin: var(--esp-4) 0 0;
+  font-size: var(--texto-sm);
+  color: var(--color-tinta-suave);
+  text-align: center;
+}
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--radio-control);
+  background: var(--color-peligro-tenue);
+  color: var(--color-peligro);
+  font-size: var(--texto-sm);
+
+  mat-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pantalla-acceso {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .panel-marca {
+    flex: none;
+    align-items: center;
+    text-align: center;
+    padding: var(--esp-5);
+  }
+
+  .panel-marca__titular,
+  .panel-marca__pasos {
+    display: none;
+  }
+
+  .panel-formulario {
+    padding: var(--esp-5) var(--esp-4);
+  }
+}
