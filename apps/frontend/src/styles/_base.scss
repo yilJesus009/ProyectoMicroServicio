@@ -1,0 +1,99 @@
+// Reset y estilos base: tipografía, texto y foco visible de DISEÑO.md (secciones 5 y 12).
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--fuente);
+  background-color: var(--color-fondo);
+  color: var(--color-tinta);
+  font-size: var(--texto-base);
+  line-height: var(--interlineado-texto);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  line-height: var(--interlineado-titulo);
+  font-weight: 700;
+}
+
+// Mayúscula solo al inicio de la frase: nada en mayúsculas sostenidas (sección 5 y 13).
+.texto-display,
+.texto-2xl,
+.texto-xl,
+.texto-lg,
+.texto-sm,
+.texto-xs {
+  text-transform: none;
+}
+
+.texto-display {
+  font-size: var(--texto-display);
+  font-weight: 800;
+  font-style: italic;
+  line-height: var(--interlineado-titulo);
+}
+
+.texto-2xl {
+  font-size: var(--texto-2xl);
+  font-weight: 700;
+  line-height: var(--interlineado-titulo);
+}
+
+.texto-xl {
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  line-height: var(--interlineado-titulo);
+}
+
+.texto-lg {
+  font-size: var(--texto-lg);
+  font-weight: 600;
+  line-height: var(--interlineado-titulo);
+}
+
+.texto-sm {
+  font-size: var(--texto-sm);
+  font-weight: 500;
+  line-height: var(--interlineado-texto);
+}
+
+.texto-xs {
+  font-size: var(--texto-xs);
+  font-weight: 400;
+  line-height: var(--interlineado-texto);
+}
+
+.texto-suave {
+  color: var(--color-tinta-suave);
+}
+
+// Precios, códigos, fechas y cantidades (sección 5).
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+// Párrafos de lectura con ancho máximo de 75 caracteres (sección 5).
+.parrafo {
+  max-width: 75ch;
+}
+
+// Foco visible en todo lo interactivo, también sobre rojo (sección 12).
+:focus-visible {
+  outline: none;
+  box-shadow: var(--anillo-foco);
+}

@@ -1,39 +1,84 @@
-
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
+// Tema Angular Material (Material 3) y estilos globales de RepuestosYa.
+// Ver DISEÑO.md en la raíz del repo para la referencia completa.
 @use '@angular/material' as mat;
+@use '@fontsource/rubik/400.css' as *;
+@use '@fontsource/rubik/500.css' as *;
+@use '@fontsource/rubik/600.css' as *;
+@use '@fontsource/rubik/700.css' as *;
+@use '@fontsource/rubik/800.css' as *;
+@use '@fontsource/rubik/800-italic.css' as *;
+@use 'styles/tokens';
+@use 'styles/base';
+@use 'styles/globales';
 
 html {
+  // Paleta roja de marca (sección 7 de DISEÑO.md): se genera a partir del
+  // rojo base de Material y luego se sobrescriben las variables del sistema
+  // con los tokens exactos de la marca, porque el tono que genera Material
+  // no coincide con el `#EA044E` de PedidosYa.
   @include mat.theme((
     color: (
-      primary: mat.$azure-palette,
-      tertiary: mat.$blue-palette,
+      primary: mat.$red-palette,
+      tertiary: mat.$red-palette,
     ),
-    typography: Roboto,
+    typography: Rubik,
     density: 0,
   ));
+
+  --mat-sys-primary: var(--color-rojo);
+  --mat-sys-on-primary: #FFFFFF;
+  --mat-sys-primary-container: var(--color-rojo-tenue);
+  --mat-sys-on-primary-container: var(--color-rojo-texto);
+  --mat-sys-secondary: var(--color-rojo-oscuro);
+  --mat-sys-on-secondary: #FFFFFF;
+  --mat-sys-secondary-container: var(--color-rojo-tenue);
+  --mat-sys-on-secondary-container: var(--color-rojo-texto);
+  --mat-sys-tertiary: var(--color-rojo);
+  --mat-sys-on-tertiary: #FFFFFF;
+
+  --mat-sys-error: var(--color-peligro);
+  --mat-sys-on-error: #FFFFFF;
+  --mat-sys-error-container: var(--color-peligro-tenue);
+  --mat-sys-on-error-container: var(--color-peligro);
+
+  --mat-sys-surface: var(--color-superficie);
+  --mat-sys-on-surface: var(--color-tinta);
+  --mat-sys-surface-container: var(--color-superficie-2);
+  --mat-sys-surface-container-low: var(--color-superficie);
+  --mat-sys-surface-container-high: var(--color-superficie-2);
+  --mat-sys-surface-variant: var(--color-superficie-2);
+  --mat-sys-on-surface-variant: var(--color-tinta-suave);
+  --mat-sys-background: var(--color-fondo);
+  --mat-sys-on-background: var(--color-tinta);
+
+  --mat-sys-outline: var(--color-borde-fuerte);
+  --mat-sys-outline-variant: var(--color-borde);
+
+  // Radios de controles y paneles (sección 6 y 7: sin !important).
+  --mat-sys-corner-extra-small: var(--radio-control);
+  --mat-sys-corner-small: var(--radio-control);
+  --mat-sys-corner-medium: var(--radio-control);
+  --mat-sys-corner-large: var(--radio-panel);
+  --mat-sys-corner-full: var(--radio-pastilla);
+
+  // Los botones de Material caen a `corner-full` (pastilla) si no se fija su
+  // propio token; DISEÑO.md pide 8px en botones, así que se fija aparte.
+  --mat-button-filled-container-shape: var(--radio-control);
+  --mat-button-protected-container-shape: var(--radio-control);
+  --mat-button-outlined-container-shape: var(--radio-control);
+  --mat-button-text-container-shape: var(--radio-control);
+  --mat-button-tonal-container-shape: var(--radio-control);
+  --mat-button-filled-container-height: var(--alto-control);
+  --mat-button-protected-container-height: var(--alto-control);
+  --mat-button-outlined-container-height: var(--alto-control);
+  --mat-button-text-container-height: var(--alto-control);
+  --mat-button-tonal-container-height: var(--alto-control);
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
+  // La aplicación es solo de tema claro (sección 4: nada de modo oscuro).
   color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
+  background-color: var(--mat-sys-background);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
-  margin: 0;
 }
-/* You can add global styles to this file, and also import other style files */
-
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
