@@ -5,6 +5,7 @@
   </header>
 
   @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
     <p class="estado-carga">Cargando pedidos…</p>
   } @else if (error(); as mensaje) {
     <p class="mensaje-servidor" role="alert">

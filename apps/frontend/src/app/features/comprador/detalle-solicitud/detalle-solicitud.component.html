@@ -1,5 +1,6 @@
 <section class="pantalla">
   @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
     <p class="estado-carga">Cargando solicitud…</p>
   } @else if (error() && !solicitud()) {
     <p class="mensaje-servidor" role="alert">

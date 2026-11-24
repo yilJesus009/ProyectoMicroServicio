@@ -1,5 +1,6 @@
 <section class="pantalla">
   @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
     <p class="estado-carga">Cargando pedido…</p>
   } @else if (error() && !pedido()) {
     <p class="mensaje-servidor" role="alert">
@@ -115,7 +116,7 @@
             <mat-label>Número de tarjeta</mat-label>
             <input matInput formControlName="numero" inputmode="numeric" autocomplete="off" />
             @if (formulario.controls.numero.invalid && formulario.controls.numero.touched) {
-              <mat-error>Formato: 0000 0000 0000 0000</mat-error>
+              <mat-error><mat-icon aria-hidden="true">error</mat-icon>Formato: 0000 0000 0000 0000</mat-error>
             }
           </mat-form-field>
 
@@ -124,7 +125,7 @@
               <mat-label>Vencimiento</mat-label>
               <input matInput formControlName="vencimiento" placeholder="MM/AA" autocomplete="off" />
               @if (formulario.controls.vencimiento.invalid && formulario.controls.vencimiento.touched) {
-                <mat-error>Formato: MM/AA</mat-error>
+                <mat-error><mat-icon aria-hidden="true">error</mat-icon>Formato: MM/AA</mat-error>
               }
             </mat-form-field>
 
@@ -132,7 +133,7 @@
               <mat-label>CVV</mat-label>
               <input matInput formControlName="cvv" inputmode="numeric" autocomplete="off" />
               @if (formulario.controls.cvv.invalid && formulario.controls.cvv.touched) {
-                <mat-error>3 dígitos</mat-error>
+                <mat-error><mat-icon aria-hidden="true">error</mat-icon>3 dígitos</mat-error>
               }
             </mat-form-field>
           </div>

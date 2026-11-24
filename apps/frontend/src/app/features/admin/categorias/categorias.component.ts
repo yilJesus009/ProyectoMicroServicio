@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { CatalogoFacade, Categoria } from '../../../facades/catalogo.facade';
@@ -39,6 +40,7 @@ function rellenar(form: FormularioCategoria, categoria: Categoria): void {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatProgressBarModule,
     ReactiveFormsModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

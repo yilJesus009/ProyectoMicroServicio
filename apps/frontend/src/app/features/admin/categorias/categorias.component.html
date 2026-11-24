@@ -23,7 +23,7 @@
         <mat-label>Nombre</mat-label>
         <input matInput formControlName="name" />
         @if (formAlta.controls.name.invalid && formAlta.controls.name.touched) {
-          <mat-error>Ingresa el nombre</mat-error>
+          <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa el nombre</mat-error>
         }
       </mat-form-field>
 
@@ -50,6 +50,7 @@
   </div>
 
   @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
     <p class="estado-carga">Cargando categorías…</p>
   } @else if (lista().length === 0) {
     <div class="panel vacio">
@@ -80,7 +81,7 @@
                       <mat-label>Nombre</mat-label>
                       <input matInput formControlName="name" />
                       @if (formEdicion.controls.name.invalid && formEdicion.controls.name.touched) {
-                        <mat-error>Ingresa el nombre</mat-error>
+                        <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa el nombre</mat-error>
                       }
                     </mat-form-field>
 

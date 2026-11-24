@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatRadioModule } from '@angular/material/radio';
 
 import { mensajeDeError } from '../../../core/error/api-error';
@@ -55,6 +56,7 @@ const TONO_ESTADO_OFERTA: Record<string, string | undefined> = {
     DecimalPipe,
     MatButtonModule,
     MatIconModule,
+    MatProgressBarModule,
     MatRadioModule,
     RouterLink,
     TarjetaSolicitudComponent,

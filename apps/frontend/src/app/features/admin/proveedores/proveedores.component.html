@@ -14,6 +14,7 @@
   </header>
 
   @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
     <p class="estado-carga">Cargando proveedores…</p>
   }
   @if (error()) {
@@ -49,7 +50,7 @@
                 <mat-label>Motivo del rechazo</mat-label>
                 <textarea matInput [formControl]="motivo" rows="2"></textarea>
                 @if (motivo.invalid && motivo.touched) {
-                  <mat-error>Escribe el motivo del rechazo</mat-error>
+                  <mat-error><mat-icon aria-hidden="true">error</mat-icon>Escribe el motivo del rechazo</mat-error>
                 }
               </mat-form-field>
               <div class="botones">

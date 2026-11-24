@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 
 import { mensajeDeError } from '../../../core/error/api-error';
@@ -16,7 +17,13 @@ import { TarjetaSolicitudComponent } from '../../../shared/tarjeta-solicitud/tar
  */
 @Component({
   selector: 'app-mis-solicitudes',
-  imports: [MatButtonModule, MatIconModule, RouterLink, TarjetaSolicitudComponent],
+  imports: [
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    RouterLink,
+    TarjetaSolicitudComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mis-solicitudes.component.html',
   styleUrl: './mis-solicitudes.component.scss',

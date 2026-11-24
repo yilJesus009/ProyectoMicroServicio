@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import qrcode from 'qrcode-generator';
 
 import { mensajeDeError } from '../../../core/error/api-error';
@@ -33,6 +34,7 @@ import { ETIQUETA_ESTADO_PEDIDO } from '../../../shared/order-card/order-card.co
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatProgressBarModule,
     ReactiveFormsModule,
     RouterLink,
   ],

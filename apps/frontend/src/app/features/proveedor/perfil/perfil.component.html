@@ -10,6 +10,7 @@
   </header>
 
   @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
     <p class="estado-carga">Cargando tu perfil…</p>
   } @else {
     <div class="panel tarjeta">
@@ -27,7 +28,7 @@
           <mat-label>Nombre comercial</mat-label>
           <input matInput formControlName="business_name" autocomplete="organization" />
           @if (form.controls.business_name.invalid && form.controls.business_name.touched) {
-            <mat-error>Ingresa el nombre de tu negocio</mat-error>
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa el nombre de tu negocio</mat-error>
           }
         </mat-form-field>
 
@@ -35,7 +36,7 @@
           <mat-label>Ciudad</mat-label>
           <input matInput formControlName="city" autocomplete="address-level2" />
           @if (form.controls.city.invalid && form.controls.city.touched) {
-            <mat-error>Ingresa tu ciudad</mat-error>
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa tu ciudad</mat-error>
           }
         </mat-form-field>
 
@@ -43,7 +44,7 @@
           <mat-label>Teléfono</mat-label>
           <input matInput formControlName="phone" autocomplete="tel" />
           @if (form.controls.phone.invalid && form.controls.phone.touched) {
-            <mat-error>Ingresa un teléfono de contacto</mat-error>
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa un teléfono de contacto</mat-error>
           }
         </mat-form-field>
 
@@ -55,7 +56,7 @@
             }
           </mat-select>
           @if (form.controls.category_ids.invalid && form.controls.category_ids.touched) {
-            <mat-error>Elige al menos una categoría</mat-error>
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Elige al menos una categoría</mat-error>
           }
         </mat-form-field>
 

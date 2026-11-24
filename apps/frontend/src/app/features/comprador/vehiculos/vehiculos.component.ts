@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { CatalogoFacade, Vehiculo } from '../../../facades/catalogo.facade';
@@ -26,6 +27,7 @@ const ANIO_MAX = new Date().getFullYear() + 1;
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatProgressBarModule,
     ReactiveFormsModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

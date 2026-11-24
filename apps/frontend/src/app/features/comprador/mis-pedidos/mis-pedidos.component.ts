@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { Pedido, PedidosFacade } from '../../../facades/pedidos.facade';
@@ -15,7 +16,7 @@ import { OrderCardComponent } from '../../../shared/order-card/order-card.compon
  */
 @Component({
   selector: 'app-mis-pedidos',
-  imports: [MatButtonModule, MatIconModule, OrderCardComponent, RouterLink],
+  imports: [MatButtonModule, MatIconModule, MatProgressBarModule, OrderCardComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mis-pedidos.component.html',
   styleUrl: './mis-pedidos.component.scss',

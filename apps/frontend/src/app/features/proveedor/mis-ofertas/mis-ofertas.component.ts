@@ -3,6 +3,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { Oferta, SolicitudesFacade } from '../../../facades/solicitudes.facade';
@@ -32,7 +33,14 @@ const TONO_ESTADO: Record<string, string | undefined> = {
  */
 @Component({
   selector: 'app-mis-ofertas',
-  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, RouterLink],
+  imports: [
+    DatePipe,
+    DecimalPipe,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    RouterLink,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mis-ofertas.component.html',
   styleUrl: './mis-ofertas.component.scss',

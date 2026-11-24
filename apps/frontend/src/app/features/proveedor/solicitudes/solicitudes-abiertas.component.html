@@ -1,5 +1,6 @@
 <section class="abiertas">
   @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
     <p class="cargando">Cargando solicitudes…</p>
   } @else if (!aprobado) {
     <div class="panel aviso-perfil">

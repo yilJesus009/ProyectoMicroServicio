@@ -2,10 +2,14 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { EstadoPedido, Pedido, PedidosFacade } from '../../../facades/pedidos.facade';
-import { OrderCardComponent } from '../../../shared/order-card/order-card.component';
+import {
+  ETIQUETA_ESTADO_PEDIDO,
+  OrderCardComponent,
+} from '../../../shared/order-card/order-card.component';
 
 /** Siguiente acción según estado y tipo de entrega (docs/flujo-principal.md). */
 function siguienteEstado(pedido: Pedido): { estado: EstadoPedido; etiqueta: string } | null {
@@ -31,7 +35,7 @@ function siguienteEstado(pedido: Pedido): { estado: EstadoPedido; etiqueta: stri
  */
 @Component({
   selector: 'app-pedidos-proveedor',
-  imports: [MatButtonModule, MatIconModule, OrderCardComponent, RouterLink],
+  imports: [MatButtonModule, MatIconModule, MatProgressBarModule, OrderCardComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pedidos-proveedor.component.html',
   styleUrl: './pedidos-proveedor.component.scss',
@@ -79,7 +83,8 @@ export class PedidosProveedorComponent {
     try {
       const actualizado = await this.pedidos.cambiarEstado(pedido.id, accion.estado);
       this.lista.set(this.lista().map((p) => (p.id === actualizado.id ? actualizado : p)));
-      this.aviso.set(`Pedido #${pedido.id}: ${accion.etiqueta.toLowerCase()} — listo.`);
+      const etiquetaEstado = (ETIQUETA_ESTADO_PEDIDO[accion.estado] ?? accion.estado).toLowerCase();
+      this.aviso.set(`Pedido #${pedido.id}: ahora está ${etiquetaEstado}.`);
     } catch (err) {
       // 422 (transición inválida) o 403 (no es su pedido): msg del backend.
       this.error.set(mensajeDeError(err));

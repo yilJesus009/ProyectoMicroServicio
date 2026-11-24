@@ -2,6 +2,7 @@
   <h1 class="titular texto-display">¿Qué repuesto necesitas?</h1>
 
   @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
     <p class="cargando">Cargando categorías…</p>
   } @else {
     <form class="formulario" [formGroup]="form" (ngSubmit)="crear()">
@@ -44,7 +45,7 @@
             <mat-label>Marca del vehículo</mat-label>
             <input matInput formControlName="vehicleBrand" placeholder="Toyota" />
             @if (form.controls.vehicleBrand.invalid && form.controls.vehicleBrand.touched) {
-              <mat-error>Ingresa la marca</mat-error>
+              <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa la marca</mat-error>
             }
           </mat-form-field>
 
@@ -52,7 +53,7 @@
             <mat-label>Modelo del vehículo</mat-label>
             <input matInput formControlName="vehicleModel" placeholder="Corolla" />
             @if (form.controls.vehicleModel.invalid && form.controls.vehicleModel.touched) {
-              <mat-error>Ingresa el modelo</mat-error>
+              <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa el modelo</mat-error>
             }
           </mat-form-field>
 
@@ -60,7 +61,7 @@
             <mat-label>Año del vehículo</mat-label>
             <input matInput type="number" formControlName="vehicleYear" placeholder="2018" />
             @if (form.controls.vehicleYear.invalid && form.controls.vehicleYear.touched) {
-              <mat-error>Año entre {{ anioMinimo }} y {{ anioMaximo }}</mat-error>
+              <mat-error><mat-icon aria-hidden="true">error</mat-icon>Año entre {{ anioMinimo }} y {{ anioMaximo }}</mat-error>
             }
           </mat-form-field>
         </div>
@@ -75,7 +76,7 @@
           placeholder="Pastillas de freno delanteras"
         ></textarea>
         @if (form.controls.description.invalid && form.controls.description.touched) {
-          <mat-error>Describe lo que necesitas</mat-error>
+          <mat-error><mat-icon aria-hidden="true">error</mat-icon>Describe lo que necesitas</mat-error>
         }
       </mat-form-field>
 
@@ -84,7 +85,7 @@
           <mat-label>Ciudad</mat-label>
           <input matInput formControlName="city" placeholder="Santa Cruz" />
           @if (form.controls.city.invalid && form.controls.city.touched) {
-            <mat-error>Ingresa tu ciudad</mat-error>
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa tu ciudad</mat-error>
           }
         </mat-form-field>
 

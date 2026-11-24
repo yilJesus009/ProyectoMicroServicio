@@ -321,6 +321,72 @@ solicitudes" y "Solicitudes abiertas")
   notificaciones, que no tiene ruta propia: vive en la campanita de la
   barra superior, ya retematizada en la Fase 2.
 
+## Fase 5 — Estados
+
+Decisión tomada con el usuario: los avisos de éxito/error siguen como
+bloques fijos `.mensaje-servidor` en la página (no se migró a
+`MatSnackBar`, que sí pide la sección 7). Un aviso de error fijo no
+desaparece solo — es mejor para no perder el mensaje — y migrar a
+`MatSnackBar` real habría cambiado cómo se entrega el aviso en ~12
+pantallas (lógica, no solo estilo). **Queda como mejora para después de
+la v1.0.**
+
+- **Carga**: se agregó `<mat-progress-bar mode="indeterminate" />` junto
+  al texto "Cargando…" en las 14 pantallas con un estado de carga inicial
+  (todas las de Fase 3 excepto login/registro, que no tienen carga
+  inicial — solo el botón "Entrando…"/"Creando cuenta…" deshabilitado
+  durante el envío, que ya existía). Antes solo había texto; ahora cumple
+  la sección 10 completa ("barra de progreso de Material en el área que
+  carga").
+- **Vacíos**: revisados los 9 bloques `.vacio` de la app. Todos ya tienen
+  una frase clara de qué va ahí; solo "Mis solicitudes" necesitaba (y ya
+  tenía) una acción de creación directa — el resto de pantallas vacías
+  (mis ofertas, mis pedidos, proveedores filtrados, categorías, etc.) no
+  tiene una acción de creación de una sola pantalla a la que enlazar, así
+  que no se forzó ninguna.
+- **Errores de formulario**: el texto de los 26 `<mat-error>` de la app ya
+  seguía el patrón de la sección 10 (dicen qué corregir o el formato
+  esperado). Lo que faltaba — y se agregó en esta fase — es el ícono: la
+  sección 4 exige "ícono y texto, no solo color" para todo error, y los
+  `mat-error` solo tenían texto. Se agregó `<mat-icon aria-hidden="true">
+  error</mat-icon>` dentro de los 26, más la regla `mat-error { display:
+  flex; ... }` en `_globales.scss` para alinear ícono y texto. Cambio
+  puramente de plantilla, sin tocar ningún `.ts`.
+- **Avisos — rol y tono**: revisados los 28 usos de `.mensaje-servidor`:
+  ya tenían `role="alert"` en los de error y `role="status"` en los de
+  éxito/información, con ícono y tono correctos desde que se fueron
+  creando en la Fase 3.
+- **Texto "mismo verbo"**: revisados todos los `aviso.set(...)` de la
+  app. Solo uno no coincidía con el verbo de su acción: en
+  `pedidos-proveedor.component.ts`, el aviso tras avanzar un pedido decía
+  `"Pedido #12: marcar en camino — listo."` (con guion largo, raro de
+  leer); ahora usa la etiqueta real del nuevo estado:
+  `"Pedido #12: ahora está en camino."` (cambio de texto en el `.ts`,
+  sin tocar lógica, autorizado explícitamente para este caso). El resto
+  de los avisos (oferta aceptada/retirada, perfil guardado, vehículo
+  registrado/eliminado, proveedor aprobado/rechazado, categoría
+  creada/actualizada/activada/desactivada) ya usaban el mismo verbo que
+  su botón.
+- **Diálogos de confirmación**: ya existían desde la Fase 3 (aceptar
+  oferta con panel en línea, rechazar proveedor con motivo obligatorio).
+  No se agregó confirmación a "Eliminar vehículo": DISEÑO.md solo exige
+  confirmación explícita para "Rechazar" (sección 9); agregarla a
+  "Eliminar" sería una decisión de alcance nueva, no pedida.
+
+### Nota sobre el sub-agente de la Fase 5
+
+Las 13 pantallas restantes con `mat-progress-bar` se delegaron a un
+sub-agente (encargo acotado: solo esa barra, en esos 13 archivos). El
+sub-agente cumplió su encargo correctamente (build limpio, 209/209), pero
+además empezó —sin que se le pidiera— a agregar los íconos de
+`mat-error` en varios formularios, dejándolo a medio terminar en 6 de 14
+pantallas. Se detuvo solo al notar ediciones concurrentes del proceso
+principal y avisó explícitamente del desvío en su reporte final. Se
+revisó manualmente y se completó el trabajo de forma consistente en las
+26 instancias (ver "Errores de formulario" arriba) porque el motivo de
+fondo era válido (sección 4 de DISEÑO.md), pero quede claro que **no fue
+una instrucción dada**: quedó documentado para que el usuario lo sepa.
+
 ## Preguntas de la defensa
 
 (Se completa en la fase final con el resto de preguntas probables.)
