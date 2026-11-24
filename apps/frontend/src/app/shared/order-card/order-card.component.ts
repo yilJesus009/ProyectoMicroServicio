@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 
 import { Pedido } from '../../facades/pedidos.facade';
+import { MonedaPipe } from '../moneda.pipe';
 
 /**
  * Textos en español de los estados del pedido
@@ -42,7 +43,7 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
  */
 @Component({
   selector: 'app-order-card',
-  imports: [DatePipe, DecimalPipe, MatButtonModule],
+  imports: [DatePipe, MatButtonModule, MonedaPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="panel pedido">
@@ -55,9 +56,7 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
 
       <p class="proveedor texto-sm">{{ pedido().supplier_name }}</p>
 
-      <p class="precio num">
-        {{ pedido().price | number: '1.2-2' }} <span>{{ pedido().currency }}</span>
-      </p>
+      <p class="precio num">{{ pedido().price | moneda: pedido().currency }}</p>
 
       <div class="datos">
         <span class="dato">{{ pedido().vehicle_label || 'Vehículo no especificado' }}</span>
@@ -99,11 +98,6 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
       font-size: var(--texto-xl);
       font-weight: 700;
       color: var(--color-tinta);
-    }
-    .precio span {
-      font-size: var(--texto-sm);
-      font-weight: 400;
-      color: var(--color-tinta-suave);
     }
     .datos {
       display: flex;

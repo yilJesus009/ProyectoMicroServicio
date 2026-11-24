@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { Pedido, PedidosFacade } from '../../../facades/pedidos.facade';
+import { MonedaPipe } from '../../../shared/moneda.pipe';
 import {
   ETIQUETA_ESTADO_PEDIDO,
   TONO_ESTADO_PEDIDO,
@@ -24,10 +24,10 @@ import { OrderTimelineComponent } from '../../../shared/order-timeline/order-tim
 @Component({
   selector: 'app-seguimiento',
   imports: [
-    DecimalPipe,
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
+    MonedaPipe,
     OrderTimelineComponent,
     RouterLink,
   ],

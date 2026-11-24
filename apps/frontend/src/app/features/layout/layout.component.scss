@@ -71,6 +71,7 @@
 .contenido {
   padding: var(--esp-5);
   max-width: var(--ancho-contenido);
+  margin-inline: auto;
 }
 
 // A 375px el logo (28px de alto, ~148px de ancho con el texto) más el resto

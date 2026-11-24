@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 
 import { Oferta } from '../../facades/solicitudes.facade';
+import { MonedaPipe } from '../moneda.pipe';
 
 /** Textos en español de los estados de oferta (docs/frontend.md). */
 const ETIQUETA_ESTADO: Record<string, string | undefined> = {
@@ -38,7 +39,7 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
  */
 @Component({
   selector: 'app-offer-card',
-  imports: [DatePipe, DecimalPipe, MatButtonModule, MatChipsModule],
+  imports: [DatePipe, MatButtonModule, MatChipsModule, MonedaPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="oferta" [class.estado-aceptada]="oferta().status === 'ACCEPTED'">
@@ -49,9 +50,7 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
         </span>
       </header>
 
-      <p class="precio">
-        {{ oferta().price | number: '1.2-2' }} <span>{{ oferta().currency }}</span>
-      </p>
+      <p class="precio">{{ oferta().price | moneda: oferta().currency }}</p>
 
       <div class="datos">
         <span class="dato">{{ oferta().brand }}</span>
@@ -131,11 +130,6 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
       font-size: 1.4rem;
       font-weight: 600;
       color: #0b5394;
-    }
-    .precio span {
-      font-size: 0.85rem;
-      font-weight: 400;
-      color: #546e7a;
     }
     .datos {
       display: flex;

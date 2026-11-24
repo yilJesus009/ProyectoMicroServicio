@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { Oferta, SolicitudesFacade } from '../../../facades/solicitudes.facade';
+import { MonedaPipe } from '../../../shared/moneda.pipe';
 
 /** Textos en español de los estados de oferta (igual que offer-card/detalle-solicitud). */
 const ETIQUETA_ESTADO: Record<string, string | undefined> = {
@@ -35,10 +36,10 @@ const TONO_ESTADO: Record<string, string | undefined> = {
   selector: 'app-mis-ofertas',
   imports: [
     DatePipe,
-    DecimalPipe,
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
+    MonedaPipe,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

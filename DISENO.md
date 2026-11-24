@@ -100,7 +100,7 @@ Reglas:
 - Radios con jerarquía: controles (botones, campos) 8px, paneles 12px, chips y estados en forma de pastilla.
 - Separación por bordes de 1px, no por sombras. La única sombra es la de los elementos flotantes: menús, diálogos y avisos.
 - Escala de espacio de 4px: 4, 8, 12, 16, 24, 32, 48, 64.
-- Contenido alineado a la izquierda, ancho máximo 1200px.
+- Contenido centrado en el espacio disponible, ancho máximo 1200px.
 
 ## 7. Angular Material
 
@@ -123,7 +123,7 @@ Reglas:
 │  Nueva solicitud│ Texto de apoyo                                        │
 │  Mis pedidos    ├─────────────────────────────────────────────────────┤
 │  Mis vehículos  │                                                       │
-│                 │ Contenido (máx. 1200px, alineado a la izquierda)      │
+│                 │ Contenido (máx. 1200px, centrado)                     │
 │                 │                                                       │
 └────────────────┴─────────────────────────────────────────────────────┘
 ```

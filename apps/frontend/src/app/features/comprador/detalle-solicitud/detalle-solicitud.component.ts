@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -14,6 +13,7 @@ import {
   SolicitudesFacade,
 } from '../../../facades/solicitudes.facade';
 import { PedidosFacade } from '../../../facades/pedidos.facade';
+import { MonedaPipe } from '../../../shared/moneda.pipe';
 import { TarjetaSolicitudComponent } from '../../../shared/tarjeta-solicitud/tarjeta-solicitud.component';
 
 /** Textos en español de los estados de oferta (igual que offer-card). */
@@ -53,11 +53,11 @@ const TONO_ESTADO_OFERTA: Record<string, string | undefined> = {
 @Component({
   selector: 'app-detalle-solicitud',
   imports: [
-    DecimalPipe,
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
     MatRadioModule,
+    MonedaPipe,
     RouterLink,
     TarjetaSolicitudComponent,
   ],

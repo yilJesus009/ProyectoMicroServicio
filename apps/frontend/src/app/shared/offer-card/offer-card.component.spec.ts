@@ -43,8 +43,7 @@ describe('OfferCardComponent', () => {
     fixture.detectChanges();
 
     expect(texto()).toContain('AutoParts Center');
-    expect(texto()).toContain('620.00');
-    expect(texto()).toContain('BOB');
+    expect(texto()).toContain('Bs 620');
     expect(texto()).toContain('KYB');
     expect(texto()).toContain('Nuevo');
     expect(texto()).toContain('En stock');

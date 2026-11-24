@@ -65,8 +65,7 @@
           <h3 class="texto-lg">¿Aceptar esta oferta?</h3>
           <p>
             Oferta de <strong>{{ oferta.supplier_name }}</strong> por
-            <strong class="num">{{ oferta.price | number: '1.2-2' }} {{ oferta.currency }}</strong
-            >.
+            <strong class="num">{{ oferta.price | moneda: oferta.currency }}</strong>.
           </p>
           <p class="nota texto-sm texto-suave">
             Al aceptar, las demás ofertas quedarán como no elegidas y se generará tu pedido. Esta
@@ -113,7 +112,7 @@
                 >
                   <td data-etiqueta="Proveedor">{{ oferta.supplier_name }}</td>
                   <td data-etiqueta="Precio" class="num celda-precio">
-                    {{ oferta.price | number: '1.2-2' }} {{ oferta.currency }}
+                    {{ oferta.price | moneda: oferta.currency }}
                     @if (mejorPrecio().has(oferta.id)) {
                       <span class="estado estado--atencion">Mejor precio</span>
                     }

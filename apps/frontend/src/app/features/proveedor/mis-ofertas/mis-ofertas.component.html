@@ -43,7 +43,7 @@
               <td data-etiqueta="Proveedor">{{ oferta.supplier_name }}</td>
               <td data-etiqueta="Marca">{{ oferta.brand }}</td>
               <td data-etiqueta="Precio" class="num">
-                {{ oferta.price | number: '1.2-2' }} {{ oferta.currency }}
+                {{ oferta.price | moneda: oferta.currency }}
               </td>
               <td data-etiqueta="Fecha" class="num">{{ oferta.created_at | date: 'dd/MM/yyyy' }}</td>
               <td data-etiqueta="Estado" class="celda-accion">

@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--esp-4);
-  max-width: 560px;
+  max-width: 900px;
 }
 
 .volver a {
@@ -13,6 +13,29 @@
 
 .estado-carga {
   color: var(--color-tinta-suave);
+}
+
+.disposicion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.columna-pago {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+// Desde escritorio, resumen y método de pago lado a lado en vez de una
+// sola columna angosta (DISEÑO.md sección 8: aprovechar el ancho disponible).
+@media (min-width: 1024px) {
+  .disposicion {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: var(--esp-5);
+  }
 }
 
 .resumen {
