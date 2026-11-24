@@ -1,29 +1,35 @@
 <section class="pantalla">
   <div class="volver">
-    <a mat-button routerLink="/proveedor/solicitudes">← Solicitudes abiertas</a>
+    <a mat-button routerLink="/proveedor/solicitudes">
+      <mat-icon aria-hidden="true">arrow_back</mat-icon>
+      Solicitudes abiertas
+    </a>
   </div>
 
   @if (cargando()) {
-    <p class="estado">Cargando solicitud…</p>
+    <p class="estado-carga">Cargando solicitud…</p>
   } @else if (error() && !solicitud()) {
-    <p class="error" role="alert">{{ error() }}</p>
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
   }
 
   @if (solicitud(); as solicitud) {
-    <mat-card class="resumen">
-      <mat-card-header>
-        <mat-card-title>{{ solicitud.description }}</mat-card-title>
-        <mat-card-subtitle>
-          {{ solicitud.vehicle_label || 'Vehículo no especificado' }} ·
-          {{ solicitud.city }}
-        </mat-card-subtitle>
-      </mat-card-header>
-    </mat-card>
+    <div class="panel resumen">
+      <h2 class="texto-lg">{{ solicitud.description }}</h2>
+      <p class="texto-sm texto-suave">
+        {{ solicitud.vehicle_label || 'Vehículo no especificado' }}, {{ solicitud.city }}
+      </p>
+    </div>
 
-    <h2>Tu oferta</h2>
+    <h2 class="texto-xl">Tu oferta</h2>
 
     @if (error(); as mensaje) {
-      <p class="error" role="alert">{{ mensaje }}</p>
+      <p class="mensaje-servidor" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>{{ mensaje }}</span>
+      </p>
     }
 
     <form class="formulario" [formGroup]="formulario" (ngSubmit)="enviar()">
@@ -61,7 +67,7 @@
       </mat-form-field>
 
       <mat-radio-group formControlName="delivery_type" class="entrega">
-        <span class="etiqueta">Entrega:</span>
+        <span class="etiqueta texto-sm">Entrega:</span>
         <mat-radio-button value="DELIVERY">Entrega a domicilio</mat-radio-button>
         <mat-radio-button value="PICKUP">Retiro en tienda</mat-radio-button>
       </mat-radio-group>

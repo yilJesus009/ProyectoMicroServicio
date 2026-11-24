@@ -1,35 +1,26 @@
 .abiertas {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--esp-4);
 }
 
-.cargando,
-.vacia {
-  color: #546e7a;
+.cargando {
+  color: var(--color-tinta-suave);
 }
 
-.aviso {
+.aviso-perfil {
   max-width: 40rem;
-}
-
-.cabecera {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-h2 {
-  margin: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-2);
 }
 
 .filtros {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--esp-3);
 }
 
 .filtro {
@@ -39,21 +30,16 @@ h2 {
 .lista {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--esp-3);
 }
 
 .elemento {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.4rem;
+  gap: var(--esp-2);
 }
 
 .detalle {
   align-self: flex-end;
-}
-
-.error {
-  color: #b3261e;
-  margin: 0;
 }

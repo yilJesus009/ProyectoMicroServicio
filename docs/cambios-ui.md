@@ -226,6 +226,23 @@ solicitudes" y "Solicitudes abiertas")
   para una categoría sin PNG, y el estado seleccionado (rojo tenue +
   borde rojo) al hacer clic.
 
+### Solicitudes abiertas (proveedor) y Ofertar
+
+- `estado-perfil` (compartido con "Perfil comercial" y admin): pasa de
+  `mat-chip` con colores propios a `.estado`/`.estado--<tono>`, igual que
+  el resto de la app (Proveedor: Pendiente→atención, Aprobado→éxito,
+  Rechazado→neutro).
+- "Solicitudes abiertas": panel de "perfil no aprobado" con `.panel`, el
+  botón de cada fila se renombra de "Ofertar" a "Enviar oferta" (texto
+  exacto de la sección 9 y del ejemplo de verbo+objeto de la sección 10).
+  Vacío con `.panel.vacio`.
+- "Ofertar": resumen de la solicitud en `.panel`, enlace "volver" con
+  ícono, mensajes de error con `.mensaje-servidor`. Sin cambios de `.ts`.
+- Se quitó `MatCardModule` de ambas pantallas.
+- Verificado visualmente con datos inyectados en los signals (sin
+  backend): tonos de estado y urgencia correctos, ícono de categoría,
+  botones con borde rojo.
+
 ## Preguntas de la defensa
 
 (Se completa en la fase final con el resto de preguntas probables.)

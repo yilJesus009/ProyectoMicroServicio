@@ -2,52 +2,45 @@
   @if (cargando()) {
     <p class="cargando">Cargando solicitudes…</p>
   } @else if (!aprobado) {
-    <mat-card class="aviso">
-      <mat-card-header>
-        <mat-card-title>Tu perfil todavía no está aprobado</mat-card-title>
-        <mat-card-subtitle>
-          Cuando el administrador lo apruebe verás aquí las solicitudes
-          abiertas para ofertar.
-        </mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        @if (perfil(); as p) {
-          <app-estado-perfil [estado]="p.status" [motivo]="p.rejection_reason" />
-        }
-      </mat-card-content>
-      <mat-card-actions align="end">
-        <a mat-flat-button color="primary" routerLink="/proveedor/perfil">
-          Ir a mi perfil
-        </a>
-      </mat-card-actions>
-    </mat-card>
+    <div class="panel aviso-perfil">
+      <h2 class="texto-xl">Tu perfil todavía no está aprobado</h2>
+      <p class="texto-sm texto-suave">
+        Cuando el administrador lo apruebe verás aquí las solicitudes abiertas para ofertar.
+      </p>
+      @if (perfil(); as p) {
+        <app-estado-perfil [estado]="p.status" [motivo]="p.rejection_reason" />
+      }
+      <a mat-flat-button color="primary" routerLink="/proveedor/perfil">Ir a mi perfil</a>
+    </div>
   } @else {
-    <header class="cabecera">
-      <h2>Solicitudes abiertas</h2>
-      <form class="filtros" [formGroup]="filtros" (ngSubmit)="buscar()">
-        <mat-form-field appearance="outline" class="filtro">
-          <mat-label>Ciudad</mat-label>
-          <input matInput formControlName="ciudad" placeholder="Santa Cruz" />
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="filtro">
-          <mat-label>Categoría</mat-label>
-          <mat-select formControlName="categoria">
-            <mat-option [value]="''">Todas</mat-option>
-            @for (categoria of categorias(); track categoria.id) {
-              <mat-option [value]="categoria.id">{{ categoria.name }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <button mat-flat-button color="primary" type="submit" class="buscar">
-          Filtrar
-        </button>
-      </form>
+    <header class="encabezado-pagina">
+      <h1 class="encabezado-pagina__titulo">Solicitudes abiertas</h1>
     </header>
 
+    <form class="filtros" [formGroup]="filtros" (ngSubmit)="buscar()">
+      <mat-form-field appearance="outline" class="filtro">
+        <mat-label>Ciudad</mat-label>
+        <input matInput formControlName="ciudad" placeholder="Santa Cruz" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filtro">
+        <mat-label>Categoría</mat-label>
+        <mat-select formControlName="categoria">
+          <mat-option [value]="''">Todas</mat-option>
+          @for (categoria of categorias(); track categoria.id) {
+            <mat-option [value]="categoria.id">{{ categoria.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" type="submit" class="buscar">Filtrar</button>
+    </form>
+
     @if (error()) {
-      <p class="error" role="alert">{{ error() }}</p>
+      <p class="mensaje-servidor" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>{{ error() }}</span>
+      </p>
     }
 
     <div class="lista">
@@ -56,14 +49,17 @@
           <app-tarjeta-solicitud [solicitud]="solicitud" />
           <a
             mat-stroked-button
+            color="primary"
             class="detalle"
             [routerLink]="['/proveedor/solicitudes', solicitud.id, 'ofertar']"
           >
-            Ofertar
+            Enviar oferta
           </a>
         </div>
       } @empty {
-        <p class="vacia">No hay solicitudes abiertas con esos filtros.</p>
+        <div class="panel vacio">
+          <p class="vacio__texto">No hay solicitudes abiertas con esos filtros.</p>
+        </div>
       }
     </div>
   }
