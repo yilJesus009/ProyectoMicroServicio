@@ -7,26 +7,28 @@
 
 ## Estado actual (pausado)
 
-- **Paso 1 — hecho.** Clonado en
-  `C:\Users\Usuario\Desktop\Tareas\WebIII\ProyectoFinal-Prueba\ProyectoMicroServicio`
-  (nota: el repo quedó en una subcarpeta `ProyectoMicroServicio` porque el
-  clon no se hizo con un nombre de carpeta destino explícito — es la ruta
-  real a usar para retomar, no la del paso 1 sugerido abajo).
-- **Paso 2 — en curso.** Docker Desktop estaba iniciando; `docker compose up
-  --build` corriendo en foreground (sin `-d`) mostraba los healthchecks de
-  `marketplace-frontend` y `marketplace-identidad` respondiendo 200 de forma
-  repetida, lo que indica stack sano. **Falta confirmar explícitamente** con
-  `docker compose ps` que los 9 contenedores están `healthy`, y **todavía no
-  se corrió** `node scripts/seed-demo.mjs`.
-- **Pasos 3 a 10 — no iniciados.**
+- **Pasos 1 a 6 — hechos**, sobre clon limpio de `develop` en commit
+  `40cc8b7`, en
+  `C:\Users\Usuario\Desktop\Tareas\WebIII\ProyectoFinal-Prueba\ProyectoMicroServicio`.
+  Build sin caché, 9 contenedores `healthy`, `seed-demo.mjs`, 29/29
+  comprobaciones de `e2e-flujo.mjs`, 3 corridas de
+  `prueba-concurrencia-aceptar.mjs`, y las evidencias del Plan B en
+  `docs/defensa/evidencias/` (ver paso 6 y la nota debajo).
+- **Paso 7 — pendiente, ensayo individual.** Queda para que Dylan lo corra
+  solo, con cronómetro, en una pasada antes de la defensa — no se hizo en
+  esta sesión. El resto de los pasos (8, 9, 10) **no dependen de que el
+  paso 7 esté hecho**.
+- **Pasos 8 a 10 — no iniciados.**
 
-### Nota importante — reinicio del ensayo
+### Nota — faltan las capturas de interfaz del Plan B
 
-Cuando se mergee `feat/rediseno-ui` a `develop`, **este ensayo se reinicia
-desde el paso 1** (clon limpio nuevo), porque el objetivo es probar el
-código que realmente se va a presentar, no una versión previa al rediseño.
-No tocar `main` ni el tag `v1.0` hasta repetir el ensayo completo sobre el
-`develop` ya actualizado.
+`docs/defensa/evidencias/` (paso 6) por ahora solo tiene la evidencia
+técnica (salidas de los scripts y RabbitMQ). Las capturas de las
+pantallas de la interfaz para el caso en que Docker no levante nada en
+vivo (login, nueva solicitud, comparador, enviar oferta, seguimiento,
+pago) se toman en la rama `fix/layout-escritorio`, después de corregir el
+ancho del contenido en escritorio — tomarlas ahora las dejaría con el
+layout angosto que se va a corregir.
 
 ---
 
@@ -88,16 +90,31 @@ Salida esperada: un `200`, un `409`, una sola oferta `ACCEPTED`. Correrlo
 
 ### 6. Preparar capturas del Plan B (no el día de la defensa)
 
-Guardar en `docs\defensa\capturas\` (crear la carpeta si no existe):
+Guardar en `docs\defensa\evidencias\` (crear la carpeta si no existe):
 
-- `docs\defensa\capturas\e2e-flujo-29-29.png` (o `.txt`) — salida completa
-  del paso 4 con sus 29 comprobaciones en `✓`.
-- `docs\defensa\capturas\rabbitmq-colas.png` — UI de RabbitMQ
-  (`http://localhost:15672`, `guest`/`guest`), pestañas Queues y Exchanges.
-- `docs\defensa\capturas\outbox-published.png` — resultado del `SELECT` de
-  `outbox_events` con `published_at` lleno (comando 3 de
-  `docs/defensa/guion-demo.md`).
-- `docs\defensa\capturas\concurrencia-200-409.png` — salida del paso 5.
+- `docs\defensa\evidencias\e2e-flujo-29-29.txt` — salida completa del
+  paso 4 con sus 29 comprobaciones en `✓`.
+- `docs\defensa\evidencias\rabbitmq-colas.jpg` — UI de RabbitMQ
+  (`http://localhost:15672`, `guest`/`guest`), pestaña Queues and Streams
+  (8 colas, `notificaciones.all.dlq` en 0 mensajes).
+- `docs\defensa\evidencias\rabbitmq-exchanges.jpg` — misma UI, pestaña
+  Exchanges (los 4 `topic` del proyecto + `dlx`).
+- `docs\defensa\evidencias\outbox-published.txt` — resultado del `SELECT`
+  de `outbox_events` con `published_at` lleno (comando 3 de
+  `docs/defensa/guion-demo.md`). Es salida de terminal, no una captura de
+  pantalla: `.txt`, no `.png`.
+- `docs\defensa\evidencias\concurrencia-200-409.txt` — salida del paso 5.
+  También `.txt` por el mismo motivo.
+
+Capturas con contenido de imagen real (RabbitMQ) se guardan como `.jpg`,
+porque la herramienta de captura usada genera JPEG — nunca nombrarlas
+`.png` con contenido JPEG adentro.
+
+Pendiente (ver nota abajo): capturas de las pantallas clave de la
+interfaz (login, nueva solicitud, comparador, enviar oferta, seguimiento,
+pago) para el caso en que Docker no levante nada en vivo el día de la
+defensa. Se toman en `fix/layout-escritorio`, después del ajuste de
+ancho en escritorio.
 
 ### 7. Ensayo cronometrado, dos pasadas, con intercambio de roles
 

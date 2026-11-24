@@ -126,11 +126,12 @@ Preparar **durante el ensayo**, no el día de la defensa:
 
 | Si falla | Mostrar en su lugar | Archivo sugerido |
 |---|---|---|
-| Docker tarda en levantar o algo no queda `healthy` | Captura de `node scripts/e2e-flujo.mjs` ya corrido, con los 29 pasos en `✓` | `docs/defensa/capturas/e2e-flujo-29-29.png` (o `.txt` con la salida completa) |
-| La UI de RabbitMQ no carga o el navegador se cuelga | Captura de las colas y exchanges (la salida de `rabbitmqctl list_queues`/`list_exchanges`, o un screenshot de la UI ya tomado antes) | `docs/defensa/capturas/rabbitmq-colas.png` |
-| El comando de `outbox_events` no corre en vivo (typo, Docker lento) | Captura de la consulta ya corrida con una fila real con `published_at` | `docs/defensa/capturas/outbox-published.png` |
-| `prueba-concurrencia-aceptar.mjs` no da tiempo a correrlo en vivo | Captura de una corrida previa con el `200`/`409` | `docs/defensa/capturas/concurrencia-200-409.png` |
+| Docker tarda en levantar o algo no queda `healthy` | Salida de `node scripts/e2e-flujo.mjs` ya corrido, con los 29 pasos en `✓` | `docs/defensa/evidencias/e2e-flujo-29-29.txt` |
+| La UI de RabbitMQ no carga o el navegador se cuelga | Capturas de las colas y exchanges ya tomadas antes | `docs/defensa/evidencias/rabbitmq-colas.jpg` y `rabbitmq-exchanges.jpg` |
+| El comando de `outbox_events` no corre en vivo (typo, Docker lento) | Salida de la consulta ya corrida con una fila real con `published_at` | `docs/defensa/evidencias/outbox-published.txt` |
+| `prueba-concurrencia-aceptar.mjs` no da tiempo a correrlo en vivo | Salida de una corrida previa con el `200`/`409` | `docs/defensa/evidencias/concurrencia-200-409.txt` |
 | El pago o el avance de estado no responden a tiempo | Seguir con el pedido 2 (ya en `PREPARING` desde `seed-demo.mjs`) en vez de esperar el que se generó en vivo | — |
+| Docker no levanta en absoluto (no hay nada que mostrar en vivo) | **Pendiente** — capturas de las pantallas clave (login, nueva solicitud, comparador, enviar oferta, seguimiento, pago); se toman en `fix/layout-escritorio` tras el ajuste de ancho en escritorio | `docs/defensa/evidencias/ui-*.jpg` (aún no existen) |
 
 Si el plan B entra, se dice en voz alta: *"esto lo grabamos antes porque la
 red del aula puede fallar; el código real está en el repositorio y lo
