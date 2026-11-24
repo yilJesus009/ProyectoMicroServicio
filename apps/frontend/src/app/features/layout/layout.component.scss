@@ -14,12 +14,14 @@
 
 .boton-menu {
   color: #ffffff;
+  flex-shrink: 0;
 }
 
 .marca-barra {
   display: flex;
   align-items: center;
   height: 100%;
+  flex-shrink: 0;
 }
 
 .logo-barra {
@@ -32,9 +34,15 @@
   flex: 1 1 auto;
 }
 
+// En pantallas angostas, este es el único elemento que debe encogerse: sin
+// min-width:0 un hijo flex no se achica por debajo de su texto y desborda
+// la barra en vez de truncarse (bug clásico de flexbox).
 .sesion {
   font-size: var(--texto-sm);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .boton-salir {
@@ -42,6 +50,7 @@
   color: #ffffff;
   border-radius: var(--radio-control);
   padding-inline: var(--esp-4);
+  flex-shrink: 0;
 }
 
 .marca-lateral {
@@ -62,4 +71,19 @@
 .contenido {
   padding: var(--esp-5);
   max-width: var(--ancho-contenido);
+}
+
+// A 375px el logo (28px de alto, ~148px de ancho con el texto) más el resto
+// de elementos fijos de la barra no caben con el espaciado normal — se
+// reduce el espaciado y se oculta el texto de sesión (ya truncado a 0, pero
+// seguía gastando el gap de sus dos lados).
+@media (max-width: 480px) {
+  .barra-superior {
+    gap: var(--esp-2);
+    padding: 0 var(--esp-2);
+  }
+
+  .sesion {
+    display: none;
+  }
 }

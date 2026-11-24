@@ -387,9 +387,99 @@ revisó manualmente y se completó el trabajo de forma consistente en las
 fondo era válido (sección 4 de DISEÑO.md), pero quede claro que **no fue
 una instrucción dada**: quedó documentado para que el usuario lo sepa.
 
-## Preguntas de la defensa
+## Fase 6 — Responsive final, accesibilidad y limpieza
 
-(Se completa en la fase final con el resto de preguntas probables.)
+**Técnica de prueba usada**: la herramienta de automatización no puede
+cambiar el ancho real de la ventana del navegador (`resize_window` reporta
+éxito pero `window.innerWidth` no cambia). En su lugar se probó con un
+`<iframe>` del mismo origen, con `width`/`height` fijos, apuntando al
+servidor de desarrollo — se confirmó con `iframe.contentWindow.innerWidth`
+que así se obtiene un viewport real e independiente al que las media
+queries responden correctamente. Se verificó 375px (equivalente a 360px
+para este propósito), 768px y 1280px, con datos reales de forma (login,
+registro) y con datos de prueba inyectados por `window.ng.applyChanges`
+sobre los signals de cada pantalla cuando no había backend disponible
+(comparador de ofertas, seguimiento de pedido) — nunca inventando campos:
+los mismos que ya consume cada plantilla.
+
+Se encontraron y corrigieron tres desbordes horizontales reales, todos de
+CSS puro (ningún `.ts` tocado):
+
+- **Barra superior a 375px**: el bloque `.sesion` (nombre y rol de la
+  persona) es un hijo flex que, sin `min-width: 0`, no se encoge por
+  debajo del ancho de su propio texto — un desborde clásico de flexbox.
+  El logo y los botones fijos tampoco cabían ya con el espaciado normal.
+  Arreglado con `min-width: 0` + `overflow: hidden` + `text-overflow:
+  ellipsis` en `.sesion`, `flex-shrink: 0` en los elementos fijos, y un
+  `@media (max-width: 480px)` que reduce el espaciado de la barra y
+  oculta el texto de sesión (el nombre completo sigue disponible en
+  `768px` y más).
+- **Chips de categoría a 375px** (`.chips-categoria`, nueva solicitud):
+  el mismo problema de encogimiento, pero en una grilla: un `grid item`
+  tampoco se encoge por debajo de su contenido sin `min-width: 0`, así
+  que nombres como "Suspensión" forzaban la columna a crecer y desbordar
+  la grilla de 3 columnas que pide la sección 10. Arreglado con
+  `min-width: 0` en `.chip-categoria` y `text-overflow: ellipsis` en el
+  nombre como respaldo; pero con 3 columnas fijas casi todos los nombres
+  quedaban truncados en un celular real, así que se agregó
+  `@media (max-width: 599px) { grid-template-columns: repeat(2, 1fr); }`
+  — mismo diseño de tarjeta con ícono, solo con más aire por fila en
+  pantallas angostas.
+- **Tabla comparadora** (`.tabla-comparacion`): las celdas usaban
+  `height: 52px` (fijo). Cuando una celda apila dos líneas — el precio
+  más el distintivo "Mejor precio", o el estado "Enviada" más el botón
+  "Aceptar oferta" — ese contenido se salía de los 52px y se solapaba
+  visualmente con la fila siguiente, en cualquier ancho (se vio en
+  768px y 1280px; a <720px la tabla usa su otro layout, en tarjetas
+  apiladas, que no tiene este problema). Arreglado cambiando `height` por
+  `min-height`: las filas de una sola línea miden igual, las que apilan
+  contenido crecen en vez de desbordar.
+
+**Foco de teclado**: se confirmó tabulando con teclado real (no solo
+`.focus()` por script) que `:focus-visible { box-shadow: var(--anillo-foco)
+}` se aplica tanto a elementos nativos (enlaces del menú) como a
+componentes de Angular Material (`mat-stroked-button` "Salir"), incluso
+sobre el rojo de la barra superior — el anillo blanco + oscuro se ve con
+buen contraste en ambos fondos.
+
+**`prefers-reduced-motion`**: el proyecto no define ninguna propiedad
+`transition` propia en todo `apps/frontend/src` (se verificó con una
+búsqueda completa); el único movimiento posible vendría de Angular
+Material, que no está usando `@angular/animations` (ver nota de la Fase 5
+sobre el diálogo de confirmación). El token `--duracion` ya cae a `0ms`
+bajo esa media query en `_tokens.scss`, correcto y listo si en el futuro
+se agrega alguna transición propia, pero hoy no tiene nada que mitigar:
+riesgo bajo, no se forzó ninguna animación nueva solo para tener algo que
+reducir.
+
+**CSS muerto**: se repasaron las 16 clases globales de primer nivel de
+`_globales.scss` contra su uso real en plantillas (incluyendo las que
+viven en un `template:` inline de un `.ts`, no solo `.html`). Todas están
+en uso salvo `.aviso`, que no es un descuido: su comentario explícita que
+es el `panelClass` preparado para una futura migración a `MatSnackBar`,
+decisión que la Fase 5 ya documentó como diferida a después de v1.0. No
+se tocó. No quedan restos del tema azul anterior (sin coincidencias de
+hex ni nombres de paleta azul en ningún `.scss`).
+
+**Pantallas cubiertas a fondo** (las 3 anchuras, con build y 209/209
+pruebas verdes después de cada cambio): login, registro, la barra/menú
+autenticado (incluida la apertura del menú hamburguesa en 375px), nueva
+solicitud (chips + formulario completo), detalle de solicitud con el
+comparador de ofertas (incluido el caso de empate en "Mejor precio" y un
+nombre de proveedor largo) y seguimiento de pedido (línea de tiempo
+vertical en 375px, horizontal en 768px y 1280px).
+
+**Pantallas no revisadas con esta técnica en esta fase** (ofertar,
+pedidos del proveedor, perfil comercial del proveedor, pago, mis pedidos,
+mis vehículos, categorías y aprobación de proveedores en admin): no se
+encontró en ellas ningún patrón nuevo de los que causaron los tres
+desbordes de arriba (grillas o tablas con celdas que apilan contenido,
+barras con elementos de ancho fijo), pero no fueron probadas a cada ancho
+una por una. Quedan para que el usuario las revise con F12 si lo
+considera necesario antes de dar la fase por cerrada, o para una pasada
+adicional si lo pide.
+
+## Preguntas de la defensa
 
 1. **¿Por qué el tema no usa directamente el rojo exacto de la marca?**
    Porque Angular Material genera la paleta completa (los "tonos" de M3) a
@@ -398,3 +488,38 @@ una instrucción dada**: quedó documentado para que el usuario lo sepa.
    cercana que trae Material y se sobrescriben las variables de sistema que
    importan (`--mat-sys-primary` y afines) con el hex exacto de DISEÑO.md,
    que es justo el mecanismo que la sección 7 del documento pide usar.
+
+2. **¿Cómo se decide cuál oferta es la de "Mejor precio" cuando hay un
+   empate?** `mejorPrecio` (un `computed` en `detalle-solicitud`) filtra
+   las ofertas `SUBMITTED`, saca el precio mínimo con `Number(...)` para
+   comparar correctamente (no como texto) y marca con el distintivo a
+   *todas* las ofertas que igualan ese mínimo, no solo la primera — por
+   eso en el ejemplo de prueba las dos ofertas de 180.50 llevan el mismo
+   badge.
+
+3. **¿Por qué el seguimiento de pedido muestra siempre 4 pasos fijos y no
+   el historial completo de cambios de estado?** Porque la sección 9 de
+   DISEÑO.md pide una línea de tiempo de 4 pasos fijos, no el historial
+   crudo del backend. `OrderTimelineComponent` arma esos 4 pasos (el
+   tercero cambia de "En camino" a "Listo para retiro" según
+   `deliveryType`) y busca en el historial real la fecha de cada uno; si
+   el pedido está en un estado que no es ninguno de los 4 (hoy, solo
+   `COMPLETED`), ese estado se muestra aparte en tono neutro sin romper
+   la línea de tiempo.
+
+4. **¿Cómo se probó el diseño responsive sin poder cambiar el ancho real
+   de la ventana del navegador?** Con un `<iframe>` del mismo origen y
+   ancho/alto fijos apuntando al propio servidor de desarrollo: al ser
+   mismo origen, `iframe.contentWindow.innerWidth` confirma un viewport
+   real e independiente, y las media queries del CSS responden a ese
+   ancho igual que lo harían en una ventana física de ese tamaño.
+
+5. **¿Por qué varias pantallas usan `window.ng.applyChanges` con datos de
+   prueba en vez de datos reales del backend durante el diseño?** Porque
+   gran parte del trabajo de esta fase se hizo sin los microservicios
+   corriendo. `window.ng` es la API de depuración que el propio Angular
+   expone en modo desarrollo: permite tomar el componente ya instanciado
+   de una pantalla y llamar a sus signals exactamente como lo haría el
+   código real (`solicitud.set(...)`, `ofertas.set(...)`), así que lo que
+   se ve es el layout real reaccionando a datos con la misma forma que
+   los que vendrían de la API — nunca un campo o endpoint inventado.

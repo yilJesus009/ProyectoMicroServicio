@@ -136,6 +136,13 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--esp-3);
+
+  // A 3 columnas, nombres como "Suspensión" o "Carrocería" se truncan casi
+  // por completo en anchos de celular (<600px); 2 columnas les dan espacio
+  // real conservando la misma tarjeta con ícono.
+  @media (max-width: 599px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .chip-categoria {
@@ -151,10 +158,21 @@
   font-size: var(--texto-sm);
   font-weight: 500;
   cursor: pointer;
+  // Como grid item, su min-width por defecto es el ancho de su contenido:
+  // sin min-width:0 un nombre largo ("Suspensión") fuerza la columna a
+  // crecer y desborda la grilla en vez de truncarse.
+  min-width: 0;
 
   .icono {
     width: 24px;
     height: 24px;
+    flex-shrink: 0;
+  }
+
+  span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &--seleccionado {
@@ -179,7 +197,10 @@
   }
 
   td {
-    height: 52px;
+    // min-height, no height: algunas celdas apilan dos líneas (precio +
+    // "Mejor precio", o estado + botón de acción) y con una altura fija ese
+    // contenido se salía de la fila y se solapaba con la siguiente.
+    min-height: 52px;
     padding: var(--esp-2) var(--esp-4);
     border-bottom: 1px solid var(--color-borde);
   }
