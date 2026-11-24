@@ -13,5 +13,9 @@
   margin: 0;
   padding: 0;
   display: grid;
+  // minmax(0, 1fr), no 1fr a secas: ver mis-pedidos.component.scss (mismo
+  // componente de tarjeta, mismo bug de columna de grid que no se encoge
+  // por debajo del min-content de su contenido).
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--esp-3);
 }

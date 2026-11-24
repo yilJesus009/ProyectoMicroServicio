@@ -469,15 +469,45 @@ comparador de ofertas (incluido el caso de empate en "Mejor precio" y un
 nombre de proveedor largo) y seguimiento de pedido (línea de tiempo
 vertical en 375px, horizontal en 768px y 1280px).
 
-**Pantallas no revisadas con esta técnica en esta fase** (ofertar,
-pedidos del proveedor, perfil comercial del proveedor, pago, mis pedidos,
-mis vehículos, categorías y aprobación de proveedores en admin): no se
-encontró en ellas ningún patrón nuevo de los que causaron los tres
-desbordes de arriba (grillas o tablas con celdas que apilan contenido,
-barras con elementos de ancho fijo), pero no fueron probadas a cada ancho
-una por una. Quedan para que el usuario las revise con F12 si lo
-considera necesario antes de dar la fase por cerrada, o para una pasada
-adicional si lo pide.
+### Pasada adicional: las 8 pantallas restantes
+
+Con la misma técnica de iframe, en secuencia y sin sub-agentes (editar
+estilos globales con ediciones concurrentes es fácil que choquen), se
+probaron en 360/768/1280px las 8 pantallas que habían quedado fuera de la
+primera pasada: ofertar, pedidos del proveedor, perfil comercial, pago,
+mis pedidos, mis vehículos, categorías y aprobación de proveedores. Los
+tres roles (comprador, proveedor, admin) se simularon escribiendo
+directamente `repuestosya_token`/`repuestosya_usuario` en `localStorage`
+(mismas claves que usa `AuthFacade`), y cada pantalla se probó con datos
+de prueba con los casos límite ya conocidos: nombres de proveedor o de
+categoría largos, motivo de rechazo largo, oferta empatada, formulario de
+rechazo abierto.
+
+Se encontró y corrigió un cuarto desborde horizontal, de la misma familia
+que los tres de arriba:
+
+- **Listas de pedidos en grid** (`mis-pedidos.component.scss` y
+  `pedidos-proveedor.component.scss`, ambas con `<ul class="lista">` de
+  tarjetas `app-order-card`): `.lista { display: grid; gap: ...; }` sin
+  `grid-template-columns` deja la única columna en modo implícito
+  `auto`, que — igual que un flex item sin `min-width: 0` — no se encoge
+  por debajo del `min-content` de su contenido. Con dos tarjetas de
+  pedido reales (nombre de proveedor largo, varios datos cortos en
+  `.datos`), la columna se ensanchaba ~28px más que el viewport a 375px.
+  Arreglado agregando `grid-template-columns: minmax(0, 1fr);` en ambos
+  archivos — misma tarjeta, ahora su contenido envuelve en vez de
+  desbordar. Confirmado con el recorrido de `getBoundingClientRect()` de
+  cada elemento (no solo `scrollWidth` del documento, que no siempre
+  refleja el desborde real dentro de un `<iframe>`).
+
+El resto de las 8 pantallas no tenía ningún problema de desborde en
+ninguno de los tres anchos; se revisaron también los formularios de una
+y dos columnas, el badge "Mejor precio"/"Pendiente de aprobación" al
+lado de títulos largos, el QR de pago, y el formulario de motivo de
+rechazo. Build limpio y 209/209 pruebas verdes después del fix.
+
+Con esto, las 16 pantallas de `docs/frontend.md` quedaron probadas con la
+técnica de iframe en 360/768/1280px al menos una vez durante la Fase 6.
 
 ## Preguntas de la defensa
 
