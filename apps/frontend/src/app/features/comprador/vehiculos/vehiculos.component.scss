@@ -27,30 +27,3 @@
   color: var(--color-tinta-suave);
 }
 
-.lista {
-  display: flex;
-  flex-direction: column;
-  gap: var(--esp-3);
-}
-
-.vehiculo {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--esp-3);
-}
-
-.vehiculo__datos {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-3);
-}
-
-.vehiculo__datos p {
-  margin: 0;
-}
-
-.vehiculo__datos .icono {
-  color: var(--color-tinta-suave);
-}

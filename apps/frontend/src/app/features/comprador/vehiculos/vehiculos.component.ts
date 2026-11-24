@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -45,6 +45,12 @@ export class VehiculosComponent {
   readonly accionando = signal(false);
   readonly error = signal<string | null>(null);
   readonly aviso = signal<string | null>(null);
+
+  /** "1 vehículo" / "4 vehículos" (singular y plural). */
+  readonly contador = computed(() => {
+    const n = this.lista().length;
+    return n === 1 ? '1 vehículo' : `${n} vehículos`;
+  });
 
   readonly form = new FormGroup({
     brand: new FormControl('', {

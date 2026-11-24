@@ -222,7 +222,8 @@ describe('DetalleSolicitudComponent (comparador)', () => {
     const botonesAceptar = botones.filter((b) => b.textContent?.includes('Aceptar oferta'));
     expect(botonesAceptar.length).toBe(1);
     expect(texto()).toContain('Retirada');
-    expect(texto()).toContain('Enviada');
+    // Enviada no lleva badge de estado (sección 9: solo cuando no es SUBMITTED).
+    expect(texto()).not.toContain('Enviada');
   });
 
   it('sin ofertas avisa al comprador', async () => {

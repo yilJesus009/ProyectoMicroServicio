@@ -35,16 +35,51 @@
   color: var(--color-tinta-suave);
 }
 
-.foto {
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.resumen__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.resumen__id {
+  margin-left: auto;
+}
+
+.resumen__cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--esp-4);
+}
+
+.resumen__texto h1 {
   margin: 0;
 }
 
-.foto img {
-  max-width: 100%;
-  max-height: 260px;
+.resumen__texto p {
+  margin: var(--esp-1) 0 0;
+}
+
+.resumen__foto {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.resumen__foto img {
+  display: block;
+  width: 120px;
+  height: 120px;
   border-radius: var(--radio-panel);
   border: 1px solid var(--color-borde);
-  object-fit: contain;
+  object-fit: cover;
   background: var(--color-superficie-2);
 }
 

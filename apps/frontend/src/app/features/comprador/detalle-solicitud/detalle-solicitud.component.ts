@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -14,7 +14,7 @@ import {
   SolicitudesFacade,
 } from '../../../facades/solicitudes.facade';
 import { PedidosFacade } from '../../../facades/pedidos.facade';
-import { TarjetaSolicitudComponent } from '../../../shared/tarjeta-solicitud/tarjeta-solicitud.component';
+import { MonedaPipe } from '../../../shared/moneda.pipe';
 
 /** Textos en español de los estados de oferta (igual que offer-card). */
 const ETIQUETA_ESTADO_OFERTA: Record<string, string | undefined> = {
@@ -30,6 +30,20 @@ const TONO_ESTADO_OFERTA: Record<string, string | undefined> = {
   ACCEPTED: 'exito',
   REJECTED: 'neutro',
   WITHDRAWN: 'neutro',
+};
+
+/** Textos en español de la urgencia (igual que tarjeta-solicitud). */
+const ETIQUETA_URGENCIA: Record<string, string | undefined> = {
+  BAJA: 'Urgencia baja',
+  MEDIA: 'Urgencia media',
+  ALTA: 'Urgencia alta',
+};
+
+/** Tono de DISEÑO.md (sección 10) para cada urgencia real. */
+const TONO_URGENCIA: Record<string, string | undefined> = {
+  BAJA: 'neutro',
+  MEDIA: 'atencion',
+  ALTA: 'peligro',
 };
 
 /**
@@ -53,13 +67,13 @@ const TONO_ESTADO_OFERTA: Record<string, string | undefined> = {
 @Component({
   selector: 'app-detalle-solicitud',
   imports: [
-    DecimalPipe,
+    DatePipe,
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
     MatRadioModule,
+    MonedaPipe,
     RouterLink,
-    TarjetaSolicitudComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './detalle-solicitud.component.html',
@@ -94,6 +108,19 @@ export class DetalleSolicitudComponent implements OnDestroy {
 
   protected readonly ETIQUETA_ESTADO_OFERTA = ETIQUETA_ESTADO_OFERTA;
   protected readonly TONO_ESTADO_OFERTA = TONO_ESTADO_OFERTA;
+  protected readonly ETIQUETA_URGENCIA = ETIQUETA_URGENCIA;
+  protected readonly TONO_URGENCIA = TONO_URGENCIA;
+
+  /** "Toyota Corolla 2018", o la descripción del vehículo si viniera por partes. */
+  readonly vehiculo = computed(() => {
+    const s = this.solicitud();
+    if (!s) return 'Vehículo no especificado';
+    if (s.vehicle_label) return s.vehicle_label;
+    if (s.vehicle_brand) {
+      return [s.vehicle_brand, s.vehicle_model, s.vehicle_year].filter(Boolean).join(' ');
+    }
+    return 'Vehículo no especificado';
+  });
 
   /**
    * ids de las ofertas SUBMITTED con el precio más bajo (sección 9: "Mejor

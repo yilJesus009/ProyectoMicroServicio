@@ -100,7 +100,7 @@ Reglas:
 - Radios con jerarquía: controles (botones, campos) 8px, paneles 12px, chips y estados en forma de pastilla.
 - Separación por bordes de 1px, no por sombras. La única sombra es la de los elementos flotantes: menús, diálogos y avisos.
 - Escala de espacio de 4px: 4, 8, 12, 16, 24, 32, 48, 64.
-- Contenido alineado a la izquierda, ancho máximo 1200px.
+- Contenido centrado en el espacio disponible, ancho máximo 1200px.
 
 ## 7. Angular Material
 
@@ -123,7 +123,7 @@ Reglas:
 │  Nueva solicitud│ Texto de apoyo                                        │
 │  Mis pedidos    ├─────────────────────────────────────────────────────┤
 │  Mis vehículos  │                                                       │
-│                 │ Contenido (máx. 1200px, alineado a la izquierda)      │
+│                 │ Contenido (máx. 1200px, centrado)                     │
 │                 │                                                       │
 └────────────────┴─────────────────────────────────────────────────────┘
 ```
@@ -158,9 +158,9 @@ Reglas:
 - Panel izquierdo en rojo con el logo blanco, el titular en itálica gruesa y los tres pasos numerados (son una secuencia real).
 - En móvil: franja roja con el logo arriba y el formulario debajo, sin los pasos.
 
-**Mis solicitudes (comprador)**: lista de solicitudes con categoría (ícono + nombre), urgencia, repuesto, vehículo, ciudad, antigüedad y estado de ofertas ("3 ofertas", "Sin ofertas aún", "Oferta aceptada"). La acción de cada una lleva al detalle o al pedido.
+**Mis solicitudes (comprador)**: subtítulo con el contador ("1 solicitud" / "4 solicitudes"; sin texto si la lista está vacía, ahí va el vacío). Lista en filas (sección 10: ícono de categoría, repuesto, vehículo, ciudad y antigüedad, urgencia y estado). La acción de cada fila cambia según el estado: "Ver solicitud" (publicada, sin ofertas), "Ver ofertas" (recibiendo ofertas) o "Ver pedido" (oferta aceptada o completada). Botón principal "Publicar solicitud".
 
-**Nueva solicitud**: titular "¿Qué repuesto necesitas?" en itálica gruesa. Categorías como chips con ícono (el seleccionado en rojo tenue con borde rojo). Luego vehículo, descripción, ciudad y urgencia en dos columnas, y foto opcional con vista previa. Botón final "Publicar solicitud" a ancho completo.
+**Nueva solicitud**: titular "¿Qué repuesto necesitas?" en itálica gruesa, con el subtítulo "Los proveedores verán tu solicitud y te enviarán sus ofertas." Categorías como chips con ícono (el seleccionado en rojo tenue con borde rojo). Luego vehículo, descripción, ciudad y urgencia (chips de un solo valor, usables con teclado) en dos columnas, y foto opcional con vista previa. Botón final "Publicar solicitud" a ancho completo.
 
 **Detalle de solicitud y comparador de ofertas**
 ```
@@ -170,7 +170,7 @@ Reglas:
 │ Toyota Corolla 2018, Santa Cruz, publicada hace 2 días        │
 │ Se escuchan chirriar al frenar.                               │
 └──────────────────────────────────────────────────────────────┘
-Ofertas recibidas (3). Solo puedes aceptar una.
+Ofertas recibidas (3). Solo puedes aceptar una. Las demás quedarán como no elegidas.
 ┌────────────────────┬──────────┬───────────────────┬─────────────────┬───────────┐
 │ Proveedor          │   Precio │ Entrega           │ Nota            │           │
 ├────────────────────┼──────────┼───────────────────┼─────────────────┼───────────┤
@@ -181,26 +181,30 @@ Ofertas recibidas (3). Solo puedes aceptar una.
 │                    │  precio) │                   │                 │           │
 └────────────────────┴──────────┴───────────────────┴─────────────────┴───────────┘
 ```
-- La oferta más barata lleva el estado "Mejor precio" (tono atención) debajo del precio.
+- El precio va alineado a la derecha de su columna. La oferta más barata lleva el estado "Mejor precio" (tono atención) debajo del precio.
+- El badge de estado de la oferta **no se muestra mientras está "Enviada"** (sería ruido: es el estado por defecto); sí se muestra para Aceptada, No elegida y Retirada.
 - "Aceptar" usa el botón con borde rojo: hay uno por fila y ninguno debe competir con el resto de la pantalla.
 - Al aceptar: diálogo de confirmación ("Aceptar la oferta de Repuestos Oriente por Bs 420. Las demás ofertas quedarán como no elegidas."), luego un aviso de éxito con "Ver pedido", la fila aceptada con fondo verde muy tenue (`#F1FAF4`) y estado "Aceptada", y las demás con texto en tinta suave y estado "No elegida". Sin bajar la opacidad.
 
-**Solicitudes abiertas (proveedor)**: filtros de ciudad y categoría arriba; la misma información de la solicitud que ve el comprador, con la acción "Enviar oferta" en cada fila.
+**Solicitudes abiertas (proveedor)**: subtítulo "Compradores que todavía esperan ofertas." Filtros de ciudad (input) y categoría (select) arriba; la misma lista en filas que ve el comprador, con la acción "Enviar oferta" en cada una.
 
 **Mis ofertas (proveedor)**: tabla con repuesto, comprador o ciudad, precio, fecha y estado (pendiente, aceptada, no elegida).
 
+**Mis pedidos (comprador y proveedor) y Mis vehículos**: mismo patrón de fila que las listas de solicitudes (ícono, contenido, estados, acción), con subtítulo con el contador. En Mis pedidos, precio y estado a la derecha; la acción (si existe) es la del siguiente paso para el proveedor, o ninguna para el comprador (la fila entera enlaza al seguimiento).
+
 **Seguimiento del pedido**
 ```
- ●──────────────●──────────────◉──────────────○
- Confirmado     Preparando     Listo para     Entregado
- 18 nov         19 nov         retiro, hoy
+ ◉──────────────○──────────────○──────────────○
+ Pendiente      Preparando     Listo para     Entregado
+ de pago                       retiro
 ```
-- Pasos completados en verde, paso actual con anillo rojo y texto en negrita, pasos futuros en gris. En móvil, vertical.
-- Debajo, un aviso en información con lo que sigue (por ejemplo, dirección de retiro) y la acción que corresponda si existe ("Confirmar recepción").
-- Bloque de pago: método, referencia y la nota "Pago simulado. No se guardan datos de tarjeta."
+- Pasos completados en verde, paso actual con anillo rojo y texto en negrita, pasos futuros en gris. El primer paso siempre es "Pendiente de pago" (no "Confirmado"): el pedido nace así y pasa a "Preparando" recién cuando se paga.
+- Desde escritorio (≥1024px), grid de dos columnas: a la izquierda el stepper, el aviso de lo que sigue (información, por ejemplo mientras se prepara) y la acción que corresponda ("Pagar ahora" si está pendiente de pago); a la derecha el bloque de Pago. En móvil y tablet, una sola columna, pago debajo.
+- "Confirmar recepción" va integrado dentro del mismo aviso informativo de "El pedido fue entregado…", no en un panel aparte.
+- Bloque de pago: pares etiqueta-valor (Método, Referencia, Total, Estado) y la nota "Pago simulado. No se guardan datos de tarjeta." Antes de pagar, Método y Referencia muestran "—" y Estado dice "Pendiente"; tras pagar, "Confirmado".
 - Un pedido cancelado no usa los pasos: estado neutro y el motivo si existe.
 
-**Proveedores pendientes (admin)**: filas con nombre, rubro, ciudad y antigüedad de la solicitud; acciones "Ver perfil" (texto), "Aprobar" (primario) y "Rechazar" (secundario). Rechazar pide confirmación.
+**Proveedores pendientes (admin)**: filas con ícono, nombre, ciudad y teléfono, categorías y "Solicitó el alta el" con la fecha; acciones "Aprobar" (primario) y "Rechazar" (secundario, pide el motivo). Subtítulo con el contador ("N proveedores por revisar" en el filtro de pendientes, "N proveedores" en los demás). Sin "Ver perfil".
 
 **Categorías (admin)**: tabla simple con nombre, ícono y acciones.
 
@@ -364,4 +368,4 @@ Los nombres exactos salen de los enums reales del proyecto.
 }
 ```
 
-Clases globales previstas (en `src/styles/`): `.barra-superior`, `.barra-lateral`, `.encabezado-pagina`, `.panel`, `.estado` con variantes `--exito`, `--atencion`, `--info`, `--neutro`, `--peligro`, `.chip-categoria`, `.tabla-comparacion`, `.pasos`, `.vacio`, `.aviso`. Los botones, campos, diálogos y avisos son los de Angular Material con el tema aplicado.
+Clases globales previstas (en `src/styles/`): `.barra-superior`, `.barra-lateral`, `.encabezado-pagina`, `.panel`, `.lista-filas` + `.fila` (fila de lista: ícono circular, contenido, estados y acción, separadas por borde), `.estado` con variantes `--exito`, `--atencion`, `--info`, `--neutro`, `--peligro`, `.chip-categoria`, `.tabla-comparacion`, `.pasos`, `.vacio`, `.aviso`. Los botones, campos, diálogos y avisos son los de Angular Material con el tema aplicado.

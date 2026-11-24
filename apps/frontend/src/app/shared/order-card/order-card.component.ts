@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 import { Pedido } from '../../facades/pedidos.facade';
+import { MonedaPipe } from '../moneda.pipe';
 
 /**
  * Textos en español de los estados del pedido
@@ -42,84 +44,59 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
  */
 @Component({
   selector: 'app-order-card',
-  imports: [DatePipe, DecimalPipe, MatButtonModule],
+  imports: [DatePipe, MatButtonModule, MatIconModule, MonedaPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="panel pedido">
-      <header class="cabecera">
-        <h3 class="texto-lg">{{ pedido().part_description }}</h3>
+    <article class="fila">
+      <div class="fila__icono">
+        <mat-icon aria-hidden="true">local_shipping</mat-icon>
+      </div>
+
+      <div class="fila__contenido">
+        <p class="fila__categoria texto-xs">{{ pedido().supplier_name }}</p>
+        <h3 class="fila__titulo">{{ pedido().part_description }}</h3>
+        <div class="fila__meta">
+          <span>
+            <mat-icon aria-hidden="true">directions_car</mat-icon>
+            {{ pedido().vehicle_label || 'Vehículo no especificado' }}
+          </span>
+          <span>
+            <mat-icon aria-hidden="true">local_shipping</mat-icon>
+            {{ ETIQUETA_ENTREGA[pedido().delivery_type] ?? pedido().delivery_type }}, {{ pedido().estimated_days }} día(s)
+          </span>
+          <span>
+            <mat-icon aria-hidden="true">schedule</mat-icon>
+            <time class="num" [attr.datetime]="pedido().created_at">
+              {{ pedido().created_at | date: 'dd/MM/yyyy' }}
+            </time>
+          </span>
+        </div>
+      </div>
+
+      <p class="fila__precio num">{{ pedido().price | moneda: pedido().currency }}</p>
+
+      <div class="fila__estados">
         <span class="estado" [class]="'estado--' + (TONO_ESTADO[pedido().status] ?? 'neutro')">
           {{ ETIQUETA_ESTADO[pedido().status] ?? pedido().status }}
         </span>
-      </header>
-
-      <p class="proveedor texto-sm">{{ pedido().supplier_name }}</p>
-
-      <p class="precio num">
-        {{ pedido().price | number: '1.2-2' }} <span>{{ pedido().currency }}</span>
-      </p>
-
-      <div class="datos">
-        <span class="dato">{{ pedido().vehicle_label || 'Vehículo no especificado' }}</span>
-        <span class="dato">{{ ETIQUETA_ENTREGA[pedido().delivery_type] ?? pedido().delivery_type }}</span>
-        <span class="dato">{{ pedido().estimated_days }} día(s)</span>
-        <time class="dato fecha num" [attr.datetime]="pedido().created_at">
-          {{ pedido().created_at | date: 'dd/MM/yyyy' }}
-        </time>
       </div>
 
       @if (accion(); as etiqueta) {
-        <button mat-flat-button color="primary" class="accion" (click)="accionEmitida.emit()">
-          {{ etiqueta }}
-        </button>
+        <div class="fila__accion">
+          <button mat-flat-button color="primary" (click)="accionEmitida.emit()">
+            {{ etiqueta }}
+          </button>
+        </div>
       }
     </article>
   `,
   styles: `
-    .pedido {
-      display: flex;
-      flex-direction: column;
-      gap: var(--esp-2);
-    }
-    .cabecera {
-      display: flex;
-      justify-content: space-between;
-      gap: var(--esp-4);
-      align-items: start;
-    }
-    h3 {
+    .fila__precio {
       margin: 0;
-    }
-    .proveedor {
-      margin: 0;
-      color: var(--color-tinta-suave);
-    }
-    .precio {
-      margin: 0;
-      font-size: var(--texto-xl);
+      flex-shrink: 0;
+      font-size: var(--texto-lg);
       font-weight: 700;
       color: var(--color-tinta);
-    }
-    .precio span {
-      font-size: var(--texto-sm);
-      font-weight: 400;
-      color: var(--color-tinta-suave);
-    }
-    .datos {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--esp-2);
-    }
-    .dato {
-      font-size: var(--texto-xs);
-      color: var(--color-tinta-suave);
-      background: var(--color-superficie-2);
-      border-radius: var(--radio-control);
-      padding: 2px var(--esp-2);
-    }
-    .accion {
-      margin-top: var(--esp-2);
-      align-self: flex-start;
     }
   `,
 })
