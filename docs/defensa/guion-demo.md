@@ -107,7 +107,7 @@ Salida real (probada):
 
 | Quién muestra | Usuario | Pantalla / comando | Qué mostrar | Qué decir |
 |---|---|---|---|---|
-| Dylan | `comprador@demo.bo` | `/comprador/solicitudes/1` | Comparador con las 2 ofertas de la solicitud 1; clic en "Aceptar" sobre la de proveedor1 | "Comparo precio y plazo de las dos ofertas. Al aceptar, la otra pasa a `REJECTED` sola — eso lo garantiza la base, no un botón que se esconde." |
+| Dylan | `comprador@demo.bo` | `/comprador/solicitudes/1` | Comparador con las 2 ofertas — la más barata trae la etiqueta "Mejor precio"; clic en "Aceptar oferta" sobre la de proveedor1 y confirmar en el diálogo ("Sí, aceptar") | "Comparo precio y plazo de las dos ofertas — la tabla ya marca cuál es la más barata. Al confirmar la aceptación, la otra queda 'No elegida' sola — en la base es el estado `REJECTED`, y eso lo garantiza la base de datos, no un botón que se esconde." |
 | Dylan | — | (nada en pantalla todavía) | — | "La pantalla **no** muestra qué pasa si dos personas aceptan a la vez, porque solo una de las dos ofertas sigue visible como aceptable — eso lo pruebo aparte, en la terminal, con tráfico real." |
 | Dylan | `comprador@demo.bo` | `/comprador/pedidos/1/pago` (pedido 1, ya en `PENDING_PAYMENT` de la demo sembrada) | Pestaña QR, botón "Ya pagué" | "Mientras se genera el pedido de la oferta que acabo de aceptar, ya tengo este otro listo para no perder tiempo esperando." |
 | Dylan | — | terminal: comando 2 de arriba | `400` al mandar `card_number` | "La pantalla de pago nunca manda el número de tarjeta, pero esto prueba que aunque alguien se salte la pantalla y lo mande a mano, el backend lo rechaza." |
@@ -126,11 +126,12 @@ Preparar **durante el ensayo**, no el día de la defensa:
 
 | Si falla | Mostrar en su lugar | Archivo sugerido |
 |---|---|---|
-| Docker tarda en levantar o algo no queda `healthy` | Captura de `node scripts/e2e-flujo.mjs` ya corrido, con los 29 pasos en `✓` | `docs/defensa/capturas/e2e-flujo-29-29.png` (o `.txt` con la salida completa) |
-| La UI de RabbitMQ no carga o el navegador se cuelga | Captura de las colas y exchanges (la salida de `rabbitmqctl list_queues`/`list_exchanges`, o un screenshot de la UI ya tomado antes) | `docs/defensa/capturas/rabbitmq-colas.png` |
-| El comando de `outbox_events` no corre en vivo (typo, Docker lento) | Captura de la consulta ya corrida con una fila real con `published_at` | `docs/defensa/capturas/outbox-published.png` |
-| `prueba-concurrencia-aceptar.mjs` no da tiempo a correrlo en vivo | Captura de una corrida previa con el `200`/`409` | `docs/defensa/capturas/concurrencia-200-409.png` |
+| Docker tarda en levantar o algo no queda `healthy` | Salida de `node scripts/e2e-flujo.mjs` ya corrido, con los 29 pasos en `✓` | `docs/defensa/evidencias/e2e-flujo-29-29.txt` |
+| La UI de RabbitMQ no carga o el navegador se cuelga | Capturas de las colas y exchanges ya tomadas antes | `docs/defensa/evidencias/rabbitmq-colas.jpg` y `rabbitmq-exchanges.jpg` |
+| El comando de `outbox_events` no corre en vivo (typo, Docker lento) | Salida de la consulta ya corrida con una fila real con `published_at` | `docs/defensa/evidencias/outbox-published.txt` |
+| `prueba-concurrencia-aceptar.mjs` no da tiempo a correrlo en vivo | Salida de una corrida previa con el `200`/`409` | `docs/defensa/evidencias/concurrencia-200-409.txt` |
 | El pago o el avance de estado no responden a tiempo | Seguir con el pedido 2 (ya en `PREPARING` desde `seed-demo.mjs`) en vez de esperar el que se generó en vivo | — |
+| Docker no levanta en absoluto (no hay nada que mostrar en vivo) | **Pendiente** — capturas de las pantallas clave (login, nueva solicitud, comparador, enviar oferta, seguimiento, pago); se toman en `fix/layout-escritorio` tras el ajuste de ancho en escritorio | `docs/defensa/evidencias/ui-*.jpg` (aún no existen) |
 
 Si el plan B entra, se dice en voz alta: *"esto lo grabamos antes porque la
 red del aula puede fallar; el código real está en el repositorio y lo

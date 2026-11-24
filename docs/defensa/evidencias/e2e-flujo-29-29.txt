@@ -1,0 +1,31 @@
+✓ 01 registro y login del comprador
+✓ 02 registro y login del proveedor 1
+✓ 03 registro y login del proveedor 2
+✓ 04 login del admin
+✓ 05 obtener una categoría del catálogo
+✓ 06 proveedor 1 completa su perfil comercial
+✓ 07 proveedor 2 completa su perfil comercial
+✓ 08 admin aprueba al proveedor 1
+✓ 09 admin aprueba al proveedor 2
+✓ 10 proveedor 1 recibe el aviso de aprobación
+✓ 11 comprador publica una solicitud con foto
+✓ 12 proveedor 1 ve la solicitud abierta y oferta
+✓ 13 proveedor 2 oferta la misma solicitud
+✓ 14 comprador recibe avisos de las dos ofertas
+✓ 15 comprador compara: ve las dos ofertas
+✓ 16 comprador acepta la oferta del proveedor 1
+✓ 17 negativo: aceptar la segunda oferta devuelve 409
+✓ 18 proveedor 1 recibe aviso de oferta aceptada
+✓ 19 proveedor 2 recibe aviso de oferta rechazada
+✓ 20 se crea el pedido a partir de OFFER_ACCEPTED
+✓ 21 comprador recibe aviso de pedido creado
+✓ 22 negativo: pagar con card_number en el body devuelve 400
+✓ 23 comprador paga con QR
+✓ 24 negativo: pagar una segunda vez devuelve 409
+✓ 25 proveedor 1 despacha el pedido (IN_TRANSIT)
+✓ 26 comprador recibe aviso de cambio de estado
+✓ 27 proveedor 1 marca el pedido entregado (DELIVERED)
+✓ 28 comprador confirma la recepción
+✓ 29 la solicitud queda COMPLETED
+
+Todo el flujo pasó correctamente.
