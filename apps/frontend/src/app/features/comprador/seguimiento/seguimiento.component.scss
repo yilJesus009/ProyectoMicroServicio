@@ -39,22 +39,73 @@
   font-weight: 700;
 }
 
-.recepcion {
+.disposicion {
   display: flex;
   flex-direction: column;
-  gap: var(--esp-1);
-  border-color: var(--color-exito);
+  gap: var(--esp-4);
 }
 
-.recepcion button {
-  align-self: flex-start;
-  margin-top: var(--esp-2);
-}
-
-.pago {
+.columna-seguimiento {
   display: flex;
   flex-direction: column;
-  gap: var(--esp-1);
+  gap: var(--esp-3);
+}
+
+// Desde escritorio, el stepper y la acción a la izquierda, el bloque de
+// pago a la derecha, en vez de una sola columna (DISEÑO.md sección 8).
+@media (min-width: 1024px) {
+  .disposicion {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: var(--esp-5);
+  }
+}
+
+.aviso-recepcion {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+}
+
+.aviso-recepcion__texto {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+}
+
+.columna-pago {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.columna-pago h2 {
+  margin: 0;
+}
+
+.pares {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.par {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+.par dt {
+  margin: 0;
+}
+
+.par dd {
+  margin: 0;
+  font-weight: 500;
 }
 
 .accion-pago {

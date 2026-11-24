@@ -41,61 +41,94 @@
       </p>
     }
 
-    <app-order-timeline
-      [status]="pedido.status"
-      [deliveryType]="pedido.delivery_type"
-      [history]="pedido.history"
-    />
+    <div class="disposicion">
+      <div class="columna-seguimiento">
+        <app-order-timeline
+          [status]="pedido.status"
+          [deliveryType]="pedido.delivery_type"
+          [history]="pedido.history"
+        />
 
-    @if (pedido.status === 'PREPARING' || pedido.status === 'IN_TRANSIT' || pedido.status === 'READY_FOR_PICKUP') {
-      <p class="mensaje-servidor mensaje-servidor--info" role="status">
-        <mat-icon aria-hidden="true">info</mat-icon>
-        <span>Esperando al proveedor: {{ ETIQUETA[pedido.status] }}. Te avisaremos en cada cambio.</span>
-      </p>
-    }
+        @if (pedido.status === 'PREPARING' || pedido.status === 'IN_TRANSIT' || pedido.status === 'READY_FOR_PICKUP') {
+          <p class="mensaje-servidor mensaje-servidor--info" role="status">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <span>Esperando al proveedor: {{ ETIQUETA[pedido.status] }}. Te avisaremos en cada cambio.</span>
+          </p>
+        }
 
-    @if (pedido.status === 'PENDING_PAYMENT') {
-      <a
-        mat-flat-button
-        color="primary"
-        class="accion-pago"
-        [routerLink]="['/comprador/pedidos', pedido.id, 'pago']"
-      >
-        Pagar ahora
-      </a>
-    }
+        @if (pedido.status === 'PENDING_PAYMENT') {
+          <a
+            mat-flat-button
+            color="primary"
+            class="accion-pago"
+            [routerLink]="['/comprador/pedidos', pedido.id, 'pago']"
+          >
+            Pagar ahora
+          </a>
+        }
 
-    @if (pedido.status === 'DELIVERED') {
-      <div class="panel recepcion" role="alertdialog" aria-label="Confirmar recepción">
-        <h3 class="texto-lg">El pedido fue entregado</h3>
-        <p class="texto-sm">Si ya recibiste el repuesto, confirma la recepción para completar el pedido.</p>
-        <button
-          mat-flat-button
-          color="primary"
-          type="button"
-          [disabled]="confirmando()"
-          (click)="confirmarRecepcion()"
-        >
-          {{ confirmando() ? 'Confirmando…' : 'Confirmar recepción' }}
-        </button>
+        @if (pedido.status === 'DELIVERED') {
+          <div
+            class="mensaje-servidor mensaje-servidor--info aviso-recepcion"
+            role="alertdialog"
+            aria-label="Confirmar recepción"
+          >
+            <div class="aviso-recepcion__texto">
+              <mat-icon aria-hidden="true">local_shipping</mat-icon>
+              <span>El pedido fue entregado. Si ya lo recibiste, confirma la recepción.</span>
+            </div>
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              [disabled]="confirmando()"
+              (click)="confirmarRecepcion()"
+            >
+              {{ confirmando() ? 'Confirmando…' : 'Confirmar recepción' }}
+            </button>
+          </div>
+        }
+
+        @if (pedido.status === 'COMPLETED') {
+          <p class="mensaje-servidor mensaje-servidor--exito" role="status">
+            <mat-icon aria-hidden="true">check_circle</mat-icon>
+            <span>Pedido completado. ¡Gracias!</span>
+          </p>
+        }
       </div>
-    }
 
-    @if (pedido.status === 'COMPLETED') {
-      <p class="mensaje-servidor mensaje-servidor--exito" role="status">
-        <mat-icon aria-hidden="true">check_circle</mat-icon>
-        <span>Pedido completado. ¡Gracias!</span>
-      </p>
-    }
-
-    @if (pedido.payment; as pago) {
-      <div class="panel pago">
-        <p class="texto-sm">
-          Pago simulado con <strong>{{ pago.method === 'QR' ? 'QR' : 'tarjeta' }}</strong>.
-          Referencia: <strong class="num">{{ pago.reference }}</strong>
-        </p>
+      <div class="panel columna-pago">
+        <h2 class="texto-lg">Pago</h2>
+        <dl class="pares">
+          <div class="par">
+            <dt class="texto-sm texto-suave">Método</dt>
+            <dd>
+              {{
+                pedido.payment
+                  ? (pedido.payment.method === 'QR' ? 'QR' : 'Tarjeta')
+                  : '—'
+              }}
+            </dd>
+          </div>
+          <div class="par">
+            <dt class="texto-sm texto-suave">Referencia</dt>
+            <dd class="num">{{ pedido.payment?.reference ?? '—' }}</dd>
+          </div>
+          <div class="par">
+            <dt class="texto-sm texto-suave">Total</dt>
+            <dd class="num">{{ pedido.price | moneda: pedido.currency }}</dd>
+          </div>
+          <div class="par">
+            <dt class="texto-sm texto-suave">Estado</dt>
+            <dd>
+              <span class="estado" [class]="'estado--' + (pedido.payment ? 'exito' : 'atencion')">
+                {{ pedido.payment ? 'Confirmado' : 'Pendiente' }}
+              </span>
+            </dd>
+          </div>
+        </dl>
         <p class="texto-xs texto-suave">Pago simulado. No se guardan datos de tarjeta.</p>
       </div>
-    }
+    </div>
   }
 </section>
