@@ -339,6 +339,115 @@
   }
 }
 
+// Filas de lista (sección 9, modelo de rediseño): un panel con una fila por
+// elemento (ícono circular + contenido + estados + acción), separadas por
+// borde, en vez de una tarjeta suelta por elemento. Mis solicitudes,
+// solicitudes abiertas, proveedores pendientes, mis pedidos y mis vehículos.
+.lista-filas {
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-panel);
+  overflow: hidden;
+
+  // El borde que separa una fila de la siguiente va en el hijo directo del
+  // panel, no en `.fila`: cuando la fila la pone un componente compartido
+  // (app-tarjeta-solicitud, app-order-card), `.fila` es la única hija de
+  // ESE componente, así que `.fila:last-child` daría verdadero en cada una
+  // (cada una es la última de su propio envoltorio) y ningún borde se vería.
+  > * {
+    display: block;
+    border-bottom: 1px solid var(--color-borde);
+  }
+
+  > :last-child {
+    border-bottom: none;
+  }
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-4) var(--esp-5);
+
+  &__icono {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radio-pastilla);
+    background-color: var(--color-neutro-tenue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .icono,
+    mat-icon {
+      color: var(--color-tinta-suave);
+    }
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  // flex-basis da el ancho "preferido": con flex-wrap, el resto de la fila
+  // (ícono, estados, acción) pasa a su propia línea cuando no entra, en vez
+  // de encogerse hasta desbordar en 360/768px.
+  &__contenido {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
+
+  &__categoria {
+    margin: 0;
+    color: var(--color-tinta-suave);
+  }
+
+  &__titulo {
+    margin: 0;
+    font-size: var(--texto-base);
+    font-weight: 600;
+    color: var(--color-tinta);
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3);
+    margin-top: var(--esp-1);
+    color: var(--color-tinta-suave);
+    font-size: var(--texto-sm);
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    mat-icon,
+    .icono {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+    }
+  }
+
+  &__estados {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2);
+    flex-shrink: 0;
+  }
+
+  &__accion {
+    flex-shrink: 0;
+  }
+}
+
 // Vacíos (sección 10): frase + acción para llenar el espacio.
 .vacio {
   text-align: center;

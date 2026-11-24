@@ -48,81 +48,54 @@ const TONO_URGENCIA: Record<string, string | undefined> = {
   imports: [DatePipe, MatChipsModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="panel tarjeta">
-      <header class="cabecera">
-        <h3 class="texto-lg">{{ solicitud().description }}</h3>
-        <span class="estado" [class]="'estado--' + (TONO_ESTADO[solicitud().status] ?? 'neutro')">
-          {{ ETIQUETA_ESTADO[solicitud().status] ?? solicitud().status }}
-        </span>
-      </header>
-
-      <p class="vehiculo texto-sm">{{ vehiculo() }}</p>
-
-      <div class="datos">
-        @if (solicitud().category_name; as categoria) {
-          <span class="dato">
-            @if (iconoCategoria(); as icono) {
-              <span class="icono icono--categoria-{{ icono }}" aria-hidden="true"></span>
-            } @else {
-              <mat-icon aria-hidden="true">build</mat-icon>
-            }
-            {{ categoria }}
-          </span>
+    <article class="fila">
+      <div class="fila__icono">
+        @if (iconoCategoria(); as icono) {
+          <span class="icono icono--categoria-{{ icono }}" aria-hidden="true"></span>
+        } @else {
+          <mat-icon aria-hidden="true">build</mat-icon>
         }
-        <span class="dato">{{ solicitud().city }}</span>
+      </div>
+
+      <div class="fila__contenido">
+        @if (solicitud().category_name; as categoria) {
+          <p class="fila__categoria texto-xs">{{ categoria }}</p>
+        }
+        <h3 class="fila__titulo">{{ solicitud().description }}</h3>
+        <div class="fila__meta">
+          <span>
+            <mat-icon aria-hidden="true">directions_car</mat-icon>
+            {{ vehiculo() }}
+          </span>
+          <span>
+            <mat-icon aria-hidden="true">location_on</mat-icon>
+            {{ solicitud().city }}
+          </span>
+          <span>
+            <mat-icon aria-hidden="true">schedule</mat-icon>
+            <time class="num" [attr.datetime]="solicitud().created_at">
+              {{ solicitud().created_at | date: 'dd/MM/yyyy' }}
+            </time>
+          </span>
+        </div>
+      </div>
+
+      <div class="fila__estados">
         <span
           class="estado"
           [class]="'estado--' + (TONO_URGENCIA[solicitud().urgency] ?? 'neutro')"
         >
           {{ ETIQUETA_URGENCIA[solicitud().urgency] ?? solicitud().urgency }}
         </span>
-        <time class="dato fecha num" [attr.datetime]="solicitud().created_at">
-          {{ solicitud().created_at | date: 'dd/MM/yyyy' }}
-        </time>
+        <span class="estado" [class]="'estado--' + (TONO_ESTADO[solicitud().status] ?? 'neutro')">
+          {{ ETIQUETA_ESTADO[solicitud().status] ?? solicitud().status }}
+        </span>
+      </div>
+
+      <div class="fila__accion">
+        <ng-content select="[accion]" />
       </div>
     </article>
-  `,
-  styles: `
-    .tarjeta {
-      display: flex;
-      flex-direction: column;
-      gap: var(--esp-2);
-    }
-    .cabecera {
-      display: flex;
-      justify-content: space-between;
-      gap: var(--esp-4);
-      align-items: start;
-    }
-    h3 {
-      margin: 0;
-    }
-    .vehiculo {
-      margin: 0;
-      color: var(--color-tinta-suave);
-    }
-    .datos {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--esp-2);
-    }
-    .dato {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--esp-1);
-      font-size: var(--texto-xs);
-      color: var(--color-tinta-suave);
-      background: var(--color-superficie-2);
-      border-radius: var(--radio-control);
-      padding: 2px var(--esp-2);
-    }
-    .dato .icono,
-    .dato mat-icon {
-      width: 16px;
-      height: 16px;
-      font-size: 16px;
-    }
   `,
 })
 export class TarjetaSolicitudComponent {
