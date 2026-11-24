@@ -8,26 +8,12 @@
   color: var(--color-tinta-suave);
 }
 
-.lista {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  // minmax(0, 1fr), no 1fr a secas: una columna de grid implícita no se
-  // encoge por debajo del min-content de su contenido (mismo bug que un
-  // flex/grid item sin min-width:0), así que una tarjeta con varios datos
-  // cortos desbordaba el ancho disponible en vez de que su contenido
-  // envolviera.
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--esp-3);
-}
-
-.tarjeta-enlace {
+.fila-enlace {
   display: block;
   text-decoration: none;
   color: inherit;
 }
 
-.tarjeta-enlace:hover {
-  filter: brightness(0.985);
+.fila-enlace:hover {
+  background-color: var(--color-superficie-2);
 }

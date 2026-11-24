@@ -1,6 +1,11 @@
 <section class="proveedores">
   <header class="encabezado-pagina">
-    <h1 class="encabezado-pagina__titulo">Proveedores</h1>
+    <div>
+      <h1 class="encabezado-pagina__titulo">Proveedores</h1>
+      @if (!cargando()) {
+        <p class="encabezado-pagina__apoyo">{{ contador() }}</p>
+      }
+    </div>
 
     <mat-form-field appearance="outline" class="filtro">
       <mat-label>Estado</mat-label>
@@ -30,21 +35,59 @@
     </p>
   }
 
-  <div class="lista">
-    @for (perfil of lista(); track perfil.id) {
-      <div class="panel tarjeta">
-        <div class="tarjeta__encabezado">
-          <div>
-            <h2 class="texto-lg">{{ perfil.business_name }}</h2>
-            <p class="texto-sm texto-suave">{{ perfil.city }}, {{ perfil.phone }}</p>
+  @if (lista().length > 0) {
+    <div class="lista-filas">
+      @for (perfil of lista(); track perfil.id) {
+        <article class="fila">
+          <div class="fila__icono">
+            <mat-icon aria-hidden="true">storefront</mat-icon>
           </div>
-          <app-estado-perfil [estado]="perfil.status" [motivo]="perfil.rejection_reason" />
-        </div>
 
-        <p class="texto-sm">{{ nombresCategorias(perfil) }}</p>
+          <div class="fila__contenido">
+            <h3 class="fila__titulo">{{ perfil.business_name }}</h3>
+            <div class="fila__meta">
+              <span>
+                <mat-icon aria-hidden="true">location_on</mat-icon>
+                {{ perfil.city }}, {{ perfil.phone }}
+              </span>
+              <span>
+                <mat-icon aria-hidden="true">schedule</mat-icon>
+                Solicitó el alta el
+                <time [attr.datetime]="perfil.created_at">{{ perfil.created_at | date: 'dd/MM/yyyy' }}</time>
+              </span>
+            </div>
+            <p class="fila__categorias texto-xs">{{ nombresCategorias(perfil) }}</p>
+          </div>
 
-        @if (perfil.status === 'PENDING') {
-          @if (rechazandoId() === perfil.id) {
+          <div class="fila__estados">
+            <app-estado-perfil [estado]="perfil.status" [motivo]="perfil.rejection_reason" />
+          </div>
+
+          <div class="fila__accion">
+            @if (perfil.status === 'PENDING' && rechazandoId() !== perfil.id) {
+              <div class="botones">
+                <button
+                  mat-flat-button
+                  color="primary"
+                  type="button"
+                  [disabled]="accionando()"
+                  (click)="aprobar(perfil)"
+                >
+                  Aprobar
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="accionando()"
+                  (click)="abrirRechazo(perfil)"
+                >
+                  Rechazar
+                </button>
+              </div>
+            }
+          </div>
+
+          @if (perfil.status === 'PENDING' && rechazandoId() === perfil.id) {
             <div class="rechazo">
               <mat-form-field appearance="outline" class="motivo">
                 <mat-label>Motivo del rechazo</mat-label>
@@ -66,36 +109,13 @@
                 </button>
               </div>
             </div>
-          } @else {
-            <div class="botones">
-              <button
-                mat-flat-button
-                color="primary"
-                type="button"
-                class="aprobar"
-                [disabled]="accionando()"
-                (click)="aprobar(perfil)"
-              >
-                Aprobar
-              </button>
-              <button
-                mat-stroked-button
-                type="button"
-                [disabled]="accionando()"
-                (click)="abrirRechazo(perfil)"
-              >
-                Rechazar
-              </button>
-            </div>
           }
-        }
-      </div>
-    } @empty {
-      @if (!cargando()) {
-        <div class="panel vacio">
-          <p class="vacio__texto">No hay proveedores con ese estado.</p>
-        </div>
+        </article>
       }
-    }
-  </div>
+    </div>
+  } @else if (!cargando()) {
+    <div class="panel vacio">
+      <p class="vacio__texto">No hay proveedores con ese estado.</p>
+    </div>
+  }
 </section>

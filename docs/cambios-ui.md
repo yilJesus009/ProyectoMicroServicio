@@ -509,6 +509,227 @@ rechazo. Build limpio y 209/209 pruebas verdes después del fix.
 Con esto, las 16 pantallas de `docs/frontend.md` quedaron probadas con la
 técnica de iframe en 360/768/1280px al menos una vez durante la Fase 6.
 
+## Fase 7 (pausa) — Ajuste de escritorio contra el modelo de rediseño
+
+Con el ensayo de Fase 7 en curso, se detectó que el frontend en escritorio no
+coincidía con el modelo de referencia en `docs/UI/RepuestosYa propuesta de
+rediseño-project` (export de la herramienta de diseño, servido local con
+`python -m http.server` y comparado en el navegador junto al `ng serve` del
+repo, ambos contra el backend ya levantado en Docker). Se pausó el ensayo
+para corregirlo en dos tandas.
+
+### Primera tanda (ya aprobada antes de esta sesión)
+
+- Contenido centrado en vez de alineado a la izquierda (`layout.component.scss`,
+  `margin-inline: auto`), acorde a la sección 6 ya corregida en DISEÑO.md.
+- `moneda.pipe` nuevo (Bs sin decimales si el monto es entero, con dos si
+  tiene centavos; muestra el código tal cual si la moneda no es BOB) en vez
+  del `DecimalPipe` suelto con separador manual, en las 6 pantallas que
+  muestran precio.
+- Pago y Ofertar: grid/fila de dos columnas desde 1024px en vez de una sola
+  columna angosta.
+
+### Segunda tanda: patrón de fila y pantallas del modelo
+
+El modelo usa, en Mis solicitudes, Solicitudes abiertas y Proveedores
+pendientes, un patrón de fila (ícono circular + contenido + estados + acción,
+separadas por borde) en vez de una tarjeta por elemento. Se agregó como clase
+global reutilizable (`_globales.scss`): `.lista-filas` (panel contenedor) +
+`.fila` (+ elementos `__icono`, `__contenido`, `__categoria`, `__titulo`,
+`__meta`, `__estados`, `__accion`). Se aplicó en:
+
+- **Mis solicitudes / Solicitudes abiertas**: comparten `tarjeta-solicitud`
+  (ya era dumb y compartido), que pasó de tarjeta a fila; la acción de cada
+  fila se inyecta por content projection (`<ng-content select="[accion]">`)
+  en vez de ir fuera del componente, porque cada pantalla necesita un texto y
+  una ruta de acción distintos. Mis solicitudes agrega el contador
+  singular/plural y el enlace por estado (Ver solicitud/Ver ofertas/Ver
+  pedido); Solicitudes abiertas agrega el subtítulo.
+- **Mis pedidos (comprador y proveedor)**: comparten `order-card` (mismo
+  patrón que `tarjeta-solicitud`), con precio y estado a la derecha.
+- **Mis vehículos y Proveedores pendientes**: usan `.fila` directo (sin
+  componente compartido, cada una es la única pantalla de su lista).
+- **Nueva solicitud**: subtítulo nuevo; la urgencia pasa de `mat-select` a
+  `mat-button-toggle-group` (único import nuevo, `MatButtonToggleModule`)
+  atado al mismo `formControlName`, con roving tabindex de Material (Tab
+  entra al valor seleccionado, flechas cambian de opción) — se confirmó con
+  teclado real, no solo `.focus()` por script.
+- **Comparador**: el encabezado deja de reutilizar `tarjeta-solicitud` (ya es
+  una fila, no sirve para este layout) y pasa a su propio panel con chips de
+  categoría/urgencia, "Solicitud N" a la derecha y la foto al lado del texto.
+  El badge de estado de la oferta deja de mostrarse mientras está "Enviada"
+  (SUBMITTED): es el estado por defecto y no aporta nada verlo en cada fila;
+  sigue mostrándose para Aceptada/No elegida/Retirada. El precio ya estaba
+  alineado a la derecha desde antes (columna `.num` de `.tabla-comparacion`).
+- **Seguimiento**: grid de 2 columnas desde 1024px (stepper + aviso/acción a
+  la izquierda, bloque de Pago a la derecha). "Confirmar recepción" queda
+  integrado en el mismo aviso de "El pedido fue entregado…" en vez de un
+  panel aparte. El bloque de Pago ahora se muestra siempre, no solo cuando ya
+  existe el pago: antes de pagar, Método/Referencia muestran "—" y Estado
+  dice "Pendiente" (DISEÑO.md sección 10: Pago Pendiente/Confirmado). El
+  primer paso del stepper sigue siendo "Pendiente de pago", sin tocar
+  `order-timeline`.
+
+**No se aplicó** (quedó fuera a pedido explícito, para después de la v1.0):
+conteo de ofertas en la fila, ciudad como `select`, repuesto separado de la
+descripción, dirección de retiro en el aviso de "listo para retiro",
+descripción del proveedor en su fila, acción "Ver perfil" y vehículo
+preseleccionado en Nueva solicitud.
+
+### Bug real encontrado al construir `.lista-filas`
+
+El borde que separa una fila de la siguiente no se veía en ningún caso: la
+regla era `.fila:last-child { border-bottom: none }`, pero cuando la fila la
+pone un componente compartido (`app-tarjeta-solicitud`, `app-order-card`),
+`.fila` es la **única** hija de ese componente — por lo tanto siempre es
+`:last-child` de su propio envoltorio, sin importar su posición real en la
+lista. Se verificó con `getComputedStyle(...).borderBottomWidth` en el
+navegador (las tres filas de una prueba daban `0px`) antes de corregirlo.
+Arreglado moviendo el borde a `.lista-filas > *` (el hijo directo real,
+sea el componente o `.fila` sin envoltorio) y `.lista-filas > :last-child`
+para quitarlo solo en la última fila de verdad.
+
+### Verificación
+
+`ng build` sin errores, `ng test` 212/212 en las dos rondas (antes y después
+de la segunda tanda); dos aserciones de prueba ajustadas porque verificaban
+el comportamiento viejo a propósito cambiado: `AdminProveedoresComponent`
+(el teléfono se había movido sin querer fuera de la fila — error real,
+corregido agregándolo de vuelta), `OrderCardComponent` (los días estimados
+de entrega, mismo caso), y `DetalleSolicitudComponent` (la prueba de la
+oferta `WITHDRAWN` esperaba ver "Enviada" en la `SUBMITTED` de al lado — eso
+sí era el cambio de diseño pedido, se actualizó la aserción). Revisión visual
+con `ng serve` del repo principal contra el backend de Docker, con sesiones
+reales de comprador/proveedor/admin, en 360/768/1280/1920px (360 y 1920 con
+un `<iframe>` del mismo origen, igual técnica que en la Fase 6, porque
+`resize_window` seguía sin cambiar `window.innerWidth` en este entorno; 1280
+confirmado visualmente para que el grid de 2 columnas de Seguimiento se vea
+activo). Sin desbordes horizontales en ninguna de las 9 pantallas tocadas.
+
+## Fase 7 (pausa), segunda ronda — ajustes reportados a 1920px
+
+Con la Fase 7 ya en PR #63 (mergeado a `develop`), el usuario revisó la app en
+su pantalla real de 1920px y reportó cuatro problemas que no se habían visto
+en el entorno de prueba. Se trabajó en una rama nueva (`fix/ajustes-escritorio`,
+desde `develop` ya con el PR #63 adentro).
+
+### 1. Barra lateral a 360px en vez de 240px, y barra roja que no cubre toda la fila superior
+
+Dos causas distintas, ambas de CSS puro:
+
+- **Estructura**: `layout.component.html` ponía `mat-toolbar.barra-superior`
+  *adentro* de `mat-sidenav-content`, que es la columna a la derecha de
+  `mat-sidenav`. Por eso la barra roja arrancaba después del ancho de la
+  lateral en vez de cubrir las dos columnas arriba (DISEÑO.md sección 8:
+  "barra roja arriba a todo el ancho, lateral debajo"). Se saca el
+  `mat-toolbar` de adentro de `mat-sidenav-container` y pasa a ser hermano
+  suyo, con `.layout` en columna flex (`mat-toolbar` arriba, fijo;
+  `mat-sidenav-container` abajo, ocupando el resto). Se quita también el
+  bloque `.marca-lateral` (el isotipo duplicado arriba de la lista de
+  menú): ya no hace falta, el logo vive en la barra de ancho completo.
+- **Ancho de la lateral**: `.barra-lateral { width: var(--ancho-barra-lateral) }`
+  (240px) perdía contra el ancho por defecto de Material
+  (`--mat-sidenav-container-width`, 360px): misma especificidad (una
+  clase), y la hoja de Material carga después en el bundle final. Se
+  encontró inspeccionando `getMatchedCSSRules`-equivalente vía
+  `document.styleSheets`: la regla real en el CSS de Material es
+  `.mat-drawer { width: var(--mat-sidenav-container-width, 360px) }`. Se
+  fija esa variable (`--mat-sidenav-container-width: var(--ancho-barra-lateral)`)
+  en `styles.scss`, junto a los otros overrides de Material ya
+  documentados ahí (mismo patrón que `--mat-sidenav-container-shape`).
+
+Verificado con `getBoundingClientRect()` antes/después (360px → 240px) y
+visualmente con el `<iframe>` de prueba: en 360px el menú sigue abriendo
+como overlay *debajo* de la barra roja (que ahora sí se ve siempre), no
+tapándola.
+
+### 2. `--ancho-contenido` a 1440px
+
+Cambio de una línea en `_tokens.scss` (1200px → 1440px) más el mismo valor
+en los tres lugares de DISEÑO.md que lo mencionaban (secciones 6, 8 y 14).
+Listas, tablas y paneles ya usaban el 100% de `.contenido` sin su propio
+`max-width`, así que crecieron solos; no hizo falta tocarlos.
+
+### 3. Formularios angostos y pegados a la izquierda
+
+Con `.contenido` más ancho, cualquier bloque con su propio `max-width` mejor
+que el de antes y **sin** `margin-inline: auto` quedó visiblemente pegado a
+la izquierda en vez de centrado — un problema que ya existía a 1200px pero
+se nota mucho más a 1440px. Dos casos, con una solución distinta para cada
+uno (pedida así explícitamente, no es la misma clase):
+
+- **Páginas que SON un formulario** (Nueva solicitud, Perfil comercial,
+  Ofertar): clase global nueva `.pagina-formulario` (`max-width: 55rem` =
+  880px, `margin-inline: auto`) aplicada a la sección raíz de cada una
+  (título incluido). Se quitan los `max-width` propios que tenían, todos
+  más angostos que 880px (`.formulario` 44rem en Nueva solicitud, `.tarjeta`
+  40rem en Perfil comercial, `.pantalla` 760px en Ofertar) para que el
+  formulario use los 880px completos en vez de uno más chico adentro.
+  Perfil comercial de paso agrupa Ciudad y Teléfono en `.dos-columnas`
+  (Nueva solicitud y Ofertar ya tenían sus pares en dos columnas).
+- **Formularios cortos de alta sobre una lista** (Registrar vehículo, Nueva
+  categoría): clase global nueva `.fila-alta` — grid de 1 columna en móvil,
+  2 en tablet (≥600px), fila flex con el botón (`.accion`) al final desde
+  escritorio (≥1024px). Se aplana la estructura (antes Marca+Modelo y
+  Año+Placa eran dos `.dos-columnas` apiladas) para que los 4 campos y el
+  botón queden en una sola fila. Se quitan los `max-width` de los paneles
+  contenedores (36rem y 40rem) para que midan lo mismo que la lista de
+  abajo, como pidió el usuario.
+- **Pago y Seguimiento** (ya centradas en teoría, con grid de 2 columnas
+  desde la primera ronda de esta fase): tenían el mismo problema que las
+  páginas-formulario — `.pantalla { max-width: 900px }` sin
+  `margin-inline: auto` — así que se les agregó la misma propiedad. No se
+  usó `.pagina-formulario` porque su ancho (900px, no 880px) es un valor
+  propio de esa pantalla, no el genérico de formulario.
+
+### 4. Celda de acciones desalineada en la tabla de Categorías (y el mismo bug en Comparador y Mis ofertas)
+
+Causa: `.celda-accion { display: flex; ... }` se aplicaba directo sobre el
+`<td>`. Poner `display: flex` en una celda la saca del modelo de layout de
+tabla — deja de comportarse como `table-cell` — así que pierde la altura y
+el borde inferior coordinados con el resto de la fila (se ve "más arriba",
+exactamente lo que reportó el usuario). El mismo nombre de clase
+(`.celda-accion`, y `.celda-precio` en el Comparador) se reutilizaba con el
+mismo bug en tres tablas distintas: Categorías (admin), el comparador de
+ofertas (`detalle-solicitud`) y Mis ofertas (proveedor).
+
+Arreglo, igual en los tres archivos: el `display: flex` pasa a un `<div>`
+nuevo *adentro* del `<td>` (`.celda-accion__contenido`,
+`.celda-precio__contenido`); el `<td>` se queda como celda normal, solo con
+la clase para `data-etiqueta` en móvil. Se agrega también
+`vertical-align: middle` a `.tabla-comparacion td` (antes caía en el valor
+por defecto, `baseline`): con celdas de distinta altura (una línea de texto
+vs. dos apiladas) eso las dejaba a alturas distintas entre sí.
+
+Verificado con `getBoundingClientRect()`: las 4 celdas de una fila de
+Categorías terminan exactamente en el mismo borde inferior.
+
+### "Ya ofertaste" + "Ver mi oferta" (commit aparte, con lógica)
+
+Implementada tal como se había propuesto sin aplicar al cierre de la
+primera ronda: `solicitudes-abiertas.component.ts` pide `GET /offers/mine`
+(ya existía en `SolicitudesFacade.misOfertas()`) en paralelo con las
+categorías, y arma un `Set<number>` de `part_request_id` con oferta propia
+**activa** (se excluye `WITHDRAWN`: retirar una oferta permite volver a
+ofertar en esa misma solicitud). La fila de `app-tarjeta-solicitud` muestra
+"Ya ofertaste" + el enlace "Ver mi oferta" en vez de "Enviar oferta" cuando
+la solicitud está en ese set. El enlace va a `/proveedor/ofertas` (la lista
+completa) porque no existe una pantalla de detalle de una sola oferta — se
+señaló esta limitación en la propuesta original en vez de inventar una ruta
+nueva. 2 pruebas nuevas en el spec (oferta `SUBMITTED` propia → "Ya
+ofertaste"; oferta `WITHDRAWN` propia → sigue en "Enviar oferta").
+
+### Verificación de esta ronda
+
+`ng build` sin errores; `ng test` en verde en cada punto (212 → 214 con las
+2 pruebas nuevas de "Ya ofertaste"). Barrido automatizado de desborde
+horizontal (`scrollWidth` vs. `clientWidth` dentro de un `<iframe>` de
+mismo origen, igual técnica que en la Fase 6) en 360/768/1280/1920px sobre
+las 16 pantallas autenticadas de los tres roles: cero desbordes. Revisión
+visual con sesiones reales (comprador, dos proveedores, admin) contra el
+backend de Docker para confirmar cada arreglo en pantalla, no solo por
+cómputo de estilos.
+
 ## Preguntas de la defensa
 
 1. **¿Por qué el tema no usa directamente el rojo exacto de la marca?**

@@ -5,7 +5,6 @@
 }
 
 .formulario-panel {
-  max-width: 36rem;
   display: flex;
   flex-direction: column;
   gap: var(--esp-1);
@@ -18,39 +17,7 @@
   margin-top: var(--esp-3);
 }
 
-.accion {
-  margin-top: var(--esp-2);
-  align-self: flex-start;
-}
-
 .estado-carga {
   color: var(--color-tinta-suave);
 }
 
-.lista {
-  display: flex;
-  flex-direction: column;
-  gap: var(--esp-3);
-}
-
-.vehiculo {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--esp-3);
-}
-
-.vehiculo__datos {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-3);
-}
-
-.vehiculo__datos p {
-  margin: 0;
-}
-
-.vehiculo__datos .icono {
-  color: var(--color-tinta-suave);
-}

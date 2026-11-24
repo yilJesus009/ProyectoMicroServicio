@@ -46,8 +46,7 @@ describe('OrderCardComponent', () => {
 
     expect(texto()).toContain('Amortiguador delantero derecho');
     expect(texto()).toContain('AutoParts Center');
-    expect(texto()).toContain('620.00');
-    expect(texto()).toContain('BOB');
+    expect(texto()).toContain('Bs 620');
     expect(texto()).toContain('Toyota Corolla 2018');
     expect(texto()).toContain('Entrega a domicilio');
     expect(texto()).toContain('2 día(s)');

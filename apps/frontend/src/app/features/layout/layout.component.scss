@@ -2,14 +2,24 @@
 // e .item-menu ya salen de src/styles/_globales.scss; acá solo lo propio de
 // este layout.
 
+// La barra roja va arriba a todo el ancho (sección 8); mat-sidenav-container
+// solo envuelve lo que está debajo (lateral + contenido), no la barra.
 .layout {
+  display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
 .barra-superior {
+  flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+.cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .boton-menu {
@@ -53,14 +63,6 @@
   flex-shrink: 0;
 }
 
-.marca-lateral {
-  display: flex;
-  align-items: center;
-  height: var(--alto-barra-superior);
-  padding: 0 var(--esp-4);
-  border-bottom: 1px solid var(--color-borde);
-}
-
 .lista-menu {
   display: flex;
   flex-direction: column;
@@ -71,6 +73,7 @@
 .contenido {
   padding: var(--esp-5);
   max-width: var(--ancho-contenido);
+  margin-inline: auto;
 }
 
 // A 375px el logo (28px de alto, ~148px de ancho con el texto) más el resto

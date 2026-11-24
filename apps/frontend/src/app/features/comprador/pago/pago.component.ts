@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DecimalPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,6 +10,7 @@ import qrcode from 'qrcode-generator';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { MetodoPago, Pedido, PedidosFacade } from '../../../facades/pedidos.facade';
+import { MonedaPipe } from '../../../shared/moneda.pipe';
 import { ETIQUETA_ESTADO_PEDIDO } from '../../../shared/order-card/order-card.component';
 
 /**
@@ -29,12 +29,12 @@ import { ETIQUETA_ESTADO_PEDIDO } from '../../../shared/order-card/order-card.co
 @Component({
   selector: 'app-pago',
   imports: [
-    DecimalPipe,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
     MatProgressBarModule,
+    MonedaPipe,
     ReactiveFormsModule,
     RouterLink,
   ],

@@ -51,6 +51,8 @@ export class SolicitudesAbiertasComponent {
   readonly lista = signal<Solicitud[]>([]);
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
+  /** ids de solicitud con una oferta propia activa (no retirada). */
+  readonly misOfertasIds = signal<ReadonlySet<number>>(new Set());
 
   readonly filtros = new FormGroup({
     ciudad: new FormControl('', { nonNullable: true }),
@@ -75,7 +77,20 @@ export class SolicitudesAbiertasComponent {
       // 403, y el aviso ya dice qué hacer.
       if (perfil?.status !== 'APPROVED') return;
 
-      this.categorias.set(await this.catalogo.categoriasActivas());
+      const [categorias, ofertas] = await Promise.all([
+        this.catalogo.categoriasActivas(),
+        this.solicitudes.misOfertas(),
+      ]);
+      this.categorias.set(categorias);
+      // Retirada no cuenta como "ya ofertaste": el proveedor puede volver a
+      // ofertar en esa solicitud.
+      this.misOfertasIds.set(
+        new Set(
+          ofertas
+            .filter((oferta) => oferta.status !== 'WITHDRAWN')
+            .map((oferta) => oferta.part_request_id),
+        ),
+      );
       await this.buscar();
     } catch (err) {
       this.error.set(mensajeDeError(err));

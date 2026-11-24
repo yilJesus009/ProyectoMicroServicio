@@ -1,6 +1,11 @@
 <section class="pantalla">
   <header class="encabezado-pagina">
-    <h1 class="encabezado-pagina__titulo">Mis pedidos</h1>
+    <div>
+      <h1 class="encabezado-pagina__titulo">Mis pedidos</h1>
+      @if (!cargando() && lista().length > 0) {
+        <p class="encabezado-pagina__apoyo">{{ contador() }}</p>
+      }
+    </div>
     <a mat-stroked-button color="primary" routerLink="/comprador/solicitudes">Mis solicitudes</a>
   </header>
 
@@ -17,14 +22,12 @@
       <p class="vacio__texto">Todavía no tienes pedidos. Cuando aceptes una oferta aparecerá aquí.</p>
     </div>
   } @else {
-    <ul class="lista">
+    <div class="lista-filas">
       @for (pedido of lista(); track pedido.id) {
-        <li>
-          <a class="tarjeta-enlace" [routerLink]="['/comprador/pedidos', pedido.id]">
-            <app-order-card [pedido]="pedido" />
-          </a>
-        </li>
+        <a class="fila-enlace" [routerLink]="['/comprador/pedidos', pedido.id]">
+          <app-order-card [pedido]="pedido" />
+        </a>
       }
-    </ul>
+    </div>
   }
 </section>

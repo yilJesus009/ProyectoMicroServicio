@@ -2,7 +2,24 @@
   display: flex;
   flex-direction: column;
   gap: var(--esp-4);
-  max-width: 640px;
+}
+
+.fila-dos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+// Pares de campos cortos en una fila desde escritorio, en vez de ocupar
+// cada uno el ancho completo del formulario (DISEÑO.md sección 8).
+@media (min-width: 1024px) {
+  .fila-dos {
+    flex-direction: row;
+
+    > * {
+      flex: 1 1 0;
+    }
+  }
 }
 
 .volver a {

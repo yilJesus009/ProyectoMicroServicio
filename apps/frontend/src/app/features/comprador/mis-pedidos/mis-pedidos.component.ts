@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -27,6 +27,12 @@ export class MisPedidosComponent {
   readonly lista = signal<Pedido[]>([]);
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
+
+  /** "1 pedido" / "4 pedidos" (singular y plural). */
+  readonly contador = computed(() => {
+    const n = this.lista().length;
+    return n === 1 ? '1 pedido' : `${n} pedidos`;
+  });
 
   constructor() {
     void this.cargar();

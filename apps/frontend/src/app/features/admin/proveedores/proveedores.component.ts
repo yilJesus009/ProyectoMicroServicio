@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -27,6 +28,7 @@ import { EstadoPerfilComponent } from '../../../shared/estado-perfil/estado-perf
 @Component({
   selector: 'app-admin-proveedores',
   imports: [
+    DatePipe,
     EstadoPerfilComponent,
     MatButtonModule,
     MatFormFieldModule,
@@ -54,6 +56,13 @@ export class AdminProveedoresComponent {
   readonly aviso = signal<string | null>(null);
   /** Id del perfil al que se le está escribiendo el motivo de rechazo. */
   readonly rechazandoId = signal<number | null>(null);
+
+  /** "3 proveedores por revisar" (filtro pendientes) o "3 proveedores". */
+  readonly contador = computed(() => {
+    const n = this.lista().length;
+    const sustantivo = n === 1 ? 'proveedor' : 'proveedores';
+    return this.filtro() === 'PENDING' ? `${n} ${sustantivo} por revisar` : `${n} ${sustantivo}`;
+  });
 
   readonly motivo = new FormControl('', {
     nonNullable: true,

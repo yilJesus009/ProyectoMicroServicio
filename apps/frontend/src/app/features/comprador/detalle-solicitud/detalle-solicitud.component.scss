@@ -35,16 +35,51 @@
   color: var(--color-tinta-suave);
 }
 
-.foto {
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.resumen__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.resumen__id {
+  margin-left: auto;
+}
+
+.resumen__cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--esp-4);
+}
+
+.resumen__texto h1 {
   margin: 0;
 }
 
-.foto img {
-  max-width: 100%;
-  max-height: 260px;
+.resumen__texto p {
+  margin: var(--esp-1) 0 0;
+}
+
+.resumen__foto {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.resumen__foto img {
+  display: block;
+  width: 120px;
+  height: 120px;
   border-radius: var(--radio-panel);
   border: 1px solid var(--color-borde);
-  object-fit: contain;
+  object-fit: cover;
   background: var(--color-superficie-2);
 }
 
@@ -78,14 +113,18 @@
   overflow-x: auto;
 }
 
-.celda-precio {
+// El flex va en un <div> adentro del <td>, no en el <td> mismo: poner
+// display:flex directo en una celda la saca del modelo de layout de
+// tabla (deja de ser "table-cell") y pierde la altura y el borde
+// inferior alineados con el resto de la fila.
+.celda-precio__contenido {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: var(--esp-1);
 }
 
-.celda-accion {
+.celda-accion__contenido {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -103,7 +142,7 @@
 }
 
 @media (max-width: 720px) {
-  .celda-accion {
+  .celda-accion__contenido {
     align-items: flex-start;
   }
 }
