@@ -509,6 +509,103 @@ rechazo. Build limpio y 209/209 pruebas verdes después del fix.
 Con esto, las 16 pantallas de `docs/frontend.md` quedaron probadas con la
 técnica de iframe en 360/768/1280px al menos una vez durante la Fase 6.
 
+## Fase 7 (pausa) — Ajuste de escritorio contra el modelo de rediseño
+
+Con el ensayo de Fase 7 en curso, se detectó que el frontend en escritorio no
+coincidía con el modelo de referencia en `docs/UI/RepuestosYa propuesta de
+rediseño-project` (export de la herramienta de diseño, servido local con
+`python -m http.server` y comparado en el navegador junto al `ng serve` del
+repo, ambos contra el backend ya levantado en Docker). Se pausó el ensayo
+para corregirlo en dos tandas.
+
+### Primera tanda (ya aprobada antes de esta sesión)
+
+- Contenido centrado en vez de alineado a la izquierda (`layout.component.scss`,
+  `margin-inline: auto`), acorde a la sección 6 ya corregida en DISEÑO.md.
+- `moneda.pipe` nuevo (Bs sin decimales si el monto es entero, con dos si
+  tiene centavos; muestra el código tal cual si la moneda no es BOB) en vez
+  del `DecimalPipe` suelto con separador manual, en las 6 pantallas que
+  muestran precio.
+- Pago y Ofertar: grid/fila de dos columnas desde 1024px en vez de una sola
+  columna angosta.
+
+### Segunda tanda: patrón de fila y pantallas del modelo
+
+El modelo usa, en Mis solicitudes, Solicitudes abiertas y Proveedores
+pendientes, un patrón de fila (ícono circular + contenido + estados + acción,
+separadas por borde) en vez de una tarjeta por elemento. Se agregó como clase
+global reutilizable (`_globales.scss`): `.lista-filas` (panel contenedor) +
+`.fila` (+ elementos `__icono`, `__contenido`, `__categoria`, `__titulo`,
+`__meta`, `__estados`, `__accion`). Se aplicó en:
+
+- **Mis solicitudes / Solicitudes abiertas**: comparten `tarjeta-solicitud`
+  (ya era dumb y compartido), que pasó de tarjeta a fila; la acción de cada
+  fila se inyecta por content projection (`<ng-content select="[accion]">`)
+  en vez de ir fuera del componente, porque cada pantalla necesita un texto y
+  una ruta de acción distintos. Mis solicitudes agrega el contador
+  singular/plural y el enlace por estado (Ver solicitud/Ver ofertas/Ver
+  pedido); Solicitudes abiertas agrega el subtítulo.
+- **Mis pedidos (comprador y proveedor)**: comparten `order-card` (mismo
+  patrón que `tarjeta-solicitud`), con precio y estado a la derecha.
+- **Mis vehículos y Proveedores pendientes**: usan `.fila` directo (sin
+  componente compartido, cada una es la única pantalla de su lista).
+- **Nueva solicitud**: subtítulo nuevo; la urgencia pasa de `mat-select` a
+  `mat-button-toggle-group` (único import nuevo, `MatButtonToggleModule`)
+  atado al mismo `formControlName`, con roving tabindex de Material (Tab
+  entra al valor seleccionado, flechas cambian de opción) — se confirmó con
+  teclado real, no solo `.focus()` por script.
+- **Comparador**: el encabezado deja de reutilizar `tarjeta-solicitud` (ya es
+  una fila, no sirve para este layout) y pasa a su propio panel con chips de
+  categoría/urgencia, "Solicitud N" a la derecha y la foto al lado del texto.
+  El badge de estado de la oferta deja de mostrarse mientras está "Enviada"
+  (SUBMITTED): es el estado por defecto y no aporta nada verlo en cada fila;
+  sigue mostrándose para Aceptada/No elegida/Retirada. El precio ya estaba
+  alineado a la derecha desde antes (columna `.num` de `.tabla-comparacion`).
+- **Seguimiento**: grid de 2 columnas desde 1024px (stepper + aviso/acción a
+  la izquierda, bloque de Pago a la derecha). "Confirmar recepción" queda
+  integrado en el mismo aviso de "El pedido fue entregado…" en vez de un
+  panel aparte. El bloque de Pago ahora se muestra siempre, no solo cuando ya
+  existe el pago: antes de pagar, Método/Referencia muestran "—" y Estado
+  dice "Pendiente" (DISEÑO.md sección 10: Pago Pendiente/Confirmado). El
+  primer paso del stepper sigue siendo "Pendiente de pago", sin tocar
+  `order-timeline`.
+
+**No se aplicó** (quedó fuera a pedido explícito, para después de la v1.0):
+conteo de ofertas en la fila, ciudad como `select`, repuesto separado de la
+descripción, dirección de retiro en el aviso de "listo para retiro",
+descripción del proveedor en su fila, acción "Ver perfil" y vehículo
+preseleccionado en Nueva solicitud.
+
+### Bug real encontrado al construir `.lista-filas`
+
+El borde que separa una fila de la siguiente no se veía en ningún caso: la
+regla era `.fila:last-child { border-bottom: none }`, pero cuando la fila la
+pone un componente compartido (`app-tarjeta-solicitud`, `app-order-card`),
+`.fila` es la **única** hija de ese componente — por lo tanto siempre es
+`:last-child` de su propio envoltorio, sin importar su posición real en la
+lista. Se verificó con `getComputedStyle(...).borderBottomWidth` en el
+navegador (las tres filas de una prueba daban `0px`) antes de corregirlo.
+Arreglado moviendo el borde a `.lista-filas > *` (el hijo directo real,
+sea el componente o `.fila` sin envoltorio) y `.lista-filas > :last-child`
+para quitarlo solo en la última fila de verdad.
+
+### Verificación
+
+`ng build` sin errores, `ng test` 212/212 en las dos rondas (antes y después
+de la segunda tanda); dos aserciones de prueba ajustadas porque verificaban
+el comportamiento viejo a propósito cambiado: `AdminProveedoresComponent`
+(el teléfono se había movido sin querer fuera de la fila — error real,
+corregido agregándolo de vuelta), `OrderCardComponent` (los días estimados
+de entrega, mismo caso), y `DetalleSolicitudComponent` (la prueba de la
+oferta `WITHDRAWN` esperaba ver "Enviada" en la `SUBMITTED` de al lado — eso
+sí era el cambio de diseño pedido, se actualizó la aserción). Revisión visual
+con `ng serve` del repo principal contra el backend de Docker, con sesiones
+reales de comprador/proveedor/admin, en 360/768/1280/1920px (360 y 1920 con
+un `<iframe>` del mismo origen, igual técnica que en la Fase 6, porque
+`resize_window` seguía sin cambiar `window.innerWidth` en este entorno; 1280
+confirmado visualmente para que el grid de 2 columnas de Seguimiento se vea
+activo). Sin desbordes horizontales en ninguna de las 9 pantallas tocadas.
+
 ## Preguntas de la defensa
 
 1. **¿Por qué el tema no usa directamente el rojo exacto de la marca?**
