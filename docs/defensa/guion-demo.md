@@ -98,10 +98,10 @@ Salida real (probada):
 | Quién muestra | Usuario | Pantalla / comando | Qué mostrar | Qué decir |
 |---|---|---|---|---|
 | Jesús | — | terminal: `docker compose ps` | 9 contenedores `healthy` | "Todo el sistema son estos 9 contenedores: un Postgres, un RabbitMQ y 7 servicios, cada uno con su propio framework." |
-| Jesús | nuevo (registra en vivo) | `http://localhost:4200/registro` | Registro de un proveedor nuevo, rol PROVEEDOR | "Registro un proveedor nuevo para mostrar la aprobación en vivo; el admin y los demás usuarios ya existen, los dejó listos un script." |
+| Jesús | nuevo (registra en vivo) | `http://localhost:4200/registro` | Registro de un proveedor nuevo con la opción "Soy proveedor" y una contraseña fuerte (por ejemplo `Repuestos2026!`) | "Registro un proveedor nuevo para mostrar la aprobación en vivo; el admin y los demás usuarios ya existen, los dejó listos un script. La contraseña tiene que ser fuerte: Identidad rechaza las comunes, las solo numéricas o las parecidas al nombre o al correo — hoy la pantalla todavía solo dice 'Datos inválidos' si se usa una débil, sin decir cuál de las tres reglas falló." |
 | Jesús | el proveedor nuevo | `/proveedor/perfil` | Completa nombre comercial, ciudad y categorías → queda `PENDING` | "El perfil pertenece al usuario, no es un servicio aparte — así lo decidimos en `decisiones.md` (D6)." |
 | Jesús | `admin@repuestosya.com` | `/admin/proveedores` | Aprueba al proveedor nuevo | "El Gateway valida el JWT, pero cada servicio **también** lo revisa por su cuenta — si alguien entra directo por la red de Docker, igual lo para." |
-| Jesús | comprador / proveedor1 / admin | menú lateral de cada uno | Tres menús distintos, cada uno con sus propias pantallas | "El frontend es una sola app Angular; el menú cambia según el rol que vino en el JWT, no por configuración aparte." |
+| Jesús | comprador / proveedor1 / admin | menú lateral de cada uno | Tres menús distintos, cada uno con sus propias pantallas; como proveedor1, en `/proveedor/solicitudes` la solicitud 1 ya muestra "Ya ofertaste" y "Ver mi oferta" en vez de "Enviar oferta" | "El frontend es una sola app Angular; el menú cambia según el rol que vino en el JWT, no por configuración aparte. Y esta fila ya sabe que proveedor1 ofertó acá antes: no deja mandar una segunda oferta a ciegas, manda a 'Mis ofertas' a ver la que ya tiene." |
 
 ## Minuto 4–9 — Dylan (Negociación, Pedidos, Notificaciones, Catálogo, eventos)
 
@@ -109,16 +109,16 @@ Salida real (probada):
 |---|---|---|---|---|
 | Dylan | `comprador@demo.bo` | `/comprador/solicitudes/1` | Comparador con las 2 ofertas — la más barata trae la etiqueta "Mejor precio"; clic en "Aceptar oferta" sobre la de proveedor1 y confirmar en el diálogo ("Sí, aceptar") | "Comparo precio y plazo de las dos ofertas — la tabla ya marca cuál es la más barata. Al confirmar la aceptación, la otra queda 'No elegida' sola — en la base es el estado `REJECTED`, y eso lo garantiza la base de datos, no un botón que se esconde." |
 | Dylan | — | (nada en pantalla todavía) | — | "La pantalla **no** muestra qué pasa si dos personas aceptan a la vez, porque solo una de las dos ofertas sigue visible como aceptable — eso lo pruebo aparte, en la terminal, con tráfico real." |
-| Dylan | `comprador@demo.bo` | `/comprador/pedidos/1/pago` (pedido 1, ya en `PENDING_PAYMENT` de la demo sembrada) | Pestaña QR, botón "Ya pagué" | "Mientras se genera el pedido de la oferta que acabo de aceptar, ya tengo este otro listo para no perder tiempo esperando." |
+| Dylan | `comprador@demo.bo` | `/comprador/pedidos/1/pago` (pedido 1, ya en `PENDING_PAYMENT` de la demo sembrada) | Resumen del pedido a la izquierda y pestañas QR/Tarjeta a la derecha; pestaña QR, botón "Ya pagué" | "Mientras se genera el pedido de la oferta que acabo de aceptar, ya tengo este otro listo para no perder tiempo esperando." |
 | Dylan | — | terminal: comando 2 de arriba | `400` al mandar `card_number` | "La pantalla de pago nunca manda el número de tarjeta, pero esto prueba que aunque alguien se salte la pantalla y lo mande a mano, el backend lo rechaza." |
 | Dylan | `comprador@demo.bo` | botón "Ya pagué" en la misma pantalla | Pasa a `PREPARING` con la referencia `PAY-...` | "El pago es un adaptador simulado (`SimulatedPaymentGateway`) — el día que haya uno real, solo se cambia esa pieza." |
 | Dylan | `proveedor1@demo.bo` | `/proveedor/pedidos` (pedido 2, ya en `PREPARING`) | Botón de siguiente estado → `IN_TRANSIT`/`READY_FOR_PICKUP` → `DELIVERED` | "El próximo estado lo decide el tipo de entrega de la oferta — es el patrón Strategy, en `DeliveryType`." |
-| Dylan | `comprador@demo.bo` | `/comprador/pedidos/{id}` | Línea de tiempo del pedido; botón "Confirmar recepción" en `DELIVERED` | "Al confirmar, el pedido pasa a `COMPLETED` **y la solicitud también** — lo hace Negociación al consumir el evento, no un segundo clic." |
+| Dylan | `comprador@demo.bo` | `/comprador/pedidos/{id}` | Dos columnas: los pasos a la izquierda (empiezan en "Pendiente de pago", no en "Confirmado") y el bloque Pago (método, referencia, total y estado) a la derecha; en `DELIVERED`, el botón "Confirmar recepción" aparece dentro del mismo aviso, no aparte | "Al confirmar, el pedido pasa a `COMPLETED` **y la solicitud también** — lo hace Negociación al consumir el evento, no un segundo clic." |
 | Dylan | cualquiera | campanita (barra superior) | Avisos que llegaron en cada paso anterior | "Cada paso generó su aviso dentro de la app — Notificaciones solo escucha eventos, no hay nada hardcodeado." |
 | Dylan | — | terminal: comando 3 de arriba (`outbox_events`) | Una fila con `published_at` lleno | "El evento se guarda en la misma transacción que el cambio de negocio; un proceso aparte lo publica después — así nunca se pierde aunque RabbitMQ esté caído un momento." |
 | Dylan | — | RabbitMQ UI (comando 5) | Exchanges y colas reales, una `.dlq` en 0 | "Cuatro exchanges, uno por tipo de evento, y cada servicio tiene su propia cola con su propia `.dlq` — ahí caería un mensaje sin `event_id` o mal formado." |
 | Dylan | — | terminal: `node scripts/prueba-concurrencia-aceptar.mjs` (comando 4) | `200`/`409` en vivo, contra Postgres real | "Esto es la regla más importante del proyecto, probada con tráfico concurrente de verdad, no con un mock." |
-| Dylan | cualquiera | `/comprador/solicitudes/nueva` | Tarjetas de categoría del Catálogo | "Catálogo es el servicio más simple a propósito — NestJS, sin eventos, solo lectura y administración." |
+| Dylan | cualquiera | `/comprador/solicitudes/nueva` | Chips de categoría con ícono, que vienen del Catálogo (la urgencia también se elige con chips) | "Catálogo es el servicio más simple a propósito — NestJS, sin eventos, solo lectura y administración." |
 
 ## Plan B (si algo falla en vivo)
 
@@ -131,7 +131,7 @@ Preparar **durante el ensayo**, no el día de la defensa:
 | El comando de `outbox_events` no corre en vivo (typo, Docker lento) | Salida de la consulta ya corrida con una fila real con `published_at` | `docs/defensa/evidencias/outbox-published.txt` |
 | `prueba-concurrencia-aceptar.mjs` no da tiempo a correrlo en vivo | Salida de una corrida previa con el `200`/`409` | `docs/defensa/evidencias/concurrencia-200-409.txt` |
 | El pago o el avance de estado no responden a tiempo | Seguir con el pedido 2 (ya en `PREPARING` desde `seed-demo.mjs`) en vez de esperar el que se generó en vivo | — |
-| Docker no levanta en absoluto (no hay nada que mostrar en vivo) | **Pendiente** — capturas de las pantallas clave (login, nueva solicitud, comparador, enviar oferta, seguimiento, pago); se toman en `fix/layout-escritorio` tras el ajuste de ancho en escritorio | `docs/defensa/evidencias/ui-*.jpg` (aún no existen) |
+| Docker no levanta en absoluto (no hay nada que mostrar en vivo) | Capturas de las pantallas clave ya en escritorio: nueva solicitud, solicitudes abiertas, enviar oferta, comparador, pago y seguimiento | `docs/defensa/evidencias/nueva-solicitud.jpg`, `solicitudes-abiertas.jpg`, `ofertar.jpg`, `comparador.jpg`, `pago.jpg` y `seguimiento.jpg` |
 
 Si el plan B entra, se dice en voz alta: *"esto lo grabamos antes porque la
 red del aula puede fallar; el código real está en el repositorio y lo
