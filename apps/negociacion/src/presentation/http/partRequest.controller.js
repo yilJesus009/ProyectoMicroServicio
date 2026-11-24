@@ -23,6 +23,7 @@ function toResponse(entity) {
     vehicle_brand: entity.vehicleBrand,
     vehicle_model: entity.vehicleModel,
     vehicle_year: entity.vehicleYear,
+    vehicle_label: entity.vehicleLabel,
     description: entity.description,
     city: entity.city,
     urgency: entity.urgency,
