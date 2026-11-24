@@ -15,19 +15,41 @@
       </a>
     </div>
 
-    <app-tarjeta-solicitud [solicitud]="solicitud" />
+    <div class="panel resumen">
+      <div class="resumen__chips">
+        @if (solicitud.category_name; as categoria) {
+          <span class="estado estado--neutro">{{ categoria }}</span>
+        }
+        <span class="estado" [class]="'estado--' + (TONO_URGENCIA[solicitud.urgency] ?? 'neutro')">
+          {{ ETIQUETA_URGENCIA[solicitud.urgency] ?? solicitud.urgency }}
+        </span>
+        <span class="resumen__id texto-sm texto-suave">Solicitud {{ solicitud.id }}</span>
+      </div>
 
-    @if (fotoUrl(); as url) {
-      <figure class="foto">
-        <img [src]="url" [attr.alt]="'Foto del repuesto: ' + solicitud.description" />
-      </figure>
-    }
+      <div class="resumen__cuerpo">
+        <div class="resumen__texto">
+          <h1 class="texto-xl">{{ solicitud.description }}</h1>
+          <p class="texto-sm texto-suave">
+            {{ vehiculo() }}, {{ solicitud.city }}, publicada el
+            {{ solicitud.created_at | date: 'dd/MM/yyyy' }}
+          </p>
+        </div>
+
+        @if (fotoUrl(); as url) {
+          <figure class="resumen__foto">
+            <img [src]="url" [attr.alt]="'Foto del repuesto: ' + solicitud.description" />
+          </figure>
+        }
+      </div>
+    </div>
 
     <section class="comparador">
       <header class="cabecera">
         <div>
           <h2 class="texto-xl">Ofertas recibidas ({{ ofertas().length }})</h2>
-          <p class="texto-sm texto-suave">Solo puedes aceptar una.</p>
+          <p class="texto-sm texto-suave">
+            Solo puedes aceptar una. Las demás quedarán como no elegidas.
+          </p>
         </div>
 
         <mat-radio-group
@@ -126,12 +148,14 @@
                   </td>
                   <td data-etiqueta="Nota">{{ oferta.notes || '—' }}</td>
                   <td data-etiqueta="Acción" class="celda-accion">
-                    <span
-                      class="estado"
-                      [class]="'estado--' + (TONO_ESTADO_OFERTA[oferta.status] ?? 'neutro')"
-                    >
-                      {{ ETIQUETA_ESTADO_OFERTA[oferta.status] ?? oferta.status }}
-                    </span>
+                    @if (oferta.status !== 'SUBMITTED') {
+                      <span
+                        class="estado"
+                        [class]="'estado--' + (TONO_ESTADO_OFERTA[oferta.status] ?? 'neutro')"
+                      >
+                        {{ ETIQUETA_ESTADO_OFERTA[oferta.status] ?? oferta.status }}
+                      </span>
+                    }
                     @if (
                       (solicitud.status === 'PUBLISHED' ||
                         solicitud.status === 'RECEIVING_OFFERS') &&
