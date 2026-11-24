@@ -107,7 +107,7 @@ Salida real (probada):
 
 | Quién muestra | Usuario | Pantalla / comando | Qué mostrar | Qué decir |
 |---|---|---|---|---|
-| Dylan | `comprador@demo.bo` | `/comprador/solicitudes/1` | Comparador con las 2 ofertas de la solicitud 1; clic en "Aceptar" sobre la de proveedor1 | "Comparo precio y plazo de las dos ofertas. Al aceptar, la otra pasa a `REJECTED` sola — eso lo garantiza la base, no un botón que se esconde." |
+| Dylan | `comprador@demo.bo` | `/comprador/solicitudes/1` | Comparador con las 2 ofertas — la más barata trae la etiqueta "Mejor precio"; clic en "Aceptar oferta" sobre la de proveedor1 y confirmar en el diálogo ("Sí, aceptar") | "Comparo precio y plazo de las dos ofertas — la tabla ya marca cuál es la más barata. Al confirmar la aceptación, la otra queda 'No elegida' sola — en la base es el estado `REJECTED`, y eso lo garantiza la base de datos, no un botón que se esconde." |
 | Dylan | — | (nada en pantalla todavía) | — | "La pantalla **no** muestra qué pasa si dos personas aceptan a la vez, porque solo una de las dos ofertas sigue visible como aceptable — eso lo pruebo aparte, en la terminal, con tráfico real." |
 | Dylan | `comprador@demo.bo` | `/comprador/pedidos/1/pago` (pedido 1, ya en `PENDING_PAYMENT` de la demo sembrada) | Pestaña QR, botón "Ya pagué" | "Mientras se genera el pedido de la oferta que acabo de aceptar, ya tengo este otro listo para no perder tiempo esperando." |
 | Dylan | — | terminal: comando 2 de arriba | `400` al mandar `card_number` | "La pantalla de pago nunca manda el número de tarjeta, pero esto prueba que aunque alguien se salte la pantalla y lo mande a mano, el backend lo rechaza." |

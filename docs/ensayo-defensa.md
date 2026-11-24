@@ -72,9 +72,10 @@ contraseña `Demo12345!`) y los ids de las 3 solicitudes sembradas.
 node scripts/e2e-flujo.mjs
 ```
 
-Debe terminar con los 13 pasos de `docs/flujo-principal.md` en `✓`. Si algo
-sale `✗`, se detiene ahí mismo con el detalle — no seguir al paso 5 sin esto
-en verde.
+Debe terminar con sus 29 comprobaciones internas en `✓` (cubren los 13
+pasos de negocio de `docs/flujo-principal.md`, incluidos los 3 casos
+negativos y los avisos). Si algo sale `✗`, se detiene ahí mismo con el
+detalle — no seguir al paso 5 sin esto en verde.
 
 ### 5. Prueba de concurrencia (la regla crítica)
 
@@ -90,7 +91,7 @@ Salida esperada: un `200`, un `409`, una sola oferta `ACCEPTED`. Correrlo
 Guardar en `docs\defensa\capturas\` (crear la carpeta si no existe):
 
 - `docs\defensa\capturas\e2e-flujo-29-29.png` (o `.txt`) — salida completa
-  del paso 4 con los 29 pasos internos en `✓`.
+  del paso 4 con sus 29 comprobaciones en `✓`.
 - `docs\defensa\capturas\rabbitmq-colas.png` — UI de RabbitMQ
   (`http://localhost:15672`, `guest`/`guest`), pestañas Queues y Exchanges.
 - `docs\defensa\capturas\outbox-published.png` — resultado del `SELECT` de
