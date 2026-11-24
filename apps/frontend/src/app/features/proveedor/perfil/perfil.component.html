@@ -1,4 +1,4 @@
-<section class="perfil">
+<section class="perfil pagina-formulario">
   <header class="encabezado-pagina">
     <div>
       <h1 class="encabezado-pagina__titulo">Perfil comercial</h1>
@@ -32,21 +32,23 @@
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Ciudad</mat-label>
-          <input matInput formControlName="city" autocomplete="address-level2" />
-          @if (form.controls.city.invalid && form.controls.city.touched) {
-            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa tu ciudad</mat-error>
-          }
-        </mat-form-field>
+        <div class="dos-columnas">
+          <mat-form-field appearance="outline">
+            <mat-label>Ciudad</mat-label>
+            <input matInput formControlName="city" autocomplete="address-level2" />
+            @if (form.controls.city.invalid && form.controls.city.touched) {
+              <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa tu ciudad</mat-error>
+            }
+          </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Teléfono</mat-label>
-          <input matInput formControlName="phone" autocomplete="tel" />
-          @if (form.controls.phone.invalid && form.controls.phone.touched) {
-            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa un teléfono de contacto</mat-error>
-          }
-        </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Teléfono</mat-label>
+            <input matInput formControlName="phone" autocomplete="tel" />
+            @if (form.controls.phone.invalid && form.controls.phone.touched) {
+              <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa un teléfono de contacto</mat-error>
+            }
+          </mat-form-field>
+        </div>
 
         <mat-form-field appearance="outline">
           <mat-label>Categorías que atiendes</mat-label>

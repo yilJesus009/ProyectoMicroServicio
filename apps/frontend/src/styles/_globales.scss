@@ -82,6 +82,15 @@
   padding: var(--esp-5);
 }
 
+// Páginas que SON un formulario (Nueva solicitud, Perfil comercial,
+// Ofertar): toda la página, título incluido, centrada en un ancho de
+// lectura cómodo en vez de pegada a la izquierda del .contenido ancho.
+.pagina-formulario {
+  width: 100%;
+  max-width: 55rem;
+  margin-inline: auto;
+}
+
 // Utilidad de layout: "dos columnas" de formulario (varias pantallas de la
 // sección 9 piden este agrupamiento). Colapsa a una columna en móvil.
 .dos-columnas {
