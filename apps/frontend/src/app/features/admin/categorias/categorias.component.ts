@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { CatalogoFacade, Categoria } from '../../../facades/catalogo.facade';
+import { iconoCategoriaPorNombre } from '../../../shared/iconos-categoria';
 
 /** Campos de un formulario de categoría (alta y edición comparten shape). */
 type FormularioCategoria = FormGroup<{
@@ -35,8 +36,8 @@ function rellenar(form: FormularioCategoria, categoria: Categoria): void {
   selector: 'app-admin-categorias',
   imports: [
     MatButtonModule,
-    MatCardModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     ReactiveFormsModule,
   ],
@@ -57,6 +58,9 @@ export class AdminCategoriasComponent {
 
   readonly formAlta = this.crearFormulario();
   readonly formEdicion = this.crearFormulario();
+
+  /** Ícono propio de cada categoría en la tabla (sección 10). */
+  protected readonly iconoCategoria = iconoCategoriaPorNombre;
 
   constructor() {
     void this.cargar();

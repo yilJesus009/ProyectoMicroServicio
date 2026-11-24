@@ -299,6 +299,28 @@ solicitudes" y "Solicitudes abiertas")
   "Pago") a clase global en `_globales.scss`, con su propio colapso a una
   columna en móvil.
 
+### Mis vehículos, Proveedores pendientes y Categorías (cierre de Fase 3)
+
+- "Mis vehículos": formulario en `.dos-columnas`, cada vehículo con el
+  ícono propio `icono--mis-vehiculos` (sección 10: "junto al vehículo en
+  listas y detalles").
+- "Proveedores pendientes": tarjetas en vez de filas de tabla literal (el
+  mockup de la sección 9 no trae un dibujo ASCII para esta pantalla, a
+  diferencia del comparador); se corrigió el separador de ciudad/teléfono
+  de "·" a coma. No se agregó la acción "Ver perfil" que menciona la
+  sección 9: no existe una pantalla de detalle de perfil aparte, toda la
+  información (estado, categorías, motivo de rechazo) ya está en la
+  tarjeta — agregarla sería crear una ruta/pantalla nueva sin un
+  endpoint adicional que la justifique.
+- "Categorías": pasa de tarjetas a tabla `.tabla-comparacion` (Nombre,
+  Ícono, Estado, Acciones), como pide la sección 9. La columna "Ícono" usa
+  el mismo `iconoCategoriaPorNombre` (ícono propio o `build` de Material)
+  en vez del texto crudo del campo `icon`, igual que en "Nueva solicitud".
+  La edición en línea se mantiene (ahora como una fila con `colspan`).
+- Con esto quedan las 16 pantallas de la Fase 3 — incluida la de
+  notificaciones, que no tiene ruta propia: vive en la campanita de la
+  barra superior, ya retematizada en la Fase 2.
+
 ## Preguntas de la defensa
 
 (Se completa en la fase final con el resto de preguntas probables.)
