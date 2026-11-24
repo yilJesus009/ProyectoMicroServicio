@@ -9,6 +9,7 @@ import { SolicitudesAbiertasComponent } from './solicitudes-abiertas.component';
 const ME_URL = `${environment.apiUrl}/suppliers/me`;
 const CATEGORIAS_URL = `${environment.apiUrl}/categories`;
 const ABIERTAS_URL = `${environment.apiUrl}/part-requests/open`;
+const MIS_OFERTAS_URL = `${environment.apiUrl}/offers/mine`;
 
 const PERFIL_APROBADO = {
   id: 55,
@@ -70,13 +71,24 @@ describe('SolicitudesAbiertasComponent', () => {
   }
 
   /** Responde en orden las peticiones iniciales de cargar(). */
-  async function responderInicio(perfil: unknown, solicitudes: unknown[] = []): Promise<void> {
+  async function responderInicio(
+    perfil: unknown,
+    solicitudes: unknown[] = [],
+    misOfertas: unknown[] = [],
+  ): Promise<void> {
     http.expectOne(ME_URL).flush({ status: 200, msg: 'Perfil comercial', data: perfil });
     if ((perfil as { status?: string } | null)?.status === 'APPROVED') {
+      // categorías y mis ofertas se piden en paralelo (Promise.all): no
+      // importa cuál de las dos llegue primero.
       (await esperarPeticion(CATEGORIAS_URL)).flush({
         status: 200,
         msg: 'Operación exitosa',
         data: [],
+      });
+      (await esperarPeticion(MIS_OFERTAS_URL)).flush({
+        status: 200,
+        msg: 'Operación exitosa',
+        data: misOfertas,
       });
       (await esperarPeticion(ABIERTAS_URL)).flush({
         status: 200,
@@ -106,6 +118,7 @@ describe('SolicitudesAbiertasComponent', () => {
     expect(texto()).toContain('Tu perfil todavía no está aprobado');
     http.expectNone(ABIERTAS_URL);
     http.expectNone(CATEGORIAS_URL);
+    http.expectNone(MIS_OFERTAS_URL);
   });
 
   it('con el perfil aprobado lista las solicitudes abiertas', async () => {
@@ -114,6 +127,25 @@ describe('SolicitudesAbiertasComponent', () => {
     expect(texto()).toContain('Pastillas de freno delanteras');
     expect(texto()).toContain('Publicada');
     expect(texto()).toContain('Toyota Corolla 2018');
+  });
+
+  it('con una oferta propia activa en esa solicitud muestra "Ya ofertaste"', async () => {
+    await responderInicio(PERFIL_APROBADO, [SOLICITUD], [
+      { id: 1, part_request_id: SOLICITUD.id, status: 'SUBMITTED' },
+    ]);
+
+    expect(texto()).toContain('Ya ofertaste');
+    expect(texto()).toContain('Ver mi oferta');
+    expect(texto()).not.toContain('Enviar oferta');
+  });
+
+  it('una oferta retirada no cuenta como "ya ofertaste"', async () => {
+    await responderInicio(PERFIL_APROBADO, [SOLICITUD], [
+      { id: 1, part_request_id: SOLICITUD.id, status: 'WITHDRAWN' },
+    ]);
+
+    expect(texto()).toContain('Enviar oferta');
+    expect(texto()).not.toContain('Ya ofertaste');
   });
 
   it('al filtrar por ciudad vuelve a pedir con el query param', async () => {

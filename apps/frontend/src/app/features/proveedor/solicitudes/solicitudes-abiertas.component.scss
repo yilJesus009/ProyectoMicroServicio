@@ -27,3 +27,10 @@
   min-width: 12rem;
 }
 
+.ya-ofertaste {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--esp-1);
+}
+
