@@ -84,25 +84,6 @@
   text-align: center;
 }
 
-.error {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--esp-2);
-  margin: 0;
-  padding: var(--esp-2) var(--esp-3);
-  border-radius: var(--radio-control);
-  background: var(--color-peligro-tenue);
-  color: var(--color-peligro);
-  font-size: var(--texto-sm);
-
-  mat-icon {
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    font-size: 20px;
-  }
-}
-
 @media (max-width: 768px) {
   .pantalla-acceso {
     flex-direction: column;

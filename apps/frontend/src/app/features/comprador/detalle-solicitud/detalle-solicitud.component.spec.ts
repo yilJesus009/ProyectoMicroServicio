@@ -212,10 +212,10 @@ describe('DetalleSolicitudComponent (comparador)', () => {
       oferta({ id: 79, supplier_name: 'Repuestos SA', price: 700, status: 'WITHDRAWN' }),
     ]);
 
-    const tarjetas = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll('app-offer-card'),
+    const filas = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr'),
     );
-    expect(tarjetas.length).toBe(2);
+    expect(filas.length).toBe(2);
 
     // Solo la SUBMITTED muestra el botón; la retirada, no (el backend daría 422).
     const botones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'));
@@ -229,6 +229,73 @@ describe('DetalleSolicitudComponent (comparador)', () => {
     await cargar([]);
 
     expect(texto()).toContain('Todavía no hay ofertas para esta solicitud.');
+  });
+
+  // ---------------------------------------------------------------------
+  // mejorPrecio() — indicador "Mejor precio" de la sección 9 de DISEÑO.md
+  // ---------------------------------------------------------------------
+
+  it('mejorPrecio marca la única oferta SUBMITTED más barata', async () => {
+    await cargar([
+      oferta({ id: 1, price: 500 }),
+      oferta({ id: 2, price: 350 }),
+      oferta({ id: 3, price: 420 }),
+    ]);
+
+    expect(fixture.componentInstance.mejorPrecio()).toEqual(new Set([2]));
+  });
+
+  it('mejorPrecio marca a todas las ofertas empatadas en el precio más bajo', async () => {
+    await cargar([
+      oferta({ id: 1, price: 350 }),
+      oferta({ id: 2, price: 350 }),
+      oferta({ id: 3, price: 420 }),
+    ]);
+
+    expect(fixture.componentInstance.mejorPrecio()).toEqual(new Set([1, 2]));
+  });
+
+  it('mejorPrecio compara como número aunque el precio llegue como texto', async () => {
+    await cargar([oferta({ id: 1, price: '350.00' }), oferta({ id: 2, price: 420 })]);
+
+    expect(fixture.componentInstance.mejorPrecio()).toEqual(new Set([1]));
+  });
+
+  it('mejorPrecio queda vacío sin ofertas', async () => {
+    await cargar([]);
+
+    expect(fixture.componentInstance.mejorPrecio()).toEqual(new Set());
+  });
+
+  it('mejorPrecio ignora ofertas que no están SUBMITTED', async () => {
+    await cargar([
+      oferta({ id: 1, price: 300, status: 'WITHDRAWN' }),
+      oferta({ id: 2, price: 500, status: 'SUBMITTED' }),
+    ]);
+
+    expect(fixture.componentInstance.mejorPrecio()).toEqual(new Set([2]));
+  });
+
+  it('mejorPrecio queda vacío si la solicitud ya tiene oferta aceptada', async () => {
+    const peticiones = http.match(() => true);
+    for (const req of peticiones) {
+      if (req.request.url.endsWith('/offers')) {
+        req.flush({
+          status: 200,
+          msg: 'Ofertas encontradas',
+          data: [oferta({ id: 1, price: 300, status: 'ACCEPTED' })],
+        });
+      } else {
+        req.flush({
+          status: 200,
+          msg: 'Operación exitosa',
+          data: { ...SOLICITUD, status: 'OFFER_ACCEPTED' },
+        });
+      }
+    }
+    await ceder();
+
+    expect(fixture.componentInstance.mejorPrecio()).toEqual(new Set());
   });
 
   it('si la solicitud ya tiene oferta aceptada no ofrece aceptar de nuevo', async () => {

@@ -1,11 +1,17 @@
 <section class="pantalla">
   @if (cargando()) {
-    <p class="estado">Cargando solicitud…</p>
+    <p class="estado-carga">Cargando solicitud…</p>
   } @else if (error() && !solicitud()) {
-    <p class="error" role="alert">{{ error() }}</p>
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
   } @else if (solicitud(); as solicitud) {
     <div class="volver">
-      <a mat-button routerLink="/comprador/solicitudes">← Mis solicitudes</a>
+      <a mat-button routerLink="/comprador/solicitudes">
+        <mat-icon aria-hidden="true">arrow_back</mat-icon>
+        Mis solicitudes
+      </a>
     </div>
 
     <app-tarjeta-solicitud [solicitud]="solicitud" />
@@ -18,7 +24,10 @@
 
     <section class="comparador">
       <header class="cabecera">
-        <h2>Ofertas recibidas ({{ ofertas().length }})</h2>
+        <div>
+          <h2 class="texto-xl">Ofertas recibidas ({{ ofertas().length }})</h2>
+          <p class="texto-sm texto-suave">Solo puedes aceptar una.</p>
+        </div>
 
         <mat-radio-group
           class="orden"
@@ -32,27 +41,35 @@
       </header>
 
       @if (aviso(); as mensaje) {
-        <p class="aviso" role="status">{{ mensaje }}</p>
+        <p class="mensaje-servidor mensaje-servidor--info" role="status">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          <span>{{ mensaje }}</span>
+        </p>
       }
       @if (generando()) {
-        <p class="generando" role="status">
-          Generando tu pedido… esto puede tardar unos segundos.
+        <p class="mensaje-servidor mensaje-servidor--info" role="status">
+          <mat-icon aria-hidden="true">hourglass_top</mat-icon>
+          <span>Generando tu pedido… esto puede tardar unos segundos.</span>
         </p>
       }
       @if (error(); as mensaje) {
-        <p class="error" role="alert">{{ mensaje }}</p>
+        <p class="mensaje-servidor" role="alert">
+          <mat-icon aria-hidden="true">error</mat-icon>
+          <span>{{ mensaje }}</span>
+        </p>
       }
 
       @if (porConfirmar(); as oferta) {
         <section class="confirmacion" role="alertdialog" aria-label="Confirmar aceptación">
-          <h3>¿Aceptar esta oferta?</h3>
+          <h3 class="texto-lg">¿Aceptar esta oferta?</h3>
           <p>
             Oferta de <strong>{{ oferta.supplier_name }}</strong> por
-            <strong>{{ oferta.price | number: '1.2-2' }} {{ oferta.currency }}</strong>.
+            <strong class="num">{{ oferta.price | number: '1.2-2' }} {{ oferta.currency }}</strong
+            >.
           </p>
-          <p class="nota">
-            Al aceptar, las demás ofertas quedarán rechazadas y se generará tu
-            pedido. Esta acción no se puede deshacer.
+          <p class="nota texto-sm texto-suave">
+            Al aceptar, las demás ofertas quedarán como no elegidas y se generará tu pedido. Esta
+            acción no se puede deshacer.
           </p>
           <div class="acciones">
             <button mat-button type="button" (click)="cancelarAceptacion()">Cancelar</button>
@@ -70,32 +87,77 @@
       }
 
       @if (ofertas().length === 0) {
-        <p class="estado">Todavía no hay ofertas para esta solicitud.</p>
+        <div class="panel vacio">
+          <p class="vacio__texto">Todavía no hay ofertas para esta solicitud.</p>
+        </div>
       } @else {
-        <ul class="lista">
-          @for (oferta of ofertas(); track oferta.id) {
-            <li>
-              <app-offer-card
-                [oferta]="oferta"
-                [accion]="
-                  (solicitud.status === 'PUBLISHED' ||
-                    solicitud.status === 'RECEIVING_OFFERS') &&
-                  oferta.status === 'SUBMITTED'
-                    ? 'Aceptar oferta'
-                    : null
-                "
-                [esAceptar]="true"
-                (accionEmitida)="confirmarAceptacion(oferta)"
-              />
-            </li>
-          }
-        </ul>
+        <div class="tabla-envoltorio">
+          <table class="tabla-comparacion">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th class="num">Precio</th>
+                <th>Entrega</th>
+                <th>Nota</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (oferta of ofertas(); track oferta.id) {
+                <tr
+                  [class.fila-aceptada]="oferta.status === 'ACCEPTED'"
+                  [class.fila-no-elegida]="
+                    oferta.status === 'REJECTED' || oferta.status === 'WITHDRAWN'
+                  "
+                >
+                  <td data-etiqueta="Proveedor">{{ oferta.supplier_name }}</td>
+                  <td data-etiqueta="Precio" class="num celda-precio">
+                    {{ oferta.price | number: '1.2-2' }} {{ oferta.currency }}
+                    @if (mejorPrecio().has(oferta.id)) {
+                      <span class="estado estado--atencion">Mejor precio</span>
+                    }
+                  </td>
+                  <td data-etiqueta="Entrega">
+                    {{
+                      oferta.delivery_type === 'PICKUP'
+                        ? 'Listo para retiro'
+                        : oferta.estimated_days + ' día(s)'
+                    }}
+                  </td>
+                  <td data-etiqueta="Nota">{{ oferta.notes || '—' }}</td>
+                  <td data-etiqueta="Acción" class="celda-accion">
+                    <span
+                      class="estado"
+                      [class]="'estado--' + (TONO_ESTADO_OFERTA[oferta.status] ?? 'neutro')"
+                    >
+                      {{ ETIQUETA_ESTADO_OFERTA[oferta.status] ?? oferta.status }}
+                    </span>
+                    @if (
+                      (solicitud.status === 'PUBLISHED' ||
+                        solicitud.status === 'RECEIVING_OFFERS') &&
+                      oferta.status === 'SUBMITTED'
+                    ) {
+                      <button
+                        mat-stroked-button
+                        color="primary"
+                        type="button"
+                        (click)="confirmarAceptacion(oferta)"
+                      >
+                        Aceptar oferta
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
 
       @if (solicitud.status === 'OFFER_ACCEPTED' || solicitud.status === 'COMPLETED') {
-        <p class="cerrada">
+        <p class="cerrada texto-sm texto-suave">
           Esta solicitud ya tiene una oferta aceptada.
-          <a routerLink="/comprador/pedidos">Ver mis pedidos</a>.
+          <a class="enlace" routerLink="/comprador/pedidos">Ver mis pedidos</a>.
         </p>
       }
     </section>

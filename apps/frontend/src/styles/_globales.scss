@@ -318,6 +318,55 @@
   }
 }
 
+// Mensaje de error del servidor, en línea bajo un formulario (sección 10:
+// "un error siempre lleva ícono y texto, no solo color"). No es .aviso
+// (eso es para MatSnackBar, flotante con sombra): este es parte fija de la
+// página, con el mismo tratamiento de fondo tenue + texto del tono.
+.mensaje-servidor {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--radio-control);
+  background: var(--color-peligro-tenue);
+  color: var(--color-peligro);
+  font-size: var(--texto-sm);
+
+  mat-icon,
+  .icono {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+
+  &--exito {
+    background: var(--color-exito-tenue);
+    color: var(--color-exito);
+  }
+
+  &--atencion {
+    background: var(--color-atencion-tenue);
+    color: var(--color-atencion-texto);
+  }
+
+  &--info {
+    background: var(--color-info-tenue);
+    color: var(--color-info);
+  }
+
+  &--neutro {
+    background: var(--color-neutro-tenue);
+    color: var(--color-neutro);
+  }
+
+  &--peligro {
+    background: var(--color-peligro-tenue);
+    color: var(--color-peligro);
+  }
+}
+
 // Avisos (sección 10): usados como panelClass de MatSnackBar.
 .aviso {
   display: flex;

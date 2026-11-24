@@ -1,6 +1,8 @@
 <section class="mias">
-  <header class="cabecera">
-    <h2>Mis solicitudes</h2>
+  <header class="encabezado-pagina">
+    <div>
+      <h1 class="encabezado-pagina__titulo">Mis solicitudes</h1>
+    </div>
     <a mat-flat-button color="primary" routerLink="/comprador/solicitudes/nueva">
       Nueva solicitud
     </a>
@@ -10,7 +12,10 @@
     <p class="cargando">Cargando solicitudes…</p>
   }
   @if (error()) {
-    <p class="error" role="alert">{{ error() }}</p>
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
   }
 
   <div class="lista">
@@ -27,19 +32,15 @@
       </div>
     } @empty {
       @if (!cargando()) {
-        <mat-card class="vacia">
-          <mat-card-header>
-            <mat-card-title>Aún no publicaste solicitudes</mat-card-title>
-            <mat-card-subtitle>
-              Publica lo que necesitas y los proveedores te envían ofertas.
-            </mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-actions align="end">
-            <a mat-stroked-button routerLink="/comprador/solicitudes/nueva">
-              Crear mi primera solicitud
-            </a>
-          </mat-card-actions>
-        </mat-card>
+        <div class="panel vacio">
+          <p class="vacio__texto">
+            Aún no publicaste solicitudes. Publica la primera y los proveedores te enviarán
+            ofertas.
+          </p>
+          <a mat-flat-button color="primary" routerLink="/comprador/solicitudes/nueva">
+            Publicar solicitud
+          </a>
+        </div>
       }
     }
   </div>

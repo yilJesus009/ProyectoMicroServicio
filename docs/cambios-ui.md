@@ -136,6 +136,69 @@ sin tocar ninguna aserción de negocio:
 - Ningún `.spec.ts` de login/registro necesitó cambios: los selectores usan
   `[formControlName]`, `input[type="radio"]` y textos que no cambiaron.
 
+### Clase global nueva: `.mensaje-servidor`
+
+El mensaje de error del servidor (ícono + fondo tenue del tono) se repetía
+en cada pantalla. Se promovió a `_globales.scss` con variantes de tono
+(`--exito`, `--atencion`, `--info`, `--neutro`, `--peligro`; sin modificador
+= peligro, para no tocar los sitios que ya la usaban así). No confundir con
+`.aviso`: esa es para el `panelClass` de `MatSnackBar` (flotante, con
+sombra); `.mensaje-servidor` es parte fija del flujo de la página.
+
+### Mis solicitudes
+
+- `.encabezado-pagina` y el bloque `.vacio` con el texto exacto del ejemplo
+  de DISEÑO.md sección 10 ("Aún no tienes solicitudes…" / "Publicar
+  solicitud"), antes de la Fase 5 porque ya estaba rehaciendo este bloque.
+- Se quitó `MatCardModule` (ya no se usa `mat-card`).
+
+### Tarjeta de solicitud (`shared/tarjeta-solicitud`, dumb, la usan "Mis
+solicitudes" y "Solicitudes abiertas")
+
+- Estado y urgencia pasan a `.estado`/`.estado--<tono>` con el mapeo de la
+  sección 4: Solicitud → info/atención/éxito/neutro/neutro;
+  Urgencia → neutro/atención/peligro. El **texto** de las etiquetas no
+  cambió (decisión ya tomada en el cierre de Fase 0).
+- Categoría: ícono propio + nombre (sección 9: "categoría (ícono + nombre)").
+  Se agregó un `computed()` (`iconoCategoria`) que normaliza el
+  `category_name` (sin tildes, minúsculas) y lo compara contra las 6
+  categorías con PNG; si no hay PNG (categoría creada por el admin sin uno)
+  cae al ícono `build` de Material, tal como pide la sección 10. Dato
+  puramente de presentación: no se tocó ningún endpoint ni el modelo
+  `Solicitud`.
+
+### Detalle de solicitud y comparador de ofertas
+
+- Pasa de tarjetas apiladas (`app-offer-card`) a una tabla
+  `.tabla-comparacion` (Proveedor, Precio, Entrega, Nota, Acción/Estado),
+  como pide el mockup de la sección 9. `OfferCardComponent` se queda solo
+  para "Mis ofertas" del proveedor.
+- **Lógica nueva agregada** (aprobada antes de tocar el `.ts`): `computed()`
+  `mejorPrecio()` en `detalle-solicitud.component.ts` — devuelve el conjunto
+  de ids de las ofertas `SUBMITTED` con el precio más bajo (comparando con
+  `Number()` por si llega como texto), marcando todas las empatadas; queda
+  vacío si la solicitud ya tiene una oferta aceptada o no hay ofertas
+  `SUBMITTED`. Sin llamadas nuevas al backend: usa los datos ya cargados.
+  6 pruebas nuevas en `detalle-solicitud.component.spec.ts` (caso normal,
+  empate, precio como texto, vacío, ofertas no `SUBMITTED` ignoradas,
+  solicitud con oferta ya aceptada).
+- Fila aceptada: fondo `#F1FAF4` (hex propio de la sección 9, distinto del
+  token general `--color-exito-tenue`). Filas no elegidas/retiradas: texto
+  en tinta suave.
+- La columna "Acción" muestra el estado de la oferta (`.estado--<tono>`,
+  mismo mapeo que `offer-card`) y, si corresponde, el botón "Aceptar
+  oferta" con borde rojo (`mat-stroked-button color="primary"`) — ambos a
+  la vez, igual que antes mostraba la tarjeta (el `.spec.ts` ya probaba
+  que "Enviada" y el botón convivieran).
+- Responsive: la tabla usa el `.tabla-comparacion` de Fase 1, que ya se
+  apila en bloques `etiqueta: valor` por debajo de 720px (atributos
+  `data-etiqueta` agregados a cada `<td>`); no se verificó a mano en
+  360px porque no se pudo redimensionar la ventana del navegador en este
+  entorno — queda para la verificación final de Fase 6.
+- `detalle-solicitud.component.spec.ts`: el único ajuste de selector fue
+  cambiar `app-offer-card` por `tbody tr` en la prueba de la oferta
+  `WITHDRAWN` (misma aserción: 2 filas).
+
 ## Preguntas de la defensa
 
 (Se completa en la fase final con el resto de preguntas probables.)
