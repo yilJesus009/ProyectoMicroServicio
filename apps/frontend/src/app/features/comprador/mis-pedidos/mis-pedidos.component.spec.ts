@@ -64,7 +64,7 @@ describe('MisPedidosComponent', () => {
     expect(texto()).toContain('Amortiguador delantero derecho');
     expect(texto()).toContain('Pendiente de pago');
 
-    const enlace = (fixture.nativeElement as HTMLElement).querySelector('ul a[href]');
+    const enlace = (fixture.nativeElement as HTMLElement).querySelector('.lista-filas a[href]');
     expect(enlace?.getAttribute('href')).toBe('/comprador/pedidos/12');
   });
 

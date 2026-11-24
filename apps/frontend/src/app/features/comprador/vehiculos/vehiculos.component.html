@@ -1,6 +1,11 @@
 <section class="vehiculos">
   <header class="encabezado-pagina">
-    <h1 class="encabezado-pagina__titulo">Mis vehículos</h1>
+    <div>
+      <h1 class="encabezado-pagina__titulo">Mis vehículos</h1>
+      @if (!cargando() && lista().length > 0) {
+        <p class="encabezado-pagina__apoyo">{{ contador() }}</p>
+      }
+    </div>
   </header>
 
   <div class="panel formulario-panel">
@@ -71,32 +76,36 @@
     <p class="estado-carga">Cargando vehículos…</p>
   }
 
-  <div class="lista">
-    @for (vehiculo of lista(); track vehiculo.id) {
-      <div class="panel vehiculo">
-        <div class="vehiculo__datos">
-          <span class="icono icono--mis-vehiculos" aria-hidden="true"></span>
-          <div>
-            <p class="texto-base">{{ vehiculo.brand }} {{ vehiculo.model }} {{ vehiculo.year }}</p>
-            <p class="texto-sm texto-suave">{{ vehiculo.plate || 'Sin placa' }}</p>
+  @if (lista().length > 0) {
+    <div class="lista-filas">
+      @for (vehiculo of lista(); track vehiculo.id) {
+        <article class="fila">
+          <div class="fila__icono">
+            <span class="icono icono--mis-vehiculos" aria-hidden="true"></span>
           </div>
-        </div>
-        <button
-          mat-stroked-button
-          color="warn"
-          type="button"
-          [disabled]="accionando()"
-          (click)="borrar(vehiculo)"
-        >
-          Eliminar
-        </button>
-      </div>
-    } @empty {
-      @if (!cargando()) {
-        <div class="panel vacio">
-          <p class="vacio__texto">Aún no registras vehículos.</p>
-        </div>
+          <div class="fila__contenido">
+            <h3 class="fila__titulo">{{ vehiculo.brand }} {{ vehiculo.model }} {{ vehiculo.year }}</h3>
+            <div class="fila__meta">
+              <span>{{ vehiculo.plate || 'Sin placa' }}</span>
+            </div>
+          </div>
+          <div class="fila__accion">
+            <button
+              mat-stroked-button
+              color="warn"
+              type="button"
+              [disabled]="accionando()"
+              (click)="borrar(vehiculo)"
+            >
+              Eliminar
+            </button>
+          </div>
+        </article>
       }
-    }
-  </div>
+    </div>
+  } @else if (!cargando()) {
+    <div class="panel vacio">
+      <p class="vacio__texto">Aún no registras vehículos.</p>
+    </div>
+  }
 </section>

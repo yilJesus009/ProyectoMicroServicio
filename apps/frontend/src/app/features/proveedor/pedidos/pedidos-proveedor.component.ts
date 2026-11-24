@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -51,6 +51,12 @@ export class PedidosProveedorComponent {
   readonly avanzando = signal<number | null>(null);
 
   readonly siguienteEstado = siguienteEstado;
+
+  /** "1 pedido" / "4 pedidos" (singular y plural). */
+  readonly contador = computed(() => {
+    const n = this.lista().length;
+    return n === 1 ? '1 pedido' : `${n} pedidos`;
+  });
 
   /** Etiqueta del botón para esa tarjeta; null si no aplica o si ya avanza. */
   accionDe(pedido: Pedido): string | null {
