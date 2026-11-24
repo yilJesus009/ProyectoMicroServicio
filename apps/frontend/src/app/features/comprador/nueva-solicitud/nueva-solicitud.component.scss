@@ -8,6 +8,10 @@
   margin: 0;
 }
 
+.subtitulo {
+  margin: var(--esp-1) 0 0;
+}
+
 .cargando {
   color: var(--color-tinta-suave);
 }
@@ -28,10 +32,20 @@
   gap: var(--esp-2);
 }
 
-.campo-foto {
+.campo-foto,
+.campo-urgencia {
   display: flex;
   flex-direction: column;
   gap: var(--esp-2);
+}
+
+.campo-urgencia mat-button-toggle-group {
+  width: 100%;
+}
+
+.campo-urgencia mat-button-toggle {
+  flex: 1;
+  text-align: center;
 }
 
 .caja-foto {
