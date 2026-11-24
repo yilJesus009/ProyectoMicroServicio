@@ -2,11 +2,14 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { Pedido, PedidosFacade } from '../../../facades/pedidos.facade';
-import { ETIQUETA_ESTADO_PEDIDO } from '../../../shared/order-card/order-card.component';
+import {
+  ETIQUETA_ESTADO_PEDIDO,
+  TONO_ESTADO_PEDIDO,
+} from '../../../shared/order-card/order-card.component';
 import { OrderTimelineComponent } from '../../../shared/order-timeline/order-timeline.component';
 
 /**
@@ -19,7 +22,7 @@ import { OrderTimelineComponent } from '../../../shared/order-timeline/order-tim
  */
 @Component({
   selector: 'app-seguimiento',
-  imports: [DecimalPipe, MatButtonModule, MatCardModule, OrderTimelineComponent, RouterLink],
+  imports: [DecimalPipe, MatButtonModule, MatIconModule, OrderTimelineComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './seguimiento.component.html',
   styleUrl: './seguimiento.component.scss',
@@ -35,6 +38,7 @@ export class SeguimientoComponent {
   readonly confirmando = signal(false);
 
   readonly ETIQUETA = ETIQUETA_ESTADO_PEDIDO;
+  readonly TONO = TONO_ESTADO_PEDIDO;
 
   private readonly id = Number(this.ruta.snapshot.paramMap.get('id'));
 

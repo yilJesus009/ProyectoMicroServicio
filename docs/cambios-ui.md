@@ -262,6 +262,43 @@ solicitudes" y "Solicitudes abiertas")
   siguiente bloque) pasa a `.estado`/`.estado--<tono>`: los 4 estados en
   tránsito → información, Entregado/Completada → éxito.
 
+### Perfil comercial, Mis pedidos (comprador), Seguimiento y Pago
+
+- "Perfil comercial" y "Mis pedidos" (comprador): mismo tratamiento que las
+  pantallas anteriores (`.encabezado-pagina`, `.panel`, `.vacio`,
+  `.mensaje-servidor`). Se renombró la clase local `.enlace` de
+  "Mis pedidos" a `.tarjeta-enlace` porque colisionaba de nombre con la
+  clase global `.enlace` (enlace de texto) agregada en el bloque de
+  login/registro — mismo comportamiento, solo el nombre cambia.
+- **Lógica nueva agregada** (aprobada antes, con los 6 detalles que pidió
+  el usuario): `order-timeline` pasa de listar el historial crudo del
+  pedido (log vertical) al stepper horizontal fijo de 4 pasos de la
+  sección 9 (Pendiente de pago → Preparando → En camino/Listo para retiro
+  según `deliveryType` → Entregado). Cambia su input: en vez de
+  `historial: EntradaHistorial[]` recibe `status`, `deliveryType` y
+  `history` (los tres ya estaban cargados en `pedido`, sin llamadas
+  nuevas). Un paso se marca completado si su estado aparece en el
+  historial (con la fecha de ese cambio), actual si coincide con
+  `pedido.status`, y futuro si no se alcanzó. Si el estado real no es
+  ninguno de los 4 pasos (hoy, solo `COMPLETED`, que ocurre después de
+  "Entregado"), el stepper no se rompe: los 4 pasos quedan completados y
+  el estado real se muestra aparte como `Estado actual: <etiqueta>` en
+  tono neutro. En ≤720px el stepper pasa a vertical (CSS ya construido en
+  Fase 1, sin cambios). Se reescribió `order-timeline.component.spec.ts`
+  cubriendo los dos `deliveryType`, cada estado como "actual", las fechas
+  tomadas de `history`, y el caso `COMPLETED` fuera de los 4 pasos.
+- "Seguimiento": usa el nuevo stepper, bloque de pago con la nota exacta
+  "Pago simulado. No se guardan datos de tarjeta." (sección 9), estado del
+  pedido con `.estado--<tono>`. Se quitó el encabezado "Línea de tiempo"
+  (ya no aplica: no es un log, es el stepper fijo) — se ajustó esa
+  aserción en el `.spec.ts`, el resto de las pruebas no cambió.
+- "Pago": mismo tratamiento visual (pestañas QR/Tarjeta con token de color
+  en vez de azul, badge de "Simulación" con `.estado--atencion`). Ningún
+  cambio a la lógica del QR ni a la regla de "solo se envía `{ method }`".
+- Se promovió `.dos-columnas` (usada en "Nueva solicitud" y ahora en
+  "Pago") a clase global en `_globales.scss`, con su propio colapso a una
+  columna en móvil.
+
 ## Preguntas de la defensa
 
 (Se completa en la fase final con el resto de preguntas probables.)

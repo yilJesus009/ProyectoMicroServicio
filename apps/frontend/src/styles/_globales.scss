@@ -82,6 +82,18 @@
   padding: var(--esp-5);
 }
 
+// Utilidad de layout: "dos columnas" de formulario (varias pantallas de la
+// sección 9 piden este agrupamiento). Colapsa a una columna en móvil.
+.dos-columnas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--esp-3);
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
 // Estado con variantes: fondo tenue + texto oscuro del mismo tono (sección 4).
 .estado {
   display: inline-flex;

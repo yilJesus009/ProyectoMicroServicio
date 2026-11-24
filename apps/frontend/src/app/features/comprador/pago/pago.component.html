@@ -1,29 +1,34 @@
 <section class="pantalla">
   @if (cargando()) {
-    <p class="estado">Cargando pedido…</p>
+    <p class="estado-carga">Cargando pedido…</p>
   } @else if (error() && !pedido()) {
-    <p class="error" role="alert">{{ error() }}</p>
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
   } @else if (pedido(); as pedido) {
     <div class="volver">
-      <a mat-button routerLink="/comprador/pedidos">← Mis pedidos</a>
+      <a mat-button routerLink="/comprador/pedidos">
+        <mat-icon aria-hidden="true">arrow_back</mat-icon>
+        Mis pedidos
+      </a>
     </div>
 
-    <mat-card class="resumen">
-      <mat-card-header>
-        <mat-card-title>{{ pedido.part_description }}</mat-card-title>
-        <mat-card-subtitle>
-          {{ pedido.supplier_name }} · {{ pedido.vehicle_label || 'Vehículo no especificado' }}
-        </mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <p class="precio">{{ pedido.price | number: '1.2-2' }} {{ pedido.currency }}</p>
-        <p class="simulacion" role="note">Simulación: no se realiza ningún cobro</p>
-      </mat-card-content>
-    </mat-card>
+    <div class="panel resumen">
+      <h1 class="texto-lg">{{ pedido.part_description }}</h1>
+      <p class="texto-sm texto-suave">
+        {{ pedido.supplier_name }}, {{ pedido.vehicle_label || 'Vehículo no especificado' }}
+      </p>
+      <p class="precio num">{{ pedido.price | number: '1.2-2' }} {{ pedido.currency }}</p>
+      <span class="estado estado--atencion" role="note">Simulación: no se realiza ningún cobro</span>
+    </div>
 
     @if (aviso(); as mensaje) {
-      <div class="confirmado" role="status">
-        <p>{{ mensaje }}</p>
+      <div class="panel confirmado" role="status">
+        <p class="texto-sm">
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+          {{ mensaje }}
+        </p>
         <a mat-flat-button color="primary" [routerLink]="['/comprador/pedidos', pedido.id]">
           Ver seguimiento del pedido
         </a>
@@ -31,21 +36,26 @@
     }
 
     @if (error(); as mensaje) {
-      <p class="error" role="alert">{{ mensaje }}</p>
+      <p class="mensaje-servidor" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>{{ mensaje }}</span>
+      </p>
     }
 
     @if (!aviso() && pedido.status !== 'PENDING_PAYMENT') {
-      <p class="estado">
+      <p class="estado-carga">
         Este pedido ya no está pendiente de pago ({{ ETIQUETA[pedido.status] ?? pedido.status }}).
       </p>
-      <a mat-stroked-button [routerLink]="['/comprador/pedidos', pedido.id]">Ver seguimiento</a>
+      <a mat-stroked-button color="primary" [routerLink]="['/comprador/pedidos', pedido.id]">
+        Ver seguimiento
+      </a>
     } @else if (!aviso()) {
       <div class="pestanas" role="tablist" aria-label="Método de pago simulado">
         <button
           type="button"
           role="tab"
           class="pestana"
-          [class.activa]="pestana() === 'QR'"
+          [class.pestana--activa]="pestana() === 'QR'"
           [attr.aria-selected]="pestana() === 'QR'"
           (click)="pestana.set('QR')"
         >
@@ -55,7 +65,7 @@
           type="button"
           role="tab"
           class="pestana"
-          [class.activa]="pestana() === 'CARD'"
+          [class.pestana--activa]="pestana() === 'CARD'"
           [attr.aria-selected]="pestana() === 'CARD'"
           (click)="pestana.set('CARD')"
         >
@@ -65,8 +75,8 @@
 
       @if (pestana() === 'QR') {
         <section class="qr" role="tabpanel" aria-label="Pago con QR">
-          <p class="referencia">
-            Referencia: <strong>{{ referenciaQr() }}</strong>
+          <p class="referencia texto-sm">
+            Referencia: <strong class="num">{{ referenciaQr() }}</strong>
           </p>
 
           @if (matrizQr(); as matriz) {
@@ -96,7 +106,7 @@
         </section>
       } @else {
         <form class="tarjeta" [formGroup]="formulario" (ngSubmit)="pagar()" role="tabpanel">
-          <p class="demo">
+          <p class="demo texto-sm texto-suave">
             Datos de demostración precargados. Se validan solo en tu navegador y
             <strong>no se envían</strong>: al confirmar viaja únicamente el método de pago.
           </p>
@@ -109,7 +119,7 @@
             }
           </mat-form-field>
 
-          <div class="fila">
+          <div class="dos-columnas">
             <mat-form-field appearance="outline">
               <mat-label>Vencimiento</mat-label>
               <input matInput formControlName="vencimiento" placeholder="MM/AA" autocomplete="off" />

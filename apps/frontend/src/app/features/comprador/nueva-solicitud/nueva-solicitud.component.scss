@@ -28,12 +28,6 @@
   gap: var(--esp-2);
 }
 
-.dos-columnas {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--esp-3);
-}
-
 .campo-foto {
   display: flex;
   flex-direction: column;
@@ -82,10 +76,4 @@
 
 .accion {
   width: 100%;
-}
-
-@media (max-width: 600px) {
-  .dos-columnas {
-    grid-template-columns: 1fr;
-  }
 }
