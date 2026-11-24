@@ -1,68 +1,38 @@
 .pantalla {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--esp-4);
 }
 
-.volver {
-  align-self: start;
+.volver a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
 }
 
 .comparador {
-  border-top: 1px solid #e0e0e0;
-  padding-top: 1rem;
+  border-top: 1px solid var(--color-borde);
+  padding-top: var(--esp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
 }
 
 .cabecera {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-h2 {
-  margin: 0;
-  font-size: 1.1rem;
+  align-items: flex-start;
+  gap: var(--esp-4);
 }
 
 .orden {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--esp-3);
 }
 
-.lista {
-  list-style: none;
-  margin: 1rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.estado {
-  color: #546e7a;
-}
-
-.error {
-  color: #842029;
-  background: #f8d7da;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-}
-
-.aviso {
-  color: #1e6b34;
-  background: #d4edda;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-}
-
-.generando {
-  color: #0b5394;
-  background: #e8f1fc;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  font-weight: 600;
+.estado-carga {
+  color: var(--color-tinta-suave);
 }
 
 .foto {
@@ -72,42 +42,68 @@ h2 {
 .foto img {
   max-width: 100%;
   max-height: 260px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border-radius: var(--radio-panel);
+  border: 1px solid var(--color-borde);
   object-fit: contain;
-  background: #fafafa;
+  background: var(--color-superficie-2);
 }
 
 .cerrada {
-  margin-top: 1rem;
-  color: #546e7a;
+  margin-top: var(--esp-2);
 }
 
 .confirmacion {
-  border: 1px solid #0b5394;
-  border-radius: 8px;
-  background: #f3f8ff;
-  padding: 1rem;
-  margin-top: 1rem;
+  border: 1px solid var(--color-rojo);
+  border-radius: var(--radio-panel);
+  background: var(--color-superficie);
+  padding: var(--esp-4);
 }
 
 .confirmacion h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
+  margin: 0 0 var(--esp-2);
 }
 
 .confirmacion p {
-  margin: 0.25rem 0;
-}
-
-.nota {
-  color: #546e7a;
-  font-size: 0.85rem;
+  margin: var(--esp-1) 0;
 }
 
 .acciones {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  gap: var(--esp-2);
+  margin-top: var(--esp-3);
+}
+
+.tabla-envoltorio {
+  overflow-x: auto;
+}
+
+.celda-precio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--esp-1);
+}
+
+.celda-accion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--esp-2);
+}
+
+// Sección 9: fila aceptada en verde muy tenue (hex propio de esta pantalla,
+// distinto del token general de éxito).
+.fila-aceptada {
+  background: #f1faf4;
+}
+
+.fila-no-elegida td {
+  color: var(--color-tinta-suave);
+}
+
+@media (max-width: 720px) {
+  .celda-accion {
+    align-items: flex-start;
+  }
 }

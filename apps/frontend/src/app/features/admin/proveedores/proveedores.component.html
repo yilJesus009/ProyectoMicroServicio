@@ -1,6 +1,6 @@
 <section class="proveedores">
-  <header class="cabecera">
-    <h2>Proveedores</h2>
+  <header class="encabezado-pagina">
+    <h1 class="encabezado-pagina__titulo">Proveedores</h1>
 
     <mat-form-field appearance="outline" class="filtro">
       <mat-label>Estado</mat-label>
@@ -14,53 +14,60 @@
   </header>
 
   @if (cargando()) {
-    <p class="cargando">Cargando proveedores…</p>
+    <mat-progress-bar mode="indeterminate" />
+    <p class="estado-carga">Cargando proveedores…</p>
   }
   @if (error()) {
-    <p class="error" role="alert">{{ error() }}</p>
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
   }
   @if (aviso()) {
-    <p class="aviso" role="status">{{ aviso() }}</p>
+    <p class="mensaje-servidor mensaje-servidor--exito" role="status">
+      <mat-icon aria-hidden="true">check_circle</mat-icon>
+      <span>{{ aviso() }}</span>
+    </p>
   }
 
   <div class="lista">
     @for (perfil of lista(); track perfil.id) {
-      <mat-card class="tarjeta">
-        <mat-card-header>
-          <mat-card-title>{{ perfil.business_name }}</mat-card-title>
-          <mat-card-subtitle>{{ perfil.city }} · {{ perfil.phone }}</mat-card-subtitle>
-        </mat-card-header>
-
-        <mat-card-content>
+      <div class="panel tarjeta">
+        <div class="tarjeta__encabezado">
+          <div>
+            <h2 class="texto-lg">{{ perfil.business_name }}</h2>
+            <p class="texto-sm texto-suave">{{ perfil.city }}, {{ perfil.phone }}</p>
+          </div>
           <app-estado-perfil [estado]="perfil.status" [motivo]="perfil.rejection_reason" />
-          <p class="categorias">{{ nombresCategorias(perfil) }}</p>
-        </mat-card-content>
+        </div>
+
+        <p class="texto-sm">{{ nombresCategorias(perfil) }}</p>
 
         @if (perfil.status === 'PENDING') {
-          <mat-card-actions align="end">
-            @if (rechazandoId() === perfil.id) {
-              <div class="rechazo">
-                <mat-form-field appearance="outline" class="motivo">
-                  <mat-label>Motivo del rechazo</mat-label>
-                  <textarea matInput [formControl]="motivo" rows="2"></textarea>
-                  @if (motivo.invalid && motivo.touched) {
-                    <mat-error>Escribe el motivo del rechazo</mat-error>
-                  }
-                </mat-form-field>
-                <div class="botones">
-                  <button mat-button type="button" (click)="cancelarRechazo()">Cancelar</button>
-                  <button
-                    mat-flat-button
-                    color="warn"
-                    type="button"
-                    [disabled]="accionando()"
-                    (click)="rechazar(perfil)"
-                  >
-                    Confirmar rechazo
-                  </button>
-                </div>
+          @if (rechazandoId() === perfil.id) {
+            <div class="rechazo">
+              <mat-form-field appearance="outline" class="motivo">
+                <mat-label>Motivo del rechazo</mat-label>
+                <textarea matInput [formControl]="motivo" rows="2"></textarea>
+                @if (motivo.invalid && motivo.touched) {
+                  <mat-error><mat-icon aria-hidden="true">error</mat-icon>Escribe el motivo del rechazo</mat-error>
+                }
+              </mat-form-field>
+              <div class="botones">
+                <button mat-button type="button" (click)="cancelarRechazo()">Cancelar</button>
+                <button
+                  mat-flat-button
+                  color="warn"
+                  type="button"
+                  [disabled]="accionando()"
+                  (click)="rechazar(perfil)"
+                >
+                  Confirmar rechazo
+                </button>
               </div>
-            } @else {
+            </div>
+          } @else {
+            <div class="botones">
               <button
                 mat-flat-button
                 color="primary"
@@ -79,13 +86,15 @@
               >
                 Rechazar
               </button>
-            }
-          </mat-card-actions>
+            </div>
+          }
         }
-      </mat-card>
+      </div>
     } @empty {
       @if (!cargando()) {
-        <p class="vacia">No hay proveedores con ese estado.</p>
+        <div class="panel vacio">
+          <p class="vacio__texto">No hay proveedores con ese estado.</p>
+        </div>
       }
     }
   </div>

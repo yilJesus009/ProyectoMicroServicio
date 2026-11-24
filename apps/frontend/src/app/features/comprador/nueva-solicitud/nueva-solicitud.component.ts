@@ -1,15 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnDestroy, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router } from '@angular/router';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { CatalogoFacade, Categoria, Vehiculo } from '../../../facades/catalogo.facade';
 import { SolicitudesFacade, Urgencia } from '../../../facades/solicitudes.facade';
+import { iconoCategoriaPorNombre } from '../../../shared/iconos-categoria';
 
 const ANIO_MIN = 1950;
 const ANIO_MAX = new Date().getFullYear() + 1;
@@ -32,9 +34,10 @@ const TAMANO_FOTO_MAX = 5 * 1024 * 1024;
   selector: 'app-nueva-solicitud',
   imports: [
     MatButtonModule,
-    MatCardModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
+    MatProgressBarModule,
     MatSelectModule,
     ReactiveFormsModule,
   ],
@@ -42,7 +45,7 @@ const TAMANO_FOTO_MAX = 5 * 1024 * 1024;
   templateUrl: './nueva-solicitud.component.html',
   styleUrl: './nueva-solicitud.component.scss',
 })
-export class NuevaSolicitudComponent {
+export class NuevaSolicitudComponent implements OnDestroy {
   private readonly catalogo = inject(CatalogoFacade);
   private readonly solicitudes = inject(SolicitudesFacade);
   private readonly router = inject(Router);
@@ -54,9 +57,14 @@ export class NuevaSolicitudComponent {
   readonly error = signal<string | null>(null);
   readonly categoriaElegida = signal<number | null>(null);
   readonly foto = signal<File | null>(null);
+  /** Vista previa de la foto elegida (sección 9: "foto opcional con vista previa"). */
+  readonly fotoPreviewUrl = signal<string | null>(null);
 
   readonly anioMinimo = ANIO_MIN;
   readonly anioMaximo = ANIO_MAX;
+
+  /** Ícono propio de cada categoría en los chips (sección 10). */
+  protected readonly iconoCategoria = iconoCategoriaPorNombre;
 
   /**
    * vehicleId: '' = escribir los datos a mano; un id = usar uno de mis
@@ -116,6 +124,13 @@ export class NuevaSolicitudComponent {
     this.error.set(null);
   }
 
+  /** Reemplaza la vista previa, liberando la anterior si había una. */
+  private actualizarPreview(archivo: File | null): void {
+    const anterior = this.fotoPreviewUrl();
+    if (anterior) URL.revokeObjectURL(anterior);
+    this.fotoPreviewUrl.set(archivo ? URL.createObjectURL(archivo) : null);
+  }
+
   /** Guarda la foto si su tipo y tamaño cumplen el contrato. */
   alElegirFoto(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -123,6 +138,7 @@ export class NuevaSolicitudComponent {
 
     if (!archivo) {
       this.foto.set(null);
+      this.actualizarPreview(null);
       return;
     }
 
@@ -130,11 +146,18 @@ export class NuevaSolicitudComponent {
       this.error.set('La foto debe ser jpg, png o webp de máximo 5 MB.');
       input.value = '';
       this.foto.set(null);
+      this.actualizarPreview(null);
       return;
     }
 
     this.error.set(null);
     this.foto.set(archivo);
+    this.actualizarPreview(archivo);
+  }
+
+  ngOnDestroy(): void {
+    const preview = this.fotoPreviewUrl();
+    if (preview) URL.revokeObjectURL(preview);
   }
 
   /** POST /part-requests (multipart) → navega a mis solicitudes. */

@@ -1,39 +1,29 @@
 .perfil {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: var(--esp-4);
 }
 
 .tarjeta {
   width: 100%;
   max-width: 40rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
 }
 
-.cargando,
+.estado-carga,
 .sin-perfil {
-  color: #546e7a;
-}
-
-.estado {
-  margin-bottom: 1rem;
+  color: var(--color-tinta-suave);
 }
 
 .formulario {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-}
-
-.error {
-  color: #b3261e;
-  margin: 0.25rem 0;
-}
-
-.aviso {
-  color: #1e6b34;
-  margin: 0.25rem 0;
+  gap: var(--esp-3);
 }
 
 .accion {
-  margin-top: 0.5rem;
+  margin-top: var(--esp-2);
   align-self: flex-start;
 }

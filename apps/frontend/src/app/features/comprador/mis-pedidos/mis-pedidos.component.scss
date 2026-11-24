@@ -1,20 +1,11 @@
 .pantalla {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--esp-4);
 }
 
-.cabecera {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-h2 {
-  margin: 0;
-  font-size: 1.1rem;
+.estado-carga {
+  color: var(--color-tinta-suave);
 }
 
 .lista {
@@ -22,26 +13,21 @@ h2 {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.75rem;
+  // minmax(0, 1fr), no 1fr a secas: una columna de grid implícita no se
+  // encoge por debajo del min-content de su contenido (mismo bug que un
+  // flex/grid item sin min-width:0), así que una tarjeta con varios datos
+  // cortos desbordaba el ancho disponible en vez de que su contenido
+  // envolviera.
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--esp-3);
 }
 
-.enlace {
+.tarjeta-enlace {
   display: block;
   text-decoration: none;
   color: inherit;
 }
 
-.enlace:hover {
+.tarjeta-enlace:hover {
   filter: brightness(0.985);
-}
-
-.estado {
-  color: #546e7a;
-}
-
-.error {
-  color: #842029;
-  background: #f8d7da;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
 }

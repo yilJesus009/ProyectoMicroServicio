@@ -1,50 +1,39 @@
 .proveedores {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.cabecera {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-h2 {
-  margin: 0;
+  gap: var(--esp-4);
 }
 
 .filtro {
   min-width: 14rem;
 }
 
-.cargando,
-.vacia {
-  color: #546e7a;
-}
-
-.error {
-  color: #b3261e;
-  margin: 0;
-}
-
-.aviso {
-  color: #1e6b34;
-  margin: 0;
+.estado-carga {
+  color: var(--color-tinta-suave);
 }
 
 .lista {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--esp-3);
 }
 
-.categorias {
-  margin: 0.5rem 0 0;
-  color: #546e7a;
-  font-size: 0.9rem;
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.tarjeta__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--esp-3);
+}
+
+.tarjeta__encabezado h2 {
+  margin: 0;
 }
 
 .rechazo {
@@ -58,5 +47,5 @@ h2 {
 .botones {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: var(--esp-2);
 }

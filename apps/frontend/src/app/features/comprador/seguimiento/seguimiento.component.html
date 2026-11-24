@@ -1,60 +1,74 @@
 <section class="pantalla">
   @if (cargando()) {
-    <p class="estado">Cargando pedido…</p>
+    <mat-progress-bar mode="indeterminate" />
+    <p class="estado-carga">Cargando pedido…</p>
   } @else if (error() && !pedido()) {
-    <p class="error" role="alert">{{ error() }}</p>
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
   } @else if (pedido(); as pedido) {
     <div class="volver">
-      <a mat-button routerLink="/comprador/pedidos">← Mis pedidos</a>
+      <a mat-button routerLink="/comprador/pedidos">
+        <mat-icon aria-hidden="true">arrow_back</mat-icon>
+        Mis pedidos
+      </a>
     </div>
 
-    <mat-card class="resumen">
-      <mat-card-header>
-        <mat-card-title>{{ pedido.part_description }}</mat-card-title>
-        <mat-card-subtitle>
-          {{ pedido.vehicle_label || 'Vehículo no especificado' }} ·
-          {{ pedido.supplier_name }}
-        </mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <p class="precio">
-          {{ pedido.price | number: '1.2-2' }} {{ pedido.currency }}
-        </p>
-        <span class="estado-badge">{{ ETIQUETA[pedido.status] ?? pedido.status }}</span>
-
-        @if (pedido.payment; as pago) {
-          <p class="pago">
-            Pago simulado con <strong>{{ pago.method === 'QR' ? 'QR' : 'tarjeta' }}</strong> ·
-            Referencia: <strong>{{ pago.reference }}</strong>
-          </p>
-        }
-      </mat-card-content>
-      <mat-card-actions align="end">
-        @if (pedido.status === 'PENDING_PAYMENT') {
-          <a mat-flat-button color="primary" [routerLink]="['/comprador/pedidos', pedido.id, 'pago']">
-            Pagar ahora
-          </a>
-        }
-      </mat-card-actions>
-    </mat-card>
+    <div class="panel resumen">
+      <div class="resumen__encabezado">
+        <h1 class="texto-xl">{{ pedido.part_description }}</h1>
+        <span class="estado" [class]="'estado--' + (TONO[pedido.status] ?? 'neutro')">
+          {{ ETIQUETA[pedido.status] ?? pedido.status }}
+        </span>
+      </div>
+      <p class="texto-sm texto-suave">
+        {{ pedido.vehicle_label || 'Vehículo no especificado' }}, {{ pedido.supplier_name }}
+      </p>
+      <p class="precio num">{{ pedido.price | number: '1.2-2' }} {{ pedido.currency }}</p>
+    </div>
 
     @if (aviso(); as mensaje) {
-      <p class="aviso" role="status">{{ mensaje }}</p>
+      <p class="mensaje-servidor mensaje-servidor--exito" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>{{ mensaje }}</span>
+      </p>
     }
     @if (error(); as mensaje) {
-      <p class="error" role="alert">{{ mensaje }}</p>
-    }
-
-    @if (pedido.status === 'PREPARING' || pedido.status === 'IN_TRANSIT' || pedido.status === 'READY_FOR_PICKUP') {
-      <p class="esperando">
-        Esperando al proveedor: {{ ETIQUETA[pedido.status] }}. Te avisaremos en cada cambio.
+      <p class="mensaje-servidor" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>{{ mensaje }}</span>
       </p>
     }
 
+    <app-order-timeline
+      [status]="pedido.status"
+      [deliveryType]="pedido.delivery_type"
+      [history]="pedido.history"
+    />
+
+    @if (pedido.status === 'PREPARING' || pedido.status === 'IN_TRANSIT' || pedido.status === 'READY_FOR_PICKUP') {
+      <p class="mensaje-servidor mensaje-servidor--info" role="status">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <span>Esperando al proveedor: {{ ETIQUETA[pedido.status] }}. Te avisaremos en cada cambio.</span>
+      </p>
+    }
+
+    @if (pedido.status === 'PENDING_PAYMENT') {
+      <a
+        mat-flat-button
+        color="primary"
+        class="accion-pago"
+        [routerLink]="['/comprador/pedidos', pedido.id, 'pago']"
+      >
+        Pagar ahora
+      </a>
+    }
+
     @if (pedido.status === 'DELIVERED') {
-      <section class="recepcion" role="alertdialog" aria-label="Confirmar recepción">
-        <h3>El pedido fue entregado</h3>
-        <p>Si ya recibiste el repuesto, confirma la recepción para completar el pedido.</p>
+      <div class="panel recepcion" role="alertdialog" aria-label="Confirmar recepción">
+        <h3 class="texto-lg">El pedido fue entregado</h3>
+        <p class="texto-sm">Si ya recibiste el repuesto, confirma la recepción para completar el pedido.</p>
         <button
           mat-flat-button
           color="primary"
@@ -64,16 +78,24 @@
         >
           {{ confirmando() ? 'Confirmando…' : 'Confirmar recepción' }}
         </button>
-      </section>
+      </div>
     }
 
     @if (pedido.status === 'COMPLETED') {
-      <p class="aviso" role="status">Pedido completado. ¡Gracias!</p>
+      <p class="mensaje-servidor mensaje-servidor--exito" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>Pedido completado. ¡Gracias!</span>
+      </p>
     }
 
-    <section class="historial">
-      <h3>Línea de tiempo</h3>
-      <app-order-timeline [historial]="pedido.history" />
-    </section>
+    @if (pedido.payment; as pago) {
+      <div class="panel pago">
+        <p class="texto-sm">
+          Pago simulado con <strong>{{ pago.method === 'QR' ? 'QR' : 'tarjeta' }}</strong>.
+          Referencia: <strong class="num">{{ pago.reference }}</strong>
+        </p>
+        <p class="texto-xs texto-suave">Pago simulado. No se guardan datos de tarjeta.</p>
+      </div>
+    }
   }
 </section>

@@ -1,22 +1,26 @@
 <section class="pantalla">
-  <header class="cabecera">
-    <h2>Mis pedidos</h2>
-    <a mat-stroked-button routerLink="/comprador/solicitudes">Mis solicitudes</a>
+  <header class="encabezado-pagina">
+    <h1 class="encabezado-pagina__titulo">Mis pedidos</h1>
+    <a mat-stroked-button color="primary" routerLink="/comprador/solicitudes">Mis solicitudes</a>
   </header>
 
   @if (cargando()) {
-    <p class="estado">Cargando pedidos…</p>
+    <mat-progress-bar mode="indeterminate" />
+    <p class="estado-carga">Cargando pedidos…</p>
   } @else if (error(); as mensaje) {
-    <p class="error" role="alert">{{ mensaje }}</p>
-  } @else if (lista().length === 0) {
-    <p class="estado">
-      Todavía no tienes pedidos. Cuando aceptes una oferta aparecerá aquí.
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ mensaje }}</span>
     </p>
+  } @else if (lista().length === 0) {
+    <div class="panel vacio">
+      <p class="vacio__texto">Todavía no tienes pedidos. Cuando aceptes una oferta aparecerá aquí.</p>
+    </div>
   } @else {
     <ul class="lista">
       @for (pedido of lista(); track pedido.id) {
         <li>
-          <a class="enlace" [routerLink]="['/comprador/pedidos', pedido.id]">
+          <a class="tarjeta-enlace" [routerLink]="['/comprador/pedidos', pedido.id]">
             <app-order-card [pedido]="pedido" />
           </a>
         </li>

@@ -8,7 +8,6 @@ import {
   signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
 
 import { mensajeDeError } from '../../core/error/api-error';
@@ -28,7 +27,7 @@ const INTERVALO_MS = 15_000;
  */
 @Component({
   selector: 'app-campanita',
-  imports: [DatePipe, MatButtonModule, MatIconModule],
+  imports: [DatePipe, MatButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './campanita.component.html',
   styleUrl: './campanita.component.scss',

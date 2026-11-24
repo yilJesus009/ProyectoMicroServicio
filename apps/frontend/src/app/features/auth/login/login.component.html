@@ -1,17 +1,26 @@
-<section class="acceso">
-  <mat-card class="tarjeta">
-    <mat-card-header>
-      <mat-card-title>Iniciar sesión</mat-card-title>
-      <mat-card-subtitle>RepuestosYa</mat-card-subtitle>
-    </mat-card-header>
+<div class="pantalla-acceso">
+  <div class="panel-marca">
+    <img src="/brand/logo-blanco.svg" alt="RepuestosYa" class="panel-marca__logo" />
 
-    <mat-card-content>
+    <p class="panel-marca__titular texto-display">Pide tu repuesto, recibe ofertas.</p>
+
+    <ol class="panel-marca__pasos">
+      <li><span class="panel-marca__numero">1</span> Publicas lo que necesitas</li>
+      <li><span class="panel-marca__numero">2</span> Comparas las ofertas</li>
+      <li><span class="panel-marca__numero">3</span> Aceptas una y sigues tu pedido</li>
+    </ol>
+  </div>
+
+  <div class="panel-formulario">
+    <div class="tarjeta">
+      <h1 class="texto-2xl">Iniciar sesión</h1>
+
       <form class="formulario" [formGroup]="form" (ngSubmit)="onSubmit()">
         <mat-form-field appearance="outline">
           <mat-label>Correo electrónico</mat-label>
           <input matInput type="email" formControlName="email" autocomplete="email" />
           @if (form.controls.email.invalid && form.controls.email.touched) {
-            <mat-error>Ingresa un correo válido</mat-error>
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa un correo válido</mat-error>
           }
         </mat-form-field>
 
@@ -24,12 +33,15 @@
             autocomplete="current-password"
           />
           @if (form.controls.contrasena.invalid && form.controls.contrasena.touched) {
-            <mat-error>Ingresa tu contraseña</mat-error>
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa tu contraseña</mat-error>
           }
         </mat-form-field>
 
         @if (error()) {
-          <p class="error" role="alert">{{ error() }}</p>
+          <p class="mensaje-servidor" role="alert">
+            <mat-icon aria-hidden="true">error</mat-icon>
+            <span>{{ error() }}</span>
+          </p>
         }
 
         <button
@@ -39,13 +51,11 @@
           class="accion"
           [disabled]="enviando()"
         >
-          {{ enviando() ? 'Entrando…' : 'Entrar' }}
+          {{ enviando() ? 'Iniciando sesión…' : 'Iniciar sesión' }}
         </button>
       </form>
-    </mat-card-content>
 
-    <mat-card-actions align="end">
-      <a mat-button routerLink="/registro">Crear una cuenta</a>
-    </mat-card-actions>
-  </mat-card>
-</section>
+      <p class="pie">¿No tienes cuenta? <a class="enlace" routerLink="/registro">Crear cuenta</a></p>
+    </div>
+  </div>
+</div>
