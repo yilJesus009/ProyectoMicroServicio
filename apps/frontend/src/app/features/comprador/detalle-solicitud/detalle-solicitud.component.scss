@@ -113,14 +113,18 @@
   overflow-x: auto;
 }
 
-.celda-precio {
+// El flex va en un <div> adentro del <td>, no en el <td> mismo: poner
+// display:flex directo en una celda la saca del modelo de layout de
+// tabla (deja de ser "table-cell") y pierde la altura y el borde
+// inferior alineados con el resto de la fila.
+.celda-precio__contenido {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: var(--esp-1);
 }
 
-.celda-accion {
+.celda-accion__contenido {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -138,7 +142,7 @@
 }
 
 @media (max-width: 720px) {
-  .celda-accion {
+  .celda-accion__contenido {
     align-items: flex-start;
   }
 }

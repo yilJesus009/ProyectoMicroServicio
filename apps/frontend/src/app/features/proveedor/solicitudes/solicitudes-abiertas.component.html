@@ -51,14 +51,21 @@
       <div class="lista-filas">
         @for (solicitud of lista(); track solicitud.id) {
           <app-tarjeta-solicitud [solicitud]="solicitud">
-            <a
-              mat-stroked-button
-              color="primary"
-              accion
-              [routerLink]="['/proveedor/solicitudes', solicitud.id, 'ofertar']"
-            >
-              Enviar oferta
-            </a>
+            @if (misOfertasIds().has(solicitud.id)) {
+              <div accion class="ya-ofertaste">
+                <span class="estado estado--info">Ya ofertaste</span>
+                <a mat-button color="primary" routerLink="/proveedor/ofertas">Ver mi oferta</a>
+              </div>
+            } @else {
+              <a
+                mat-stroked-button
+                color="primary"
+                accion
+                [routerLink]="['/proveedor/solicitudes', solicitud.id, 'ofertar']"
+              >
+                Enviar oferta
+              </a>
+            }
           </app-tarjeta-solicitud>
         }
       </div>

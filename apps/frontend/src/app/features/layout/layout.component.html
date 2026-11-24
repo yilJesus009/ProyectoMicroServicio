@@ -1,65 +1,63 @@
-<mat-sidenav-container class="layout">
-  <mat-sidenav
-    class="barra-lateral"
-    [mode]="modoMenu()"
-    [opened]="abierto()"
-    [fixedInViewport]="false"
-  >
-    <div class="marca-lateral">
-      <img src="/brand/isotipo-rojo.svg" alt="RepuestosYa" width="28" height="28" />
-    </div>
+<div class="layout">
+  <mat-toolbar class="barra-superior">
+    @if (!esEscritorio()) {
+      <button
+        mat-icon-button
+        type="button"
+        class="boton-menu"
+        aria-label="Abrir menú"
+        (click)="alternar()"
+      >
+        <mat-icon>menu</mat-icon>
+      </button>
+    }
 
-    <nav class="lista-menu">
-      @for (item of menu(); track item.ruta) {
-        <a
-          class="item-menu"
-          [routerLink]="item.ruta"
-          routerLinkActive="item-menu--activo"
-          [routerLinkActiveOptions]="{ exact: true }"
-          (click)="cerrarSiMovil()"
-        >
-          @if (item.icono.tipo === 'propio') {
-            <span class="icono icono--{{ item.icono.nombre }}" aria-hidden="true"></span>
-          } @else {
-            <mat-icon aria-hidden="true">{{ item.icono.nombre }}</mat-icon>
-          }
-          <span class="item-menu__etiqueta">{{ item.etiqueta }}</span>
-        </a>
-      }
-    </nav>
-  </mat-sidenav>
+    <a class="marca-barra" routerLink="/">
+      <img src="/brand/logo-blanco.svg" alt="RepuestosYa" class="logo-barra" />
+    </a>
 
-  <mat-sidenav-content>
-    <mat-toolbar class="barra-superior">
-      @if (!esEscritorio()) {
-        <button
-          mat-icon-button
-          type="button"
-          class="boton-menu"
-          aria-label="Abrir menú"
-          (click)="alternar()"
-        >
-          <mat-icon>menu</mat-icon>
-        </button>
-      }
+    <span class="espacio"></span>
 
-      <a class="marca-barra" routerLink="/">
-        <img src="/brand/logo-blanco.svg" alt="RepuestosYa" class="logo-barra" />
-      </a>
+    <app-campanita />
 
-      <span class="espacio"></span>
+    @if (usuario(); as persona) {
+      <span class="sesion">{{ persona.nombre }}, {{ nombreRol() }}</span>
+    }
 
-      <app-campanita />
+    <button mat-button type="button" class="boton-salir" (click)="salir()">Salir</button>
+  </mat-toolbar>
 
-      @if (usuario(); as persona) {
-        <span class="sesion">{{ persona.nombre }}, {{ nombreRol() }}</span>
-      }
+  <mat-sidenav-container class="cuerpo">
+    <mat-sidenav
+      class="barra-lateral"
+      [mode]="modoMenu()"
+      [opened]="abierto()"
+      [fixedInViewport]="false"
+    >
+      <nav class="lista-menu">
+        @for (item of menu(); track item.ruta) {
+          <a
+            class="item-menu"
+            [routerLink]="item.ruta"
+            routerLinkActive="item-menu--activo"
+            [routerLinkActiveOptions]="{ exact: true }"
+            (click)="cerrarSiMovil()"
+          >
+            @if (item.icono.tipo === 'propio') {
+              <span class="icono icono--{{ item.icono.nombre }}" aria-hidden="true"></span>
+            } @else {
+              <mat-icon aria-hidden="true">{{ item.icono.nombre }}</mat-icon>
+            }
+            <span class="item-menu__etiqueta">{{ item.etiqueta }}</span>
+          </a>
+        }
+      </nav>
+    </mat-sidenav>
 
-      <button mat-button type="button" class="boton-salir" (click)="salir()">Salir</button>
-    </mat-toolbar>
-
-    <main class="contenido">
-      <router-outlet />
-    </main>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+    <mat-sidenav-content>
+      <main class="contenido">
+        <router-outlet />
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

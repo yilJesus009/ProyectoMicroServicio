@@ -82,6 +82,15 @@
   padding: var(--esp-5);
 }
 
+// Páginas que SON un formulario (Nueva solicitud, Perfil comercial,
+// Ofertar): toda la página, título incluido, centrada en un ancho de
+// lectura cómodo en vez de pegada a la izquierda del .contenido ancho.
+.pagina-formulario {
+  width: 100%;
+  max-width: 55rem;
+  margin-inline: auto;
+}
+
 // Utilidad de layout: "dos columnas" de formulario (varias pantallas de la
 // sección 9 piden este agrupamiento). Colapsa a una columna en móvil.
 .dos-columnas {
@@ -91,6 +100,36 @@
 
   @media (max-width: 600px) {
     grid-template-columns: 1fr;
+  }
+}
+
+// Formularios cortos de alta sobre una lista (Registrar vehículo, Nueva
+// categoría): el panel ocupa todo el ancho, igual que la lista de abajo,
+// con los campos en una sola fila y el botón (.accion) al final desde
+// escritorio; 2 columnas en tablet, 1 en móvil.
+.fila-alta {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: var(--esp-3);
+
+  @media (min-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    > * {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    > .accion {
+      flex: 0 0 auto;
+    }
   }
 }
 
@@ -203,6 +242,10 @@
     min-height: 52px;
     padding: var(--esp-2) var(--esp-4);
     border-bottom: 1px solid var(--color-borde);
+    // Sin esto el valor por defecto es "baseline": con celdas de distinta
+    // altura (una línea vs. dos apiladas) el contenido de cada una queda a
+    // alturas distintas en vez de centrado con el resto de la fila.
+    vertical-align: middle;
   }
 
   tbody tr:hover {

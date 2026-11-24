@@ -606,6 +606,130 @@ un `<iframe>` del mismo origen, igual técnica que en la Fase 6, porque
 confirmado visualmente para que el grid de 2 columnas de Seguimiento se vea
 activo). Sin desbordes horizontales en ninguna de las 9 pantallas tocadas.
 
+## Fase 7 (pausa), segunda ronda — ajustes reportados a 1920px
+
+Con la Fase 7 ya en PR #63 (mergeado a `develop`), el usuario revisó la app en
+su pantalla real de 1920px y reportó cuatro problemas que no se habían visto
+en el entorno de prueba. Se trabajó en una rama nueva (`fix/ajustes-escritorio`,
+desde `develop` ya con el PR #63 adentro).
+
+### 1. Barra lateral a 360px en vez de 240px, y barra roja que no cubre toda la fila superior
+
+Dos causas distintas, ambas de CSS puro:
+
+- **Estructura**: `layout.component.html` ponía `mat-toolbar.barra-superior`
+  *adentro* de `mat-sidenav-content`, que es la columna a la derecha de
+  `mat-sidenav`. Por eso la barra roja arrancaba después del ancho de la
+  lateral en vez de cubrir las dos columnas arriba (DISEÑO.md sección 8:
+  "barra roja arriba a todo el ancho, lateral debajo"). Se saca el
+  `mat-toolbar` de adentro de `mat-sidenav-container` y pasa a ser hermano
+  suyo, con `.layout` en columna flex (`mat-toolbar` arriba, fijo;
+  `mat-sidenav-container` abajo, ocupando el resto). Se quita también el
+  bloque `.marca-lateral` (el isotipo duplicado arriba de la lista de
+  menú): ya no hace falta, el logo vive en la barra de ancho completo.
+- **Ancho de la lateral**: `.barra-lateral { width: var(--ancho-barra-lateral) }`
+  (240px) perdía contra el ancho por defecto de Material
+  (`--mat-sidenav-container-width`, 360px): misma especificidad (una
+  clase), y la hoja de Material carga después en el bundle final. Se
+  encontró inspeccionando `getMatchedCSSRules`-equivalente vía
+  `document.styleSheets`: la regla real en el CSS de Material es
+  `.mat-drawer { width: var(--mat-sidenav-container-width, 360px) }`. Se
+  fija esa variable (`--mat-sidenav-container-width: var(--ancho-barra-lateral)`)
+  en `styles.scss`, junto a los otros overrides de Material ya
+  documentados ahí (mismo patrón que `--mat-sidenav-container-shape`).
+
+Verificado con `getBoundingClientRect()` antes/después (360px → 240px) y
+visualmente con el `<iframe>` de prueba: en 360px el menú sigue abriendo
+como overlay *debajo* de la barra roja (que ahora sí se ve siempre), no
+tapándola.
+
+### 2. `--ancho-contenido` a 1440px
+
+Cambio de una línea en `_tokens.scss` (1200px → 1440px) más el mismo valor
+en los tres lugares de DISEÑO.md que lo mencionaban (secciones 6, 8 y 14).
+Listas, tablas y paneles ya usaban el 100% de `.contenido` sin su propio
+`max-width`, así que crecieron solos; no hizo falta tocarlos.
+
+### 3. Formularios angostos y pegados a la izquierda
+
+Con `.contenido` más ancho, cualquier bloque con su propio `max-width` mejor
+que el de antes y **sin** `margin-inline: auto` quedó visiblemente pegado a
+la izquierda en vez de centrado — un problema que ya existía a 1200px pero
+se nota mucho más a 1440px. Dos casos, con una solución distinta para cada
+uno (pedida así explícitamente, no es la misma clase):
+
+- **Páginas que SON un formulario** (Nueva solicitud, Perfil comercial,
+  Ofertar): clase global nueva `.pagina-formulario` (`max-width: 55rem` =
+  880px, `margin-inline: auto`) aplicada a la sección raíz de cada una
+  (título incluido). Se quitan los `max-width` propios que tenían, todos
+  más angostos que 880px (`.formulario` 44rem en Nueva solicitud, `.tarjeta`
+  40rem en Perfil comercial, `.pantalla` 760px en Ofertar) para que el
+  formulario use los 880px completos en vez de uno más chico adentro.
+  Perfil comercial de paso agrupa Ciudad y Teléfono en `.dos-columnas`
+  (Nueva solicitud y Ofertar ya tenían sus pares en dos columnas).
+- **Formularios cortos de alta sobre una lista** (Registrar vehículo, Nueva
+  categoría): clase global nueva `.fila-alta` — grid de 1 columna en móvil,
+  2 en tablet (≥600px), fila flex con el botón (`.accion`) al final desde
+  escritorio (≥1024px). Se aplana la estructura (antes Marca+Modelo y
+  Año+Placa eran dos `.dos-columnas` apiladas) para que los 4 campos y el
+  botón queden en una sola fila. Se quitan los `max-width` de los paneles
+  contenedores (36rem y 40rem) para que midan lo mismo que la lista de
+  abajo, como pidió el usuario.
+- **Pago y Seguimiento** (ya centradas en teoría, con grid de 2 columnas
+  desde la primera ronda de esta fase): tenían el mismo problema que las
+  páginas-formulario — `.pantalla { max-width: 900px }` sin
+  `margin-inline: auto` — así que se les agregó la misma propiedad. No se
+  usó `.pagina-formulario` porque su ancho (900px, no 880px) es un valor
+  propio de esa pantalla, no el genérico de formulario.
+
+### 4. Celda de acciones desalineada en la tabla de Categorías (y el mismo bug en Comparador y Mis ofertas)
+
+Causa: `.celda-accion { display: flex; ... }` se aplicaba directo sobre el
+`<td>`. Poner `display: flex` en una celda la saca del modelo de layout de
+tabla — deja de comportarse como `table-cell` — así que pierde la altura y
+el borde inferior coordinados con el resto de la fila (se ve "más arriba",
+exactamente lo que reportó el usuario). El mismo nombre de clase
+(`.celda-accion`, y `.celda-precio` en el Comparador) se reutilizaba con el
+mismo bug en tres tablas distintas: Categorías (admin), el comparador de
+ofertas (`detalle-solicitud`) y Mis ofertas (proveedor).
+
+Arreglo, igual en los tres archivos: el `display: flex` pasa a un `<div>`
+nuevo *adentro* del `<td>` (`.celda-accion__contenido`,
+`.celda-precio__contenido`); el `<td>` se queda como celda normal, solo con
+la clase para `data-etiqueta` en móvil. Se agrega también
+`vertical-align: middle` a `.tabla-comparacion td` (antes caía en el valor
+por defecto, `baseline`): con celdas de distinta altura (una línea de texto
+vs. dos apiladas) eso las dejaba a alturas distintas entre sí.
+
+Verificado con `getBoundingClientRect()`: las 4 celdas de una fila de
+Categorías terminan exactamente en el mismo borde inferior.
+
+### "Ya ofertaste" + "Ver mi oferta" (commit aparte, con lógica)
+
+Implementada tal como se había propuesto sin aplicar al cierre de la
+primera ronda: `solicitudes-abiertas.component.ts` pide `GET /offers/mine`
+(ya existía en `SolicitudesFacade.misOfertas()`) en paralelo con las
+categorías, y arma un `Set<number>` de `part_request_id` con oferta propia
+**activa** (se excluye `WITHDRAWN`: retirar una oferta permite volver a
+ofertar en esa misma solicitud). La fila de `app-tarjeta-solicitud` muestra
+"Ya ofertaste" + el enlace "Ver mi oferta" en vez de "Enviar oferta" cuando
+la solicitud está en ese set. El enlace va a `/proveedor/ofertas` (la lista
+completa) porque no existe una pantalla de detalle de una sola oferta — se
+señaló esta limitación en la propuesta original en vez de inventar una ruta
+nueva. 2 pruebas nuevas en el spec (oferta `SUBMITTED` propia → "Ya
+ofertaste"; oferta `WITHDRAWN` propia → sigue en "Enviar oferta").
+
+### Verificación de esta ronda
+
+`ng build` sin errores; `ng test` en verde en cada punto (212 → 214 con las
+2 pruebas nuevas de "Ya ofertaste"). Barrido automatizado de desborde
+horizontal (`scrollWidth` vs. `clientWidth` dentro de un `<iframe>` de
+mismo origen, igual técnica que en la Fase 6) en 360/768/1280/1920px sobre
+las 16 pantallas autenticadas de los tres roles: cero desbordes. Revisión
+visual con sesiones reales (comprador, dos proveedores, admin) contra el
+backend de Docker para confirmar cada arreglo en pantalla, no solo por
+cómputo de estilos.
+
 ## Preguntas de la defensa
 
 1. **¿Por qué el tema no usa directamente el rojo exacto de la marca?**

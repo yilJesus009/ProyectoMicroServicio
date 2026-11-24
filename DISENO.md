@@ -100,7 +100,7 @@ Reglas:
 - Radios con jerarquía: controles (botones, campos) 8px, paneles 12px, chips y estados en forma de pastilla.
 - Separación por bordes de 1px, no por sombras. La única sombra es la de los elementos flotantes: menús, diálogos y avisos.
 - Escala de espacio de 4px: 4, 8, 12, 16, 24, 32, 48, 64.
-- Contenido centrado en el espacio disponible, ancho máximo 1200px.
+- Contenido centrado en el espacio disponible, ancho máximo 1440px.
 
 ## 7. Angular Material
 
@@ -123,7 +123,7 @@ Reglas:
 │  Nueva solicitud│ Texto de apoyo                                        │
 │  Mis pedidos    ├─────────────────────────────────────────────────────┤
 │  Mis vehículos  │                                                       │
-│                 │ Contenido (máx. 1200px, centrado)                     │
+│                 │ Contenido (máx. 1440px, centrado)                     │
 │                 │                                                       │
 └────────────────┴─────────────────────────────────────────────────────┘
 ```
@@ -186,7 +186,7 @@ Ofertas recibidas (3). Solo puedes aceptar una. Las demás quedarán como no ele
 - "Aceptar" usa el botón con borde rojo: hay uno por fila y ninguno debe competir con el resto de la pantalla.
 - Al aceptar: diálogo de confirmación ("Aceptar la oferta de Repuestos Oriente por Bs 420. Las demás ofertas quedarán como no elegidas."), luego un aviso de éxito con "Ver pedido", la fila aceptada con fondo verde muy tenue (`#F1FAF4`) y estado "Aceptada", y las demás con texto en tinta suave y estado "No elegida". Sin bajar la opacidad.
 
-**Solicitudes abiertas (proveedor)**: subtítulo "Compradores que todavía esperan ofertas." Filtros de ciudad (input) y categoría (select) arriba; la misma lista en filas que ve el comprador, con la acción "Enviar oferta" en cada una.
+**Solicitudes abiertas (proveedor)**: subtítulo "Compradores que todavía esperan ofertas." Filtros de ciudad (input) y categoría (select) arriba; la misma lista en filas que ve el comprador, con la acción "Enviar oferta" en cada una, salvo si el proveedor ya tiene una oferta activa (no retirada) en esa solicitud: ahí la fila muestra "Ya ofertaste" y el enlace "Ver mi oferta" (a "Mis ofertas": no hay pantalla de detalle de una sola oferta).
 
 **Mis ofertas (proveedor)**: tabla con repuesto, comprador o ciudad, precio, fecha y estado (pendiente, aceptada, no elegida).
 
@@ -219,6 +219,10 @@ Ofertas recibidas (3). Solo puedes aceptar una. Las demás quedarán como no ele
 - Texto del botón: verbo + objeto ("Publicar solicitud", "Enviar oferta", "Aceptar oferta"). Sin flechas ni signos "+".
 
 **Campos**: etiqueta arriba (14px, 500), campo de 44px, borde fuerte, radio 8px. Foco: borde tinta + anillo de foco. Error: borde y texto rojo texto con ícono, y un mensaje que dice cómo corregirlo ("Ingresa el año del vehículo, por ejemplo 2018").
+
+**Páginas que son un formulario** (Nueva solicitud, Perfil comercial, Ofertar): toda la página, título incluido, centrada en un ancho de lectura de 880px (`.pagina-formulario`), con los campos en dos columnas en escritorio (`.dos-columnas`) y una sola columna en móvil. No ocupan los 1440px de `.contenido`: un formulario de ese ancho sería incómodo de leer y llenar.
+
+**Formularios de alta sobre una lista** (Registrar vehículo, Nueva categoría): el panel ocupa todo el ancho, igual que la lista de abajo (`.fila-alta`): los campos en una sola fila con el botón al final desde escritorio, 2 columnas en tablet, 1 en móvil.
 
 **Estados**
 
@@ -354,7 +358,7 @@ Los nombres exactos salen de los enums reales del proyecto.
   /* Estructura */
   --alto-barra-superior: 56px;
   --ancho-barra-lateral: 240px;
-  --ancho-contenido: 1200px;
+  --ancho-contenido: 1440px;
   --alto-control: 44px;
 
   /* Movimiento */
@@ -368,4 +372,4 @@ Los nombres exactos salen de los enums reales del proyecto.
 }
 ```
 
-Clases globales previstas (en `src/styles/`): `.barra-superior`, `.barra-lateral`, `.encabezado-pagina`, `.panel`, `.lista-filas` + `.fila` (fila de lista: ícono circular, contenido, estados y acción, separadas por borde), `.estado` con variantes `--exito`, `--atencion`, `--info`, `--neutro`, `--peligro`, `.chip-categoria`, `.tabla-comparacion`, `.pasos`, `.vacio`, `.aviso`. Los botones, campos, diálogos y avisos son los de Angular Material con el tema aplicado.
+Clases globales previstas (en `src/styles/`): `.barra-superior`, `.barra-lateral`, `.encabezado-pagina`, `.panel`, `.lista-filas` + `.fila` (fila de lista: ícono circular, contenido, estados y acción, separadas por borde), `.pagina-formulario` (centra una página-formulario en 880px), `.dos-columnas` (dos columnas de formulario, una en móvil), `.fila-alta` (formulario de alta sobre una lista: una fila en escritorio, 2 columnas en tablet, 1 en móvil), `.estado` con variantes `--exito`, `--atencion`, `--info`, `--neutro`, `--peligro`, `.chip-categoria`, `.tabla-comparacion`, `.pasos`, `.vacio`, `.aviso`. Los botones, campos, diálogos y avisos son los de Angular Material con el tema aplicado.

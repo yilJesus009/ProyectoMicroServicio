@@ -134,10 +134,12 @@
                 >
                   <td data-etiqueta="Proveedor">{{ oferta.supplier_name }}</td>
                   <td data-etiqueta="Precio" class="num celda-precio">
-                    {{ oferta.price | moneda: oferta.currency }}
-                    @if (mejorPrecio().has(oferta.id)) {
-                      <span class="estado estado--atencion">Mejor precio</span>
-                    }
+                    <div class="celda-precio__contenido">
+                      {{ oferta.price | moneda: oferta.currency }}
+                      @if (mejorPrecio().has(oferta.id)) {
+                        <span class="estado estado--atencion">Mejor precio</span>
+                      }
+                    </div>
                   </td>
                   <td data-etiqueta="Entrega">
                     {{
@@ -148,28 +150,30 @@
                   </td>
                   <td data-etiqueta="Nota">{{ oferta.notes || '—' }}</td>
                   <td data-etiqueta="Acción" class="celda-accion">
-                    @if (oferta.status !== 'SUBMITTED') {
-                      <span
-                        class="estado"
-                        [class]="'estado--' + (TONO_ESTADO_OFERTA[oferta.status] ?? 'neutro')"
-                      >
-                        {{ ETIQUETA_ESTADO_OFERTA[oferta.status] ?? oferta.status }}
-                      </span>
-                    }
-                    @if (
-                      (solicitud.status === 'PUBLISHED' ||
-                        solicitud.status === 'RECEIVING_OFFERS') &&
-                      oferta.status === 'SUBMITTED'
-                    ) {
-                      <button
-                        mat-stroked-button
-                        color="primary"
-                        type="button"
-                        (click)="confirmarAceptacion(oferta)"
-                      >
-                        Aceptar oferta
-                      </button>
-                    }
+                    <div class="celda-accion__contenido">
+                      @if (oferta.status !== 'SUBMITTED') {
+                        <span
+                          class="estado"
+                          [class]="'estado--' + (TONO_ESTADO_OFERTA[oferta.status] ?? 'neutro')"
+                        >
+                          {{ ETIQUETA_ESTADO_OFERTA[oferta.status] ?? oferta.status }}
+                        </span>
+                      }
+                      @if (
+                        (solicitud.status === 'PUBLISHED' ||
+                          solicitud.status === 'RECEIVING_OFFERS') &&
+                        oferta.status === 'SUBMITTED'
+                      ) {
+                        <button
+                          mat-stroked-button
+                          color="primary"
+                          type="button"
+                          (click)="confirmarAceptacion(oferta)"
+                        >
+                          Aceptar oferta
+                        </button>
+                      }
+                    </div>
                   </td>
                 </tr>
               }

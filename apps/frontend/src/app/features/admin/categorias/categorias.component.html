@@ -19,33 +19,35 @@
   <div class="panel alta">
     <h2 class="texto-lg">Nueva categoría</h2>
     <form class="formulario" [formGroup]="formAlta" (ngSubmit)="crear()">
-      <mat-form-field appearance="outline">
-        <mat-label>Nombre</mat-label>
-        <input matInput formControlName="name" />
-        @if (formAlta.controls.name.invalid && formAlta.controls.name.touched) {
-          <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa el nombre</mat-error>
-        }
-      </mat-form-field>
+      <div class="fila-alta">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" />
+          @if (formAlta.controls.name.invalid && formAlta.controls.name.touched) {
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa el nombre</mat-error>
+          }
+        </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Descripción</mat-label>
-        <input matInput formControlName="description" />
-      </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Descripción</mat-label>
+          <input matInput formControlName="description" />
+        </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Ícono</mat-label>
-        <input matInput formControlName="icon" placeholder="brake" />
-      </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Ícono</mat-label>
+          <input matInput formControlName="icon" placeholder="brake" />
+        </mat-form-field>
 
-      <button
-        mat-flat-button
-        color="primary"
-        type="submit"
-        class="accion"
-        [disabled]="accionando()"
-      >
-        Crear categoría
-      </button>
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="accion"
+          [disabled]="accionando()"
+        >
+          Crear categoría
+        </button>
+      </div>
     </form>
   </div>
 
@@ -121,15 +123,17 @@
                   </span>
                 </td>
                 <td data-etiqueta="Acciones" class="celda-accion">
-                  <button mat-button type="button" (click)="abrirEdicion(categoria)">Editar</button>
-                  <button
-                    mat-stroked-button
-                    type="button"
-                    [disabled]="accionando()"
-                    (click)="alternar(categoria)"
-                  >
-                    {{ categoria.active ? 'Desactivar' : 'Activar' }}
-                  </button>
+                  <div class="celda-accion__contenido">
+                    <button mat-button type="button" (click)="abrirEdicion(categoria)">Editar</button>
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      [disabled]="accionando()"
+                      (click)="alternar(categoria)"
+                    >
+                      {{ categoria.active ? 'Desactivar' : 'Activar' }}
+                    </button>
+                  </div>
                 </td>
               }
             </tr>

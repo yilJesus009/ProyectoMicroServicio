@@ -12,7 +12,9 @@
   overflow-x: auto;
 }
 
-.celda-accion {
+// El flex va en un <div> adentro del <td>, no en el <td> mismo: ver
+// detalle-solicitud.component.scss para el porqué.
+.celda-accion__contenido {
   display: flex;
   flex-direction: column;
   align-items: flex-start;

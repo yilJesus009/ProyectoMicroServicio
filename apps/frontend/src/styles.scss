@@ -68,6 +68,12 @@ html {
   // más (sección 8).
   --mat-sidenav-container-background-color: var(--color-superficie);
   --mat-sidenav-container-shape: 0px;
+  // Material trae su propio ancho por defecto (--mat-sidenav-container-width,
+  // 360px) que no lee --ancho-barra-lateral: sin esto gana por sobre
+  // `.barra-lateral { width: ... }` (misma especificidad, una sola clase,
+  // y la hoja de Material carga después) y la barra lateral queda a 360px
+  // en vez de los 240px de la sección 8.
+  --mat-sidenav-container-width: var(--ancho-barra-lateral);
 
   // Radios de controles y paneles (sección 6 y 7: sin !important).
   --mat-sys-corner-extra-small: var(--radio-control);
