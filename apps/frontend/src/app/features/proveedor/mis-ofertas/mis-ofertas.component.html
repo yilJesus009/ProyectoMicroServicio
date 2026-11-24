@@ -47,12 +47,14 @@
               </td>
               <td data-etiqueta="Fecha" class="num">{{ oferta.created_at | date: 'dd/MM/yyyy' }}</td>
               <td data-etiqueta="Estado" class="celda-accion">
-                <span class="estado" [class]="'estado--' + (TONO_ESTADO[oferta.status] ?? 'neutro')">
-                  {{ ETIQUETA_ESTADO[oferta.status] ?? oferta.status }}
-                </span>
-                @if (oferta.status === 'SUBMITTED' && !retirando()) {
-                  <button mat-button type="button" (click)="retirar(oferta)">Retirar oferta</button>
-                }
+                <div class="celda-accion__contenido">
+                  <span class="estado" [class]="'estado--' + (TONO_ESTADO[oferta.status] ?? 'neutro')">
+                    {{ ETIQUETA_ESTADO[oferta.status] ?? oferta.status }}
+                  </span>
+                  @if (oferta.status === 'SUBMITTED' && !retirando()) {
+                    <button mat-button type="button" (click)="retirar(oferta)">Retirar oferta</button>
+                  }
+                </div>
               </td>
             </tr>
           }
