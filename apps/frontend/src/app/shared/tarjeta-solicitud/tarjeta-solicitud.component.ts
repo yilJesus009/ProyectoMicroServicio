@@ -4,6 +4,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 
 import { Solicitud } from '../../facades/solicitudes.facade';
+import { iconoCategoriaPorNombre } from '../iconos-categoria';
 
 /** Textos en español de los estados (docs/frontend.md → "Estados en pantalla"). */
 const ETIQUETA_ESTADO: Record<string, string | undefined> = {
@@ -35,22 +36,6 @@ const TONO_URGENCIA: Record<string, string | undefined> = {
   ALTA: 'peligro',
 };
 
-/** Categorías con ícono propio (sección 10): el resto cae al ícono `build` de Material. */
-const CATEGORIAS_CON_ICONO = [
-  'frenos',
-  'motor',
-  'suspension',
-  'electrico',
-  'carroceria',
-  'neumaticos',
-];
-
-function normalizar(texto: string): string {
-  return texto
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
-}
 
 /**
  * Tarjeta de una solicitud (dumb): la usan las solicitudes abiertas del
@@ -155,10 +140,7 @@ export class TarjetaSolicitudComponent {
   });
 
   /** Slug del ícono propio de la categoría, o null si no hay uno (sección 10). */
-  readonly iconoCategoria = computed(() => {
-    const nombre = normalizar(this.solicitud().category_name ?? '');
-    return CATEGORIAS_CON_ICONO.includes(nombre) ? nombre : null;
-  });
+  readonly iconoCategoria = computed(() => iconoCategoriaPorNombre(this.solicitud().category_name));
 
   protected readonly ETIQUETA_ESTADO = ETIQUETA_ESTADO;
   protected readonly TONO_ESTADO = TONO_ESTADO;

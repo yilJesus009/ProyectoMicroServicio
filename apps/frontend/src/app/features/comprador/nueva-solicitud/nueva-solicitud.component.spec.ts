@@ -80,9 +80,14 @@ describe('NuevaSolicitudComponent', () => {
     responderInicio();
     await ceder();
 
+    const elemento = fixture.nativeElement as HTMLElement;
     expect(texto()).toContain('Frenos');
-    expect(texto()).toContain('brake');
     expect(texto()).toContain('Suspensión');
+    // El ícono es visual (propio o `build` de Material), no el texto crudo
+    // del campo `icon` de la categoría (DISEÑO.md prohíbe emojis/texto como
+    // ícono): "Frenos" normaliza a un ícono propio, "Suspensión" también.
+    expect(elemento.querySelector('.icono--categoria-frenos')).not.toBeNull();
+    expect(elemento.querySelector('.icono--categoria-suspension')).not.toBeNull();
     expect(fixture.componentInstance.vehiculos().length).toBe(1);
   });
 

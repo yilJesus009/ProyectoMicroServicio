@@ -199,6 +199,33 @@ solicitudes" y "Solicitudes abiertas")
   cambiar `app-offer-card` por `tbody tr` en la prueba de la oferta
   `WITHDRAWN` (misma aserción: 2 filas).
 
+### Nueva solicitud
+
+- Titular "¿Qué repuesto necesitas?" en itálica gruesa (`.texto-display`,
+  sin fondo rojo: ese tratamiento es solo del panel de login/registro).
+- Categorías: `.chips-categoria`/`.chip-categoria` de Fase 1 en vez de las
+  tarjetas propias que había. Se creó `shared/iconos-categoria.ts`
+  (función pura `iconoCategoriaPorNombre`) para no duplicar la lógica de
+  ícono por nombre que ya tenía `tarjeta-solicitud`; ambos componentes la
+  importan ahora. El campo `icon` (texto libre que carga el admin, p. ej.
+  "brake") **ya no se muestra**: se reemplaza por el ícono visual
+  (propio o `build` de Material), porque DISEÑO.md prohíbe texto/emoji
+  como ícono (sección 13). El campo sigue existiendo en el formulario de
+  administración de categorías, solo cambió cómo se usa para mostrar.
+- **Lógica nueva agregada** (mismo criterio ya aprobado para
+  `mejorPrecio`): vista previa de la foto elegida. `alElegirFoto()` ahora
+  también crea/libera un object URL (`fotoPreviewUrl`), con limpieza en
+  `ngOnDestroy` — mismo patrón que ya usa `detalle-solicitud` para la foto
+  de la solicitud. Sin esto no había forma de cumplir "foto opcional con
+  vista previa" (sección 9).
+- `nueva-solicitud.component.spec.ts`: la prueba que revisaba el ícono
+  comprobaba el texto crudo `'brake'`; ahora comprueba la clase del ícono
+  real (`.icono--categoria-frenos`), porque ese texto ya no se muestra.
+- Verificado visualmente inyectando categorías de prueba en el signal del
+  componente (sin backend): chips con ícono propio, `build` de Material
+  para una categoría sin PNG, y el estado seleccionado (rojo tenue +
+  borde rojo) al hacer clic.
+
 ## Preguntas de la defensa
 
 (Se completa en la fase final con el resto de preguntas probables.)
