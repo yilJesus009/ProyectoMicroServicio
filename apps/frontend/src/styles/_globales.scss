@@ -1,0 +1,462 @@
+// Clases globales previstas en DISEÑO.md (sección 14). Rutas de assets: este
+// proyecto sirve `public/` en la raíz (no bajo /assets), así que los íconos
+// quedan en /iconos/, /categorias/ y /brand/ en vez de /assets/iconos/...
+
+.barra-superior {
+  height: var(--alto-barra-superior);
+  background-color: var(--color-rojo);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  padding: 0 var(--esp-4);
+}
+
+.barra-lateral {
+  width: var(--ancho-barra-lateral);
+  background-color: var(--color-superficie);
+  border-right: 1px solid var(--color-borde);
+}
+
+.item-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  height: var(--alto-control);
+  padding: 0 var(--esp-4);
+  border-radius: var(--radio-control);
+  color: var(--color-tinta);
+  font-size: var(--texto-sm);
+  font-weight: 500;
+  text-decoration: none;
+
+  .icono,
+  mat-icon {
+    color: var(--color-tinta-suave);
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &--activo {
+    background-color: var(--color-rojo-tenue);
+    color: var(--color-rojo-texto);
+
+    .icono,
+    mat-icon {
+      color: var(--color-rojo-texto);
+    }
+  }
+}
+
+.encabezado-pagina {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--esp-4);
+  margin-bottom: var(--esp-5);
+
+  &__titulo {
+    font-size: var(--texto-2xl);
+    font-weight: 700;
+    line-height: var(--interlineado-titulo);
+  }
+
+  &__apoyo {
+    font-size: var(--texto-sm);
+    font-weight: 500;
+    color: var(--color-tinta-suave);
+    margin-top: var(--esp-1);
+  }
+}
+
+.panel {
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-panel);
+  padding: var(--esp-5);
+}
+
+// Utilidad de layout: "dos columnas" de formulario (varias pantallas de la
+// sección 9 piden este agrupamiento). Colapsa a una columna en móvil.
+.dos-columnas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--esp-3);
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Estado con variantes: fondo tenue + texto oscuro del mismo tono (sección 4).
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  padding: 2px var(--esp-3);
+  border-radius: var(--radio-pastilla);
+  font-size: var(--texto-sm);
+  font-weight: 500;
+  white-space: nowrap;
+
+  &--exito {
+    background-color: var(--color-exito-tenue);
+    color: var(--color-exito);
+  }
+
+  &--atencion {
+    background-color: var(--color-atencion-tenue);
+    color: var(--color-atencion-texto);
+  }
+
+  &--info {
+    background-color: var(--color-info-tenue);
+    color: var(--color-info);
+  }
+
+  &--neutro {
+    background-color: var(--color-neutro-tenue);
+    color: var(--color-neutro);
+  }
+
+  &--peligro {
+    background-color: var(--color-peligro-tenue);
+    color: var(--color-peligro);
+  }
+}
+
+// Chips de categoría (nueva solicitud, sección 10): grilla de 3 columnas.
+.chips-categoria {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--esp-3);
+
+  // A 3 columnas, nombres como "Suspensión" o "Carrocería" se truncan casi
+  // por completo en anchos de celular (<600px); 2 columnas les dan espacio
+  // real conservando la misma tarjeta con ícono.
+  @media (max-width: 599px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.chip-categoria {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  height: 56px;
+  padding: 0 var(--esp-3);
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: var(--radio-control);
+  background-color: var(--color-superficie);
+  color: var(--color-tinta);
+  font-size: var(--texto-sm);
+  font-weight: 500;
+  cursor: pointer;
+  // Como grid item, su min-width por defecto es el ancho de su contenido:
+  // sin min-width:0 un nombre largo ("Suspensión") fuerza la columna a
+  // crecer y desborda la grilla en vez de truncarse.
+  min-width: 0;
+
+  .icono {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &--seleccionado {
+    border-color: var(--color-rojo);
+    background-color: var(--color-rojo-tenue);
+    color: var(--color-rojo-texto);
+  }
+}
+
+// Tablas y filas (sección 10): encabezado en superficie 2, filas de 52px.
+.tabla-comparacion {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    background-color: var(--color-superficie-2);
+    color: var(--color-tinta-suave);
+    font-size: var(--texto-sm);
+    font-weight: 500;
+    text-align: left;
+    padding: var(--esp-3) var(--esp-4);
+  }
+
+  td {
+    // min-height, no height: algunas celdas apilan dos líneas (precio +
+    // "Mejor precio", o estado + botón de acción) y con una altura fija ese
+    // contenido se salía de la fila y se solapaba con la siguiente.
+    min-height: 52px;
+    padding: var(--esp-2) var(--esp-4);
+    border-bottom: 1px solid var(--color-borde);
+  }
+
+  tbody tr:hover {
+    background-color: var(--color-superficie-2);
+  }
+
+  td.num,
+  th.num {
+    text-align: right;
+  }
+
+  @media (max-width: 720px) {
+    thead {
+      display: none;
+    }
+
+    tr {
+      display: block;
+      border-bottom: 1px solid var(--color-borde);
+      padding: var(--esp-3) 0;
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--esp-3);
+      border-bottom: none;
+      height: auto;
+      padding: var(--esp-1) var(--esp-4);
+
+      &::before {
+        content: attr(data-etiqueta);
+        color: var(--color-tinta-suave);
+        font-size: var(--texto-sm);
+      }
+    }
+  }
+}
+
+// Pasos del seguimiento de pedido (sección 9): completado, actual y futuro.
+.pasos {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    gap: var(--esp-4);
+  }
+}
+
+.paso {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-2);
+  text-align: center;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: -50%;
+    width: 100%;
+    height: 2px;
+    background-color: var(--color-borde);
+    z-index: 0;
+  }
+
+  &:first-child::before {
+    content: none;
+  }
+
+  &__punto {
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radio-pastilla);
+    background-color: var(--color-superficie);
+    border: 2px solid var(--color-borde-fuerte);
+    z-index: 1;
+  }
+
+  &__etiqueta {
+    font-size: var(--texto-sm);
+    color: var(--color-tinta-suave);
+  }
+
+  &__fecha {
+    font-variant-numeric: tabular-nums;
+    font-size: var(--texto-xs);
+    color: var(--color-tinta-suave);
+  }
+
+  &--completado {
+    &::before {
+      background-color: var(--color-exito);
+    }
+
+    .paso__punto {
+      background-color: var(--color-exito);
+      border-color: var(--color-exito);
+    }
+
+    .paso__etiqueta {
+      color: var(--color-tinta);
+    }
+  }
+
+  &--actual {
+    .paso__punto {
+      border-color: var(--color-rojo);
+      box-shadow: 0 0 0 3px var(--color-rojo-tenue);
+    }
+
+    .paso__etiqueta {
+      color: var(--color-tinta);
+      font-weight: 700;
+    }
+  }
+
+  @media (max-width: 720px) {
+    flex-direction: row;
+    text-align: left;
+    width: 100%;
+
+    &::before {
+      top: 0;
+      left: 7px;
+      width: 2px;
+      height: 100%;
+    }
+  }
+}
+
+// Vacíos (sección 10): frase + acción para llenar el espacio.
+.vacio {
+  text-align: center;
+  padding: var(--esp-7) var(--esp-5);
+  color: var(--color-tinta-suave);
+
+  &__texto {
+    max-width: 75ch;
+    margin: 0 auto var(--esp-4);
+  }
+}
+
+// Ícono en los errores de campo (sección 10: "Error: ... con ícono").
+mat-error {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+}
+
+// Mensaje de error del servidor, en línea bajo un formulario (sección 10:
+// "un error siempre lleva ícono y texto, no solo color"). No es .aviso
+// (eso es para MatSnackBar, flotante con sombra): este es parte fija de la
+// página, con el mismo tratamiento de fondo tenue + texto del tono.
+.mensaje-servidor {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--radio-control);
+  background: var(--color-peligro-tenue);
+  color: var(--color-peligro);
+  font-size: var(--texto-sm);
+
+  mat-icon,
+  .icono {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+
+  &--exito {
+    background: var(--color-exito-tenue);
+    color: var(--color-exito);
+  }
+
+  &--atencion {
+    background: var(--color-atencion-tenue);
+    color: var(--color-atencion-texto);
+  }
+
+  &--info {
+    background: var(--color-info-tenue);
+    color: var(--color-info);
+  }
+
+  &--neutro {
+    background: var(--color-neutro-tenue);
+    color: var(--color-neutro);
+  }
+
+  &--peligro {
+    background: var(--color-peligro-tenue);
+    color: var(--color-peligro);
+  }
+}
+
+// Avisos (sección 10): usados como panelClass de MatSnackBar.
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  background-color: var(--color-superficie);
+  color: var(--color-tinta);
+  border-radius: var(--radio-panel);
+  box-shadow: var(--sombra-flotante);
+  padding: var(--esp-4);
+
+  &--exito .icono { color: var(--color-exito); }
+  &--atencion .icono { color: var(--color-atencion-texto); }
+  &--info .icono { color: var(--color-info); }
+  &--neutro .icono { color: var(--color-neutro); }
+  &--peligro .icono { color: var(--color-peligro); }
+}
+
+// Íconos propios (sección 10): PNG negro sin fondo aplicado con mask-image,
+// toman el color del texto (currentColor).
+.icono {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+
+$iconos-propios: notificaciones, 'mis-solicitudes', 'nueva-solicitud',
+  'mis-pedidos', 'mis-vehiculos', salir, 'agregar-foto';
+$categorias-propias: frenos, motor, suspension, electrico, carroceria,
+  neumaticos;
+
+@each $nombre in $iconos-propios {
+  .icono--#{$nombre} {
+    mask: url('/iconos/#{$nombre}.png') center / contain no-repeat;
+    -webkit-mask: url('/iconos/#{$nombre}.png') center / contain no-repeat;
+  }
+}
+
+@each $nombre in $categorias-propias {
+  .icono--categoria-#{$nombre} {
+    mask: url('/categorias/#{$nombre}.png') center / contain no-repeat;
+    -webkit-mask: url('/categorias/#{$nombre}.png') center / contain no-repeat;
+  }
+}

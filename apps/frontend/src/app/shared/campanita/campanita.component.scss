@@ -4,18 +4,21 @@
 
 .campanita-boton {
   position: relative;
+  color: #ffffff;
 }
 
+// Pastilla blanca con número en rojo (DISEÑO.md sección 8).
 .conteo {
   position: absolute;
   top: 2px;
   right: 2px;
   min-width: 1.1rem;
-  padding: 0 0.25rem;
-  border-radius: 999px;
-  background: #b3261e;
-  color: #fff;
-  font-size: 0.7rem;
+  padding: 0 var(--esp-1);
+  border-radius: var(--radio-pastilla);
+  background: #ffffff;
+  color: var(--color-rojo);
+  font-size: var(--texto-xs);
+  font-weight: 700;
   line-height: 1.1rem;
   text-align: center;
 }
@@ -26,20 +29,20 @@
   right: 0;
   z-index: 20;
   width: 22rem;
-  max-width: calc(100vw - 2rem);
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
-  padding: 0.5rem;
+  max-width: calc(100vw - var(--esp-5));
+  background: var(--color-superficie);
+  border-radius: var(--radio-panel);
+  box-shadow: var(--sombra-flotante);
+  padding: var(--esp-2);
 }
 
 .panel-cabecera {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.5rem;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  color: var(--color-tinta);
 }
 
 .lista {
@@ -48,49 +51,75 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--esp-1);
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
-.aviso {
+.aviso-item {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  align-items: flex-start;
+  gap: var(--esp-2);
   width: 100%;
   text-align: left;
-  padding: 0.5rem;
+  padding: var(--esp-2) var(--esp-3);
   border: none;
-  border-radius: 6px;
-  background: #f5f7fa;
+  border-radius: var(--radio-control);
+  background: var(--color-superficie);
   cursor: pointer;
-}
 
-.aviso:hover {
-  background: #e3f2fd;
-}
+  &:hover {
+    background: var(--color-superficie-2);
+  }
 
-.aviso.leido {
-  opacity: 0.65;
-}
+  &__punto {
+    flex-shrink: 0;
+    margin-top: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radio-pastilla);
+    background: transparent;
+  }
 
-.mensaje {
-  font-size: 0.85rem;
-  color: #546e7a;
-}
+  &--no-leido &__punto {
+    background: var(--color-rojo);
+  }
 
-.fecha {
-  font-size: 0.75rem;
-  color: #78909c;
+  &__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &__titulo {
+    font-size: var(--texto-sm);
+    color: var(--color-tinta);
+  }
+
+  &__mensaje {
+    font-size: var(--texto-xs);
+    color: var(--color-tinta-suave);
+  }
+
+  &__fecha {
+    flex-shrink: 0;
+    font-size: var(--texto-xs);
+    color: var(--color-tinta-suave);
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 .cargando,
 .vacio {
-  color: #546e7a;
-  font-size: 0.9rem;
-  margin: 0.5rem;
+  color: var(--color-tinta-suave);
+  font-size: var(--texto-sm);
+  margin: var(--esp-2);
 }
 
 .error {
-  color: #b3261e;
-  margin: 0.5rem;
-  font-size: 0.9rem;
+  color: var(--color-peligro);
+  margin: var(--esp-2);
+  font-size: var(--texto-sm);
 }

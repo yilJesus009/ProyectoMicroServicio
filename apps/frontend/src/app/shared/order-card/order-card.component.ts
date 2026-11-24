@@ -17,6 +17,16 @@ export const ETIQUETA_ESTADO_PEDIDO: Record<string, string | undefined> = {
   COMPLETED: 'Completada',
 };
 
+/** Tono de DISEÑO.md (sección 10) para cada estado real del pedido. */
+export const TONO_ESTADO_PEDIDO: Record<string, string | undefined> = {
+  PENDING_PAYMENT: 'info',
+  PREPARING: 'info',
+  IN_TRANSIT: 'info',
+  READY_FOR_PICKUP: 'info',
+  DELIVERED: 'exito',
+  COMPLETED: 'exito',
+};
+
 const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
   DELIVERY: 'Entrega a domicilio',
   PICKUP: 'Retiro en tienda',
@@ -35,15 +45,17 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
   imports: [DatePipe, DecimalPipe, MatButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="pedido">
+    <article class="panel pedido">
       <header class="cabecera">
-        <h3>{{ pedido().part_description }}</h3>
-        <span class="estado">{{ ETIQUETA_ESTADO[pedido().status] ?? pedido().status }}</span>
+        <h3 class="texto-lg">{{ pedido().part_description }}</h3>
+        <span class="estado" [class]="'estado--' + (TONO_ESTADO[pedido().status] ?? 'neutro')">
+          {{ ETIQUETA_ESTADO[pedido().status] ?? pedido().status }}
+        </span>
       </header>
 
-      <p class="proveedor">{{ pedido().supplier_name }}</p>
+      <p class="proveedor texto-sm">{{ pedido().supplier_name }}</p>
 
-      <p class="precio">
+      <p class="precio num">
         {{ pedido().price | number: '1.2-2' }} <span>{{ pedido().currency }}</span>
       </p>
 
@@ -51,7 +63,7 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
         <span class="dato">{{ pedido().vehicle_label || 'Vehículo no especificado' }}</span>
         <span class="dato">{{ ETIQUETA_ENTREGA[pedido().delivery_type] ?? pedido().delivery_type }}</span>
         <span class="dato">{{ pedido().estimated_days }} día(s)</span>
-        <time class="dato fecha" [attr.datetime]="pedido().created_at">
+        <time class="dato fecha num" [attr.datetime]="pedido().created_at">
           {{ pedido().created_at | date: 'dd/MM/yyyy' }}
         </time>
       </div>
@@ -65,57 +77,49 @@ const ETIQUETA_ENTREGA: Record<string, string | undefined> = {
   `,
   styles: `
     .pedido {
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 0.9rem 1rem;
-      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: var(--esp-2);
     }
     .cabecera {
       display: flex;
       justify-content: space-between;
-      gap: 1rem;
+      gap: var(--esp-4);
       align-items: start;
     }
     h3 {
       margin: 0;
-      font-size: 1rem;
-    }
-    .estado {
-      font-size: 0.75rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
-      background: #eceff1;
-      white-space: nowrap;
     }
     .proveedor {
-      margin: 0.25rem 0 0;
-      font-size: 0.85rem;
-      color: #546e7a;
+      margin: 0;
+      color: var(--color-tinta-suave);
     }
     .precio {
-      margin: 0.5rem 0;
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: #0b5394;
+      margin: 0;
+      font-size: var(--texto-xl);
+      font-weight: 700;
+      color: var(--color-tinta);
     }
     .precio span {
-      font-size: 0.85rem;
+      font-size: var(--texto-sm);
       font-weight: 400;
-      color: #546e7a;
+      color: var(--color-tinta-suave);
     }
     .datos {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
+      gap: var(--esp-2);
     }
     .dato {
-      font-size: 0.8rem;
-      background: #f5f5f5;
-      border-radius: 4px;
-      padding: 0.1rem 0.45rem;
+      font-size: var(--texto-xs);
+      color: var(--color-tinta-suave);
+      background: var(--color-superficie-2);
+      border-radius: var(--radio-control);
+      padding: 2px var(--esp-2);
     }
     .accion {
-      margin-top: 0.8rem;
+      margin-top: var(--esp-2);
+      align-self: flex-start;
     }
   `,
 })
@@ -130,5 +134,6 @@ export class OrderCardComponent {
   readonly accionEmitida = output<void>();
 
   readonly ETIQUETA_ESTADO = ETIQUETA_ESTADO_PEDIDO;
+  readonly TONO_ESTADO = TONO_ESTADO_PEDIDO;
   readonly ETIQUETA_ENTREGA = ETIQUETA_ENTREGA;
 }

@@ -1,56 +1,43 @@
 .pantalla {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--esp-4);
   max-width: 640px;
 }
 
-.volver {
-  align-self: start;
+.volver a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
 }
 
 .resumen {
-  background: #f5f7fa;
-}
-
-h2 {
-  margin: 0;
-  font-size: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
 }
 
 .formulario {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--esp-3);
 }
 
 .entrega {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
-  margin: 0.5rem 0 1rem;
-}
-
-.etiqueta {
-  font-size: 0.9rem;
-  color: rgba(0, 0, 0, 0.6);
+  gap: var(--esp-3);
+  margin: var(--esp-2) 0 var(--esp-4);
 }
 
 .acciones {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: var(--esp-2);
+  margin-top: var(--esp-2);
 }
 
-.estado {
-  color: #546e7a;
-}
-
-.error {
-  color: #842029;
-  background: #f8d7da;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+.estado-carga {
+  color: var(--color-tinta-suave);
 }

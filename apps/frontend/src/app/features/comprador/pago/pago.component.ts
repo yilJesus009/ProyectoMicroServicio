@@ -3,9 +3,10 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import qrcode from 'qrcode-generator';
 
 import { mensajeDeError } from '../../../core/error/api-error';
@@ -30,9 +31,10 @@ import { ETIQUETA_ESTADO_PEDIDO } from '../../../shared/order-card/order-card.co
   imports: [
     DecimalPipe,
     MatButtonModule,
-    MatCardModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
+    MatProgressBarModule,
     ReactiveFormsModule,
     RouterLink,
   ],

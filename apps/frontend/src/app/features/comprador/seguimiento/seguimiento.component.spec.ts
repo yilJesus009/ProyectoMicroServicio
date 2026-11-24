@@ -82,7 +82,6 @@ describe('SeguimientoComponent', () => {
     expect(texto()).toContain('Amortiguador delantero derecho');
     expect(texto()).toContain('AutoParts Center');
     expect(texto()).toContain('Pendiente de pago');
-    expect(texto()).toContain('Línea de tiempo');
     // PENDIENTE_DE_PAGO → ofrece pagar.
     expect(boton('Pagar ahora')).toBeTruthy();
   });

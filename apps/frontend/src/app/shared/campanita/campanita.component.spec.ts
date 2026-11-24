@@ -112,7 +112,7 @@ describe('CampanitaComponent', () => {
     await ceder(fixture);
     await abrirPanel(fixture);
 
-    elemento(fixture, '.aviso')?.dispatchEvent(new Event('click'));
+    elemento(fixture, '.aviso-item')?.dispatchEvent(new Event('click'));
     fixture.detectChanges();
 
     expect(router.navigate).toHaveBeenCalledWith(['/proveedor/solicitudes']);

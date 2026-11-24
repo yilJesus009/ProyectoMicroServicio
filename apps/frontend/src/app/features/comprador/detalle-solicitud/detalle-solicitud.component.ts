@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, OnDestroy, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatRadioModule } from '@angular/material/radio';
 
 import { mensajeDeError } from '../../../core/error/api-error';
@@ -13,8 +14,23 @@ import {
   SolicitudesFacade,
 } from '../../../facades/solicitudes.facade';
 import { PedidosFacade } from '../../../facades/pedidos.facade';
-import { OfferCardComponent } from '../../../shared/offer-card/offer-card.component';
 import { TarjetaSolicitudComponent } from '../../../shared/tarjeta-solicitud/tarjeta-solicitud.component';
+
+/** Textos en español de los estados de oferta (igual que offer-card). */
+const ETIQUETA_ESTADO_OFERTA: Record<string, string | undefined> = {
+  SUBMITTED: 'Enviada',
+  ACCEPTED: 'Aceptada',
+  REJECTED: 'No elegida',
+  WITHDRAWN: 'Retirada',
+};
+
+/** Tono de DISEÑO.md (sección 10) para cada estado real de la oferta. */
+const TONO_ESTADO_OFERTA: Record<string, string | undefined> = {
+  SUBMITTED: 'atencion',
+  ACCEPTED: 'exito',
+  REJECTED: 'neutro',
+  WITHDRAWN: 'neutro',
+};
 
 /**
  * `/comprador/solicitudes/:id` (docs/frontend.md): detalle de la solicitud y
@@ -39,9 +55,9 @@ import { TarjetaSolicitudComponent } from '../../../shared/tarjeta-solicitud/tar
   imports: [
     DecimalPipe,
     MatButtonModule,
-    MatCardModule,
+    MatIconModule,
+    MatProgressBarModule,
     MatRadioModule,
-    OfferCardComponent,
     RouterLink,
     TarjetaSolicitudComponent,
   ],
@@ -75,6 +91,27 @@ export class DetalleSolicitudComponent implements OnDestroy {
   private id = 0;
   private temporizadorPedido: ReturnType<typeof setTimeout> | null = null;
   private intentosPedido = 0;
+
+  protected readonly ETIQUETA_ESTADO_OFERTA = ETIQUETA_ESTADO_OFERTA;
+  protected readonly TONO_ESTADO_OFERTA = TONO_ESTADO_OFERTA;
+
+  /**
+   * ids de las ofertas SUBMITTED con el precio más bajo (sección 9: "Mejor
+   * precio"), empatadas si corresponde. Vacío si la solicitud ya tiene una
+   * oferta aceptada, porque en ese caso ya no hay nada que comparar.
+   */
+  readonly mejorPrecio = computed<ReadonlySet<number>>(() => {
+    const solicitud = this.solicitud();
+    if (!solicitud || solicitud.status === 'OFFER_ACCEPTED' || solicitud.status === 'COMPLETED') {
+      return new Set();
+    }
+
+    const enviadas = this.ofertas().filter((o) => o.status === 'SUBMITTED');
+    if (enviadas.length === 0) return new Set();
+
+    const minimo = Math.min(...enviadas.map((o) => Number(o.price)));
+    return new Set(enviadas.filter((o) => Number(o.price) === minimo).map((o) => o.id));
+  });
 
   constructor() {
     this.id = Number(this.ruta.snapshot.paramMap.get('id'));

@@ -89,7 +89,7 @@ describe('AdminProveedoresComponent', () => {
     await ceder();
 
     expect(texto()).toContain('AutoParts Center');
-    expect(texto()).toContain('Santa Cruz · 70000000');
+    expect(texto()).toContain('Santa Cruz, 70000000');
     expect(texto()).toContain('Pendiente de aprobación');
     expect(texto()).toContain('Frenos');
   });

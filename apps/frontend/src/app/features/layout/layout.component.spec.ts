@@ -25,7 +25,9 @@ describe('LayoutComponent', () => {
   let router: Router;
 
   function etiquetasDelMenu(): string[] {
-    const items = (fixture.nativeElement as HTMLElement).querySelectorAll('mat-nav-list a');
+    const items = (fixture.nativeElement as HTMLElement).querySelectorAll(
+      '.item-menu .item-menu__etiqueta',
+    );
     return Array.from(items).map((item) => item.textContent?.trim() ?? '');
   }
 
@@ -77,7 +79,13 @@ describe('LayoutComponent', () => {
     const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(texto).toContain('Persona de Prueba');
     expect(texto).toContain('Comprador');
-    expect(texto).toContain('RepuestosYa');
+
+    // El título de marca de la barra superior es el logo (DISEÑO.md sección
+    // 3: el logo lleva alt="RepuestosYa"), no un texto literal.
+    const logo = (fixture.nativeElement as HTMLElement).querySelector(
+      '.logo-barra',
+    ) as HTMLImageElement;
+    expect(logo?.alt).toBe('RepuestosYa');
   });
 
   it('al comprador le muestra SU menú y no el de los demás', async () => {
@@ -122,17 +130,21 @@ describe('LayoutComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 
-  it('el botón de menú abre y cierra el panel lateral', async () => {
+  it('alternar() cambia el estado abierto del menú lateral', async () => {
+    // El botón que llama a alternar() solo se muestra en ancho de móvil/
+    // tablet (sección 8 de DISEÑO.md: en escritorio el menú queda fijo), así
+    // que la prueba llama al método directamente en vez de buscar el botón
+    // por su rótulo, que ahora es un ícono.
     await montar('COMPRADOR');
 
-    expect(fixture.componentInstance['abierto']()).toBeTrue();
+    const abiertoInicial = fixture.componentInstance['abierto']();
 
-    boton('Ocultar menú').click();
+    fixture.componentInstance.alternar();
     fixture.detectChanges();
-    expect(fixture.componentInstance['abierto']()).toBeFalse();
+    expect(fixture.componentInstance['abierto']()).toBe(!abiertoInicial);
 
-    boton('Mostrar menú').click();
+    fixture.componentInstance.alternar();
     fixture.detectChanges();
-    expect(fixture.componentInstance['abierto']()).toBeTrue();
+    expect(fixture.componentInstance['abierto']()).toBe(abiertoInicial);
   });
 });
