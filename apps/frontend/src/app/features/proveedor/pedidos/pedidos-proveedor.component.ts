@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { EstadoPedido, Pedido, PedidosFacade } from '../../../facades/pedidos.facade';
@@ -30,7 +31,7 @@ function siguienteEstado(pedido: Pedido): { estado: EstadoPedido; etiqueta: stri
  */
 @Component({
   selector: 'app-pedidos-proveedor',
-  imports: [MatButtonModule, OrderCardComponent, RouterLink],
+  imports: [MatButtonModule, MatIconModule, OrderCardComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pedidos-proveedor.component.html',
   styleUrl: './pedidos-proveedor.component.scss',

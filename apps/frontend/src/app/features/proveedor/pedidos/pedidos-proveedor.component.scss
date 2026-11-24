@@ -1,20 +1,11 @@
 .pantalla {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--esp-4);
 }
 
-.cabecera {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-h2 {
-  margin: 0;
-  font-size: 1.1rem;
+.estado-carga {
+  color: var(--color-tinta-suave);
 }
 
 .lista {
@@ -22,23 +13,5 @@ h2 {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.75rem;
-}
-
-.estado {
-  color: #546e7a;
-}
-
-.aviso {
-  color: #1e6b34;
-  background: #d4edda;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-}
-
-.error {
-  color: #842029;
-  background: #f8d7da;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+  gap: var(--esp-3);
 }

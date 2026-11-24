@@ -1,11 +1,27 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 
 import { mensajeDeError } from '../../../core/error/api-error';
 import { Oferta, SolicitudesFacade } from '../../../facades/solicitudes.facade';
-import { OfferCardComponent } from '../../../shared/offer-card/offer-card.component';
+
+/** Textos en español de los estados de oferta (igual que offer-card/detalle-solicitud). */
+const ETIQUETA_ESTADO: Record<string, string | undefined> = {
+  SUBMITTED: 'Enviada',
+  ACCEPTED: 'Aceptada',
+  REJECTED: 'No elegida',
+  WITHDRAWN: 'Retirada',
+};
+
+/** Tono de DISEÑO.md (sección 10) para cada estado real de la oferta. */
+const TONO_ESTADO: Record<string, string | undefined> = {
+  SUBMITTED: 'atencion',
+  ACCEPTED: 'exito',
+  REJECTED: 'neutro',
+  WITHDRAWN: 'neutro',
+};
 
 /**
  * `/proveedor/ofertas` (docs/frontend.md): mis ofertas con su estado y el
@@ -16,7 +32,7 @@ import { OfferCardComponent } from '../../../shared/offer-card/offer-card.compon
  */
 @Component({
   selector: 'app-mis-ofertas',
-  imports: [MatButtonModule, MatCardModule, OfferCardComponent, RouterLink],
+  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mis-ofertas.component.html',
   styleUrl: './mis-ofertas.component.scss',
@@ -29,6 +45,9 @@ export class MisOfertasComponent {
   readonly error = signal<string | null>(null);
   readonly aviso = signal<string | null>(null);
   readonly retirando = signal<number | null>(null);
+
+  protected readonly ETIQUETA_ESTADO = ETIQUETA_ESTADO;
+  protected readonly TONO_ESTADO = TONO_ESTADO;
 
   constructor() {
     void this.cargar();

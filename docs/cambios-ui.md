@@ -243,6 +243,25 @@ solicitudes" y "Solicitudes abiertas")
   backend): tonos de estado y urgencia correctos, ícono de categoría,
   botones con borde rojo.
 
+### Mis ofertas (proveedor) y sus pedidos
+
+- **Gap frente al mockup**: DISEÑO.md pide columnas "repuesto, comprador o
+  ciudad" para la tabla de "Mis ofertas", pero el modelo `Oferta` que
+  devuelve `GET /offers/mine` no trae esos datos (solo `part_request_id`,
+  sin descripción ni comprador ni ciudad) — no hay JOIN en el contrato. No
+  se inventó el dato ni se agregó una llamada por fila al detalle de cada
+  solicitud (N+1, y no hay endpoint que lo resuelva mejor ni certeza de que
+  el proveedor pueda leer esa solicitud ajena). Se usan las columnas que sí
+  existen: Proveedor, Marca, Precio, Fecha, Estado/Acción. Si se quiere
+  cerrar esta brecha, hace falta agregar esos campos al contrato del
+  backend de Negociación — fuera del alcance del frontend.
+- "Mis ofertas" pasa de tarjetas (`OfferCardComponent`) a tabla
+  `.tabla-comparacion`, igual que el comparador. `OfferCardComponent` ya no
+  se usa en ningún lado (solo quedaba acá y en el comparador).
+- `order-card` (compartido con "Mis pedidos" del comprador, que llega en el
+  siguiente bloque) pasa a `.estado`/`.estado--<tono>`: los 4 estados en
+  tránsito → información, Entregado/Completada → éxito.
+
 ## Preguntas de la defensa
 
 (Se completa en la fase final con el resto de preguntas probables.)
