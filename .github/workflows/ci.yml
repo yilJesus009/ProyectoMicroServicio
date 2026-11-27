@@ -146,6 +146,27 @@ jobs:
             echo "::notice::Sin pruebas todavía en ${{ matrix.service }}. Agregarlas pronto."
           fi
 
+      # Cobertura solo para Gateway (AGENTS.md: health checks, pruebas y CI
+      # son el alcance de este bloque; Negociación y Notificaciones quedan
+      # fuera por ahora).
+      - name: Cobertura
+        if: steps.check.outputs.exists == 'true' && matrix.service == 'gateway'
+        working-directory: ${{ steps.check.outputs.path }}
+        run: |
+          mkdir -p coverage
+          node --test --experimental-test-coverage \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=lcov --test-reporter-destination=coverage/lcov.info \
+            tests/*.test.js
+
+      - name: Subir reporte de cobertura
+        if: steps.check.outputs.exists == 'true' && matrix.service == 'gateway'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-gateway
+          path: ${{ steps.check.outputs.path }}/coverage
+          retention-days: 7
+
   # ---------------------------------------------------------------------------
   # Identidad (Django)
   # ---------------------------------------------------------------------------
@@ -243,10 +264,18 @@ jobs:
         working-directory: apps/catalogo
         run: npm run build
 
-      - name: Pruebas
+      - name: Pruebas con cobertura
         if: steps.check.outputs.exists == 'true'
         working-directory: apps/catalogo
-        run: npm test
+        run: npm test -- --coverage
+
+      - name: Subir reporte de cobertura
+        if: steps.check.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-catalogo
+          path: apps/catalogo/coverage
+          retention-days: 7
 
   # ---------------------------------------------------------------------------
   # Pedidos (Spring Boot)
