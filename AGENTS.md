@@ -153,6 +153,7 @@ Detalle en `docs/convenciones.md`.
 |---|---|---|
 | **A — Negocio** | Negociación, Pedidos, Notificaciones y Catálogo | Dylan |
 | **B — Plataforma y pantallas** | Docker, Gateway, Identidad (ajustes) y Frontend Angular | Jesús |
+| **C — Calidad y CI** | Health checks, pruebas de Catálogo y Gateway, pipeline de CI | Alexphxmton (con hendykg) |
 
 **Reglas de trabajo:**
 
