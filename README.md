@@ -1,5 +1,7 @@
 # RepuestosYa — Marketplace de repuestos automotrices
 
+[![CI](https://github.com/yilJesus009/ProyectoMicroServicio/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/yilJesus009/ProyectoMicroServicio/actions/workflows/ci.yml?query=branch%3Adevelop)
+
 Proyecto académico de **Ingeniería Web III, Proyecto 04**. Funciona como una
 subasta al revés: el comprador publica qué repuesto necesita, los
 proveedores envían ofertas, el comprador **acepta una sola**, paga (pago
@@ -129,6 +131,45 @@ proveedores nuevos, les publica dos ofertas y lanza los dos
 (sin mocks). Repetible las veces que haga falta; cada corrida usa emails
 con marca de tiempo. Verifica que el resultado sea siempre un `200`, un
 `409` y una sola oferta `ACCEPTED`.
+
+## Health checks
+
+Cada servicio expone `GET /health` sin autenticación, solo para confirmar que
+el proceso responde (no consulta la base de datos):
+
+| Servicio | Ruta |
+|---|---|
+| Gateway | `http://localhost:4000/health` |
+| Identidad, Negociación, Pedidos, Catálogo, Notificaciones | `http://<servicio>:<puerto>/health` (interno, no expuesto) |
+
+El Gateway además agrega el estado de todos en
+`GET http://localhost:4000/api/v1/health`, también público, útil para
+confirmar de un vistazo que el sistema está completo. `docker-compose.yml`
+usa estas mismas rutas en el `healthcheck` de cada contenedor.
+
+## Pruebas por servicio
+
+```bash
+cd apps/catalogo && npm test     # Jest: dominio, casos de uso, controllers, DTO
+cd apps/gateway && npm test      # node --test: health, JWT, enrutamiento, CORS, 502
+cd apps/negociacion && npm test  # node --test
+cd apps/notificaciones && npm test  # node --test
+cd apps/pedidos && mvn test      # JUnit
+cd apps/identidad && python manage.py test  # Django TestCase
+```
+
+Ninguna necesita Docker levantado: todo lo externo (BD, RabbitMQ, otros
+servicios) se mockea.
+
+## CI
+
+`.github/workflows/ci.yml` corre en cada push y pull request hacia `develop`
+y `main`. Un job por servicio instala dependencias y corre sus pruebas (se
+omite si el servicio todavía no existe); Catálogo y Gateway además suben su
+reporte de cobertura como artifact del workflow. Un job `docker` levanta el
+stack completo (`docker compose up -d --build --wait`, falla si algún
+healthcheck no pasa) y corre `scripts/e2e-flujo.mjs` contra el Gateway antes
+de apagarlo con `docker compose down -v`.
 
 ## Documentación
 
