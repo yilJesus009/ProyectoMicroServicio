@@ -8,6 +8,12 @@
  * Requiere Docker arriba (docker compose up --build) y .env con ADMIN_EMAIL
  * y ADMIN_PASSWORD. Variable opcional: API_BASE (por defecto
  * http://localhost:4000/api/v1).
+ *
+ * docs/defensa/guion-demo.md asume, tal cual los deja este archivo: la
+ * solicitud id 1 (abierta, 2 ofertas), el pedido 1 (PENDING_PAYMENT) y el
+ * pedido 2 (PREPARING) de comprador@demo.bo / proveedor1@demo.bo /
+ * proveedor2@demo.bo. Esos tres usuarios, su orden de creación y los montos
+ * NO cambian: lo nuevo se agrega después (docs/seed-demo.md).
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -69,9 +75,9 @@ function assert(cond, msg) {
   if (!cond) throw new Error(msg);
 }
 
-async function ensureUser(nombre, email, rol) {
+async function ensureUser(nombre, email, rol, ciudad = 'Santa Cruz') {
   const register = await api('POST', '/auth/register', {
-    json: { nombre, email, contrasena: DEMO_PASSWORD, telefono: '70000000', ciudad: 'Santa Cruz', rol },
+    json: { nombre, email, contrasena: DEMO_PASSWORD, telefono: '70000000', ciudad, rol },
   });
   assert(
     register.status === 201 || register.status === 409,
@@ -83,14 +89,14 @@ async function ensureUser(nombre, email, rol) {
   return { token: login.body.data.token, userId: login.body.data.usuario.id, email };
 }
 
-async function ensureSupplierProfile(token, businessName, categoryIds) {
+async function ensureSupplierProfile(token, businessName, categoryIds, city = 'Santa Cruz') {
   const existing = await api('GET', '/suppliers/me', { token });
   if (existing.status === 200) return existing.body.data;
   assert(existing.status === 404, `GET /suppliers/me esperaba 200 o 404, llegó ${existing.status}`);
 
   const created = await api('PUT', '/suppliers/me', {
     token,
-    json: { business_name: businessName, city: 'Santa Cruz', phone: '70000001', category_ids: categoryIds },
+    json: { business_name: businessName, city, phone: '70000001', category_ids: categoryIds },
   });
   assert(created.status === 200, `PUT /suppliers/me esperaba 200, llegó ${created.status}: ${JSON.stringify(created.body)}`);
   return created.body.data;
@@ -240,6 +246,54 @@ async function ensureDemoScenario(kind, { comprador, proveedor1, proveedor2, cat
   throw new Error(`escenario desconocido: ${kind}`);
 }
 
+// ---------------------------------------------------------------------------
+// Extensión para la presentación: un tercer proveedor (3 ciudades) y un
+// segundo comprador con su propio vehículo. Se agrega DESPUÉS de lo de
+// arriba a propósito, para no mover los ids que ya usa
+// docs/defensa/guion-demo.md.
+// ---------------------------------------------------------------------------
+
+/** Id de una categoría por su nombre exacto (tal como está hoy en Catálogo). */
+async function getCategoryIdByName(token, name) {
+  const res = await api('GET', '/categories', { token });
+  assert(res.status === 200, `GET /categories esperaba 200, llegó ${res.status}`);
+  const found = res.body.data.find((c) => c.name === name);
+  assert(found, `no se encontró la categoría '${name}' en /categories`);
+  return found.id;
+}
+
+async function ensureVehicleFor(comprador, brand, model, year) {
+  const mine = await api('GET', '/vehicles/mine', { token: comprador.token });
+  assert(mine.status === 200, `GET /vehicles/mine esperaba 200, llegó ${mine.status}`);
+  const existing = mine.body.data.find((v) => v.brand === brand && v.model === model && v.year === year);
+  if (existing) return existing;
+
+  const created = await api('POST', '/vehicles', { token: comprador.token, json: { brand, model, year } });
+  assert(created.status === 201, `POST /vehicles esperaba 201, llegó ${created.status}: ${JSON.stringify(created.body)}`);
+  return created.body.data;
+}
+
+/** Tercer proveedor (La Paz) y segundo comprador con su propio vehículo. */
+async function ensureExtraSuppliersAndBuyers({ admin }) {
+  console.log('Creando / reutilizando tercer proveedor y segundo comprador...');
+  const proveedor3 = await ensureUser('AutoPartes Lara', 'proveedor3@demo.bo', 'PROVEEDOR', 'La Paz');
+  const comprador2 = await ensureUser('Luis Comprador', 'comprador2@demo.bo', 'COMPRADOR', 'Cochabamba');
+
+  const categoryIds = {
+    motor: await getCategoryIdByName(admin.token, 'Motor'),
+    suspension: await getCategoryIdByName(admin.token, 'Suspensión'),
+    electrico: await getCategoryIdByName(admin.token, 'Sistema eléctrico'),
+    carroceria: await getCategoryIdByName(admin.token, 'Carrocería'),
+  };
+
+  let profile3 = await ensureSupplierProfile(proveedor3.token, 'AutoPartes Lara', Object.values(categoryIds), 'La Paz');
+  profile3 = await ensureApproved(profile3, admin.token);
+
+  const vehiculo2 = await ensureVehicleFor(comprador2, 'Suzuki', 'Swift', 2020);
+
+  return { proveedor3, comprador2, vehiculo2, categoryIds };
+}
+
 async function main() {
   assert(ADMIN_EMAIL && ADMIN_PASSWORD, 'faltan ADMIN_EMAIL / ADMIN_PASSWORD en el .env');
 
@@ -274,12 +328,18 @@ async function main() {
   console.log('Asegurando solicitud con pedido pagado (PREPARING)...');
   const preparing = await ensureDemoScenario('preparing', ctx);
 
-  console.log('\n================ Resumen de la demo ================');
-  console.log(`Contraseña (todos los usuarios demo): ${DEMO_PASSWORD}`);
-  console.log(`Comprador:   ${comprador.email} (id ${comprador.userId})`);
-  console.log(`Proveedor 1: ${proveedor1.email} (id ${proveedor1.userId}, perfil ${profile1.id}, ${profile1.status})`);
-  console.log(`Proveedor 2: ${proveedor2.email} (id ${proveedor2.userId}, perfil ${profile2.id}, ${profile2.status})`);
-  console.log(`Vehículo del comprador: id ${vehicle.id} (${vehicle.brand} ${vehicle.model} ${vehicle.year})`);
+  const { proveedor3, comprador2 } = await ensureExtraSuppliersAndBuyers({ admin });
+
+  console.log('\n================ Usuarios de demo ================');
+  console.table([
+    { rol: 'ADMIN', email: ADMIN_EMAIL, contrasena: '(la del .env)' },
+    { rol: 'COMPRADOR', email: comprador.email, contrasena: DEMO_PASSWORD },
+    { rol: 'COMPRADOR', email: comprador2.email, contrasena: DEMO_PASSWORD },
+    { rol: 'PROVEEDOR', email: proveedor1.email, contrasena: DEMO_PASSWORD },
+    { rol: 'PROVEEDOR', email: proveedor2.email, contrasena: DEMO_PASSWORD },
+    { rol: 'PROVEEDOR', email: proveedor3.email, contrasena: DEMO_PASSWORD },
+  ]);
+  console.log('====================================================');
   console.log(
     `Solicitud abierta (lista para aceptar): id ${open.partRequest.id} — ofertas ${open.offer1.id} y ${open.offer2.id}`
   );
