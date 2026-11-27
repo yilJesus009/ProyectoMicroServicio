@@ -28,9 +28,8 @@ description: Revisar código en busca de errores comunes, fallos de seguridad, v
 - [ ] Las operaciones de escritura exigen el rol correcto **en el backend**.
 - [ ] Un usuario no puede operar sobre recursos de otro. Verificar el
       `owner_id` antes de permitir `PATCH` o `DELETE`.
-- [ ] `verify` de Identity **realmente decodifica** el token. (El código
-      anterior en PHP devolvía `{"valid": true}` sin verificar nada: no
-      repetir ese error.)
+- [ ] `verify` de Identidad **realmente decodifica** el token, no solo
+      devuelve `{"valid": true}`.
 - [ ] Los tokens expiran. Sin expiración indefinida.
 - [ ] Las contraseñas se comparan con `password_hash` / `check_password`,
       nunca con `==` ni en texto plano.
@@ -70,9 +69,11 @@ description: Revisar código en busca de errores comunes, fallos de seguridad, v
       negocio.
 - [ ] Todo endpoint nuevo está documentado en `docs/contratos-api.md`.
 - [ ] Todo evento nuevo está documentado en `docs/eventos.md`.
-- [ ] Todo puerto nuevo está en `docs/puertos.md` y en `.env.example`.
+- [ ] Todo puerto o variable nueva está en `.env.example` primero.
 - [ ] Ningún servicio expone su puerto directamente al navegador; todo pasa
       por el Gateway (`4000`).
+- [ ] Cada servicio toca **solo su esquema** en el Postgres compartido
+      (`identidad`, `negociacion`, `pedidos`, `catalogo`, `notificaciones`).
 
 ## Checklist de arquitectura
 
@@ -85,8 +86,9 @@ description: Revisar código en busca de errores comunes, fallos de seguridad, v
 
 ## La regla crítica
 
-Antes de aprobar cualquier PR que toque `offer-service`, confirmar que la
-regla de una sola oferta aceptada sigue intacta:
+Antes de aprobar cualquier PR que toque la aceptación de ofertas en
+`negociacion`, confirmar que la regla de una sola oferta aceptada sigue
+intacta:
 
 - [ ] El índice `UNIQUE` parcial existe y no se migró.
 - [ ] El handler usa transacción y `SELECT ... FOR UPDATE`.

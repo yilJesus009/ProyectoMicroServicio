@@ -1,0 +1,51 @@
+<section class="mias">
+  <header class="encabezado-pagina">
+    <div>
+      <h1 class="encabezado-pagina__titulo">Mis solicitudes</h1>
+      @if (lista().length > 0) {
+        <p class="encabezado-pagina__apoyo">{{ contador() }}</p>
+      }
+    </div>
+    <a mat-flat-button color="primary" routerLink="/comprador/solicitudes/nueva">
+      Publicar solicitud
+    </a>
+  </header>
+
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+    <p class="cargando">Cargando solicitudes…</p>
+  }
+  @if (error()) {
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
+  }
+
+  @if (lista().length > 0) {
+    <div class="lista-filas">
+      @for (solicitud of lista(); track solicitud.id) {
+        <app-tarjeta-solicitud [solicitud]="solicitud">
+          <a
+            mat-stroked-button
+            color="primary"
+            accion
+            [routerLink]="['/comprador/solicitudes', solicitud.id]"
+          >
+            {{ ETIQUETA_ACCION[solicitud.status] ?? 'Ver solicitud' }}
+          </a>
+        </app-tarjeta-solicitud>
+      }
+    </div>
+  } @else if (!cargando()) {
+    <div class="panel vacio">
+      <p class="vacio__texto">
+        Aún no publicaste solicitudes. Publica la primera y los proveedores te enviarán
+        ofertas.
+      </p>
+      <a mat-flat-button color="primary" routerLink="/comprador/solicitudes/nueva">
+        Publicar solicitud
+      </a>
+    </div>
+  }
+</section>

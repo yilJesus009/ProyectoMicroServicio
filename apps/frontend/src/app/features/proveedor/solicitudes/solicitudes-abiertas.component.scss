@@ -1,0 +1,36 @@
+.abiertas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.cargando {
+  color: var(--color-tinta-suave);
+}
+
+.aviso-perfil {
+  max-width: 40rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-2);
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+.filtro {
+  min-width: 12rem;
+}
+
+.ya-ofertaste {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--esp-1);
+}
+

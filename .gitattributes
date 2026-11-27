@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Los scripts de shell DEBEN quedar con LF: con CRLF el shebang `#!/bin/sh`
+# falla y el contenedor no arranca.
+*.sh text eol=lf

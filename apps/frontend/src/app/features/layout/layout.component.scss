@@ -1,0 +1,92 @@
+// La forma, el color y el espaciado base de .barra-superior, .barra-lateral
+// e .item-menu ya salen de src/styles/_globales.scss; acá solo lo propio de
+// este layout.
+
+// La barra roja va arriba a todo el ancho (sección 8); mat-sidenav-container
+// solo envuelve lo que está debajo (lateral + contenido), no la barra.
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.barra-superior {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.boton-menu {
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.marca-barra {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.logo-barra {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+.espacio {
+  flex: 1 1 auto;
+}
+
+// En pantallas angostas, este es el único elemento que debe encogerse: sin
+// min-width:0 un hijo flex no se achica por debajo de su texto y desborda
+// la barra en vez de truncarse (bug clásico de flexbox).
+.sesion {
+  font-size: var(--texto-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.boton-salir {
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  border-radius: var(--radio-control);
+  padding-inline: var(--esp-4);
+  flex-shrink: 0;
+}
+
+.lista-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  padding: var(--esp-3);
+}
+
+.contenido {
+  padding: var(--esp-5);
+  max-width: var(--ancho-contenido);
+  margin-inline: auto;
+}
+
+// A 375px el logo (28px de alto, ~148px de ancho con el texto) más el resto
+// de elementos fijos de la barra no caben con el espaciado normal — se
+// reduce el espaciado y se oculta el texto de sesión (ya truncado a 0, pero
+// seguía gastando el gap de sus dos lados).
+@media (max-width: 480px) {
+  .barra-superior {
+    gap: var(--esp-2);
+    padding: 0 var(--esp-2);
+  }
+
+  .sesion {
+    display: none;
+  }
+}

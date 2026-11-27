@@ -1,0 +1,270 @@
+import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { DatePipe } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatRadioModule } from '@angular/material/radio';
+
+import { mensajeDeError } from '../../../core/error/api-error';
+import {
+  Oferta,
+  OrdenOfertas,
+  Solicitud,
+  SolicitudesFacade,
+} from '../../../facades/solicitudes.facade';
+import { PedidosFacade } from '../../../facades/pedidos.facade';
+import { MonedaPipe } from '../../../shared/moneda.pipe';
+
+/** Textos en español de los estados de oferta (igual que offer-card). */
+const ETIQUETA_ESTADO_OFERTA: Record<string, string | undefined> = {
+  SUBMITTED: 'Enviada',
+  ACCEPTED: 'Aceptada',
+  REJECTED: 'No elegida',
+  WITHDRAWN: 'Retirada',
+};
+
+/** Tono de DISEÑO.md (sección 10) para cada estado real de la oferta. */
+const TONO_ESTADO_OFERTA: Record<string, string | undefined> = {
+  SUBMITTED: 'atencion',
+  ACCEPTED: 'exito',
+  REJECTED: 'neutro',
+  WITHDRAWN: 'neutro',
+};
+
+/** Textos en español de la urgencia (igual que tarjeta-solicitud). */
+const ETIQUETA_URGENCIA: Record<string, string | undefined> = {
+  BAJA: 'Urgencia baja',
+  MEDIA: 'Urgencia media',
+  ALTA: 'Urgencia alta',
+};
+
+/** Tono de DISEÑO.md (sección 10) para cada urgencia real. */
+const TONO_URGENCIA: Record<string, string | undefined> = {
+  BAJA: 'neutro',
+  MEDIA: 'atencion',
+  ALTA: 'peligro',
+};
+
+/**
+ * `/comprador/solicitudes/:id` (docs/frontend.md): detalle de la solicitud y
+ * **comparador de ofertas**, ordenable por precio o días, con "Aceptar" y
+ * confirmación.
+ *
+ * Smart: pide el detalle y las ofertas a la fachada; la tarjeta es el dumb
+ * `OfferCardComponent`. Si el backend responde 409 o 422 (ya hay una oferta
+ * aceptada, la solicitud ya no acepta ofertas…) se muestra SU `msg`.
+ *
+ * La confirmación es un panel en línea (sin MatDialog): el proyecto no
+ * depende de `@angular/animations` y así no se agrega una dependencia
+ * nueva solo para el diálogo (AGENTS.md §9.7).
+ *
+ * Después de aceptar muestra "Generando tu pedido…" y consulta
+ * `GET /orders/by-offer/{offerId}` cada 2 s (404 mientras no exista, tope
+ * de intentos); al encontrarlo navega a su pago. La foto del detalle se
+ * carga como blob con el token y se libera el object URL al destruir.
+ */
+@Component({
+  selector: 'app-detalle-solicitud',
+  imports: [
+    DatePipe,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    MatRadioModule,
+    MonedaPipe,
+    RouterLink,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './detalle-solicitud.component.html',
+  styleUrl: './detalle-solicitud.component.scss',
+})
+export class DetalleSolicitudComponent implements OnDestroy {
+  /** Intentos máximos del polling (15 × 2 s = 30 s) antes de rendirse. */
+  private static readonly MAX_INTENTOS_PEDIDO = 15;
+
+  private readonly solicitudes = inject(SolicitudesFacade);
+  private readonly pedidos = inject(PedidosFacade);
+  private readonly ruta = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  readonly solicitud = signal<Solicitud | null>(null);
+  readonly ofertas = signal<Oferta[]>([]);
+  readonly cargando = signal(true);
+  readonly error = signal<string | null>(null);
+  readonly aviso = signal<string | null>(null);
+  readonly orden = signal<OrdenOfertas>('price');
+  readonly aceptando = signal<number | null>(null);
+  /** Oferta que se está esperando confirmar (null = sin diálogo en pantalla). */
+  readonly porConfirmar = signal<Oferta | null>(null);
+  /** "Generando tu pedido…" mientras corre el polling by-offer. */
+  readonly generando = signal(false);
+  /** Object URL de la foto del detalle (blob con token), null si no hay. */
+  readonly fotoUrl = signal<string | null>(null);
+
+  private id = 0;
+  private temporizadorPedido: ReturnType<typeof setTimeout> | null = null;
+  private intentosPedido = 0;
+
+  protected readonly ETIQUETA_ESTADO_OFERTA = ETIQUETA_ESTADO_OFERTA;
+  protected readonly TONO_ESTADO_OFERTA = TONO_ESTADO_OFERTA;
+  protected readonly ETIQUETA_URGENCIA = ETIQUETA_URGENCIA;
+  protected readonly TONO_URGENCIA = TONO_URGENCIA;
+
+  /** "Toyota Corolla 2018", o la descripción del vehículo si viniera por partes. */
+  readonly vehiculo = computed(() => {
+    const s = this.solicitud();
+    if (!s) return 'Vehículo no especificado';
+    if (s.vehicle_label) return s.vehicle_label;
+    if (s.vehicle_brand) {
+      return [s.vehicle_brand, s.vehicle_model, s.vehicle_year].filter(Boolean).join(' ');
+    }
+    return 'Vehículo no especificado';
+  });
+
+  /**
+   * ids de las ofertas SUBMITTED con el precio más bajo (sección 9: "Mejor
+   * precio"), empatadas si corresponde. Vacío si la solicitud ya tiene una
+   * oferta aceptada, porque en ese caso ya no hay nada que comparar.
+   */
+  readonly mejorPrecio = computed<ReadonlySet<number>>(() => {
+    const solicitud = this.solicitud();
+    if (!solicitud || solicitud.status === 'OFFER_ACCEPTED' || solicitud.status === 'COMPLETED') {
+      return new Set();
+    }
+
+    const enviadas = this.ofertas().filter((o) => o.status === 'SUBMITTED');
+    if (enviadas.length === 0) return new Set();
+
+    const minimo = Math.min(...enviadas.map((o) => Number(o.price)));
+    return new Set(enviadas.filter((o) => Number(o.price) === minimo).map((o) => o.id));
+  });
+
+  constructor() {
+    this.id = Number(this.ruta.snapshot.paramMap.get('id'));
+    void this.cargar();
+  }
+
+  async cargar(): Promise<void> {
+    try {
+      const [solicitud, ofertas] = await Promise.all([
+        this.solicitudes.detalle(this.id),
+        this.solicitudes.ofertas(this.id, this.orden()),
+      ]);
+      this.solicitud.set(solicitud);
+      this.ofertas.set(ofertas);
+      if (solicitud.photo) void this.cargarFoto();
+    } catch (err) {
+      this.error.set(mensajeDeError(err));
+    } finally {
+      this.cargando.set(false);
+    }
+  }
+
+  /**
+   * GET /part-requests/{id}/photo → object URL. El token lo pone el
+   * interceptor; si falla, el detalle sigue usable sin foto.
+   */
+  private async cargarFoto(): Promise<void> {
+    try {
+      const blob = await this.solicitudes.foto(this.id);
+      this.fotoUrl.set(URL.createObjectURL(blob));
+    } catch {
+      // Sin foto visible no se bloquea la pantalla.
+    }
+  }
+
+  /** Cambia el orden del comparador y vuelve a pedir al backend. */
+  async cambiarOrden(orden: OrdenOfertas): Promise<void> {
+    if (orden === this.orden()) return;
+    this.orden.set(orden);
+    try {
+      this.ofertas.set(await this.solicitudes.ofertas(this.id, orden));
+    } catch (err) {
+      this.error.set(mensajeDeError(err));
+    }
+  }
+
+  /** Abre el panel de confirmación para esa oferta. */
+  confirmarAceptacion(oferta: Oferta): void {
+    this.porConfirmar.set(oferta);
+    this.error.set(null);
+  }
+
+  /** Cierra el panel sin aceptar. */
+  cancelarAceptacion(): void {
+    this.porConfirmar.set(null);
+  }
+
+  /** Confirma y llama a la operación crítica. */
+  async aceptar(): Promise<void> {
+    const oferta = this.porConfirmar();
+    if (!oferta) return;
+
+    this.aceptando.set(oferta.id);
+    this.aviso.set(null);
+    this.error.set(null);
+    try {
+      const resultado = await this.solicitudes.aceptar(oferta.id);
+      this.solicitud.set(resultado.part_request);
+      this.ofertas.set(
+        this.ofertas().map((o) =>
+          o.id === resultado.offer.id
+            ? resultado.offer
+            : o.status === 'SUBMITTED'
+              ? { ...o, status: 'REJECTED' as const }
+              : o,
+        ),
+      );
+      this.aviso.set('Oferta aceptada. El pedido se generará en unos segundos.');
+      this.porConfirmar.set(null);
+
+      // El pedido nace del evento OFFER_ACCEPTED en el backend: se espera
+      // con polling cada 2 s y, cuando exista, se va a su pantalla de pago.
+      this.generando.set(true);
+      this.intentosPedido = 0;
+      this.programarEsperaDePedido(resultado.offer.id);
+    } catch (err) {
+      // Un 409/422 se muestra tal cual (msg del sobre); el panel queda
+      // abierto para que la persona pueda reintentar o cancelar.
+      this.error.set(mensajeDeError(err));
+    } finally {
+      this.aceptando.set(null);
+    }
+  }
+
+  /** Agenda el siguiente chequeo de `GET /orders/by-offer/{offerId}` (2 s). */
+  private programarEsperaDePedido(offerId: number): void {
+    this.temporizadorPedido = setTimeout(() => void this.esperarPedido(offerId), 2000);
+  }
+
+  /** Un intento del polling: 404 sigue, encontrado navega al pago. */
+  private async esperarPedido(offerId: number): Promise<void> {
+    try {
+      const pedido = await this.pedidos.porOferta(offerId);
+      if (pedido) {
+        this.generando.set(false);
+        await this.router.navigate(['/comprador/pedidos', pedido.id, 'pago']);
+        return;
+      }
+    } catch {
+      // Error de red o distinto de 404: se cuenta como intento y se reintenta.
+    }
+
+    this.intentosPedido += 1;
+    if (this.intentosPedido >= DetalleSolicitudComponent.MAX_INTENTOS_PEDIDO) {
+      this.generando.set(false);
+      this.aviso.set(
+        'El pedido está tardando más de lo esperado. Revisa "Ver mis pedidos" en unos minutos.',
+      );
+      return;
+    }
+    this.programarEsperaDePedido(offerId);
+  }
+
+  ngOnDestroy(): void {
+    if (this.temporizadorPedido !== null) clearTimeout(this.temporizadorPedido);
+    const foto = this.fotoUrl();
+    if (foto) URL.revokeObjectURL(foto);
+  }
+}

@@ -1,0 +1,32 @@
+.proveedores {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.filtro {
+  min-width: 14rem;
+}
+
+.estado-carga {
+  color: var(--color-tinta-suave);
+}
+
+.fila__categorias {
+  margin: var(--esp-1) 0 0;
+}
+
+.rechazo {
+  flex-basis: 100%;
+  width: 100%;
+}
+
+.motivo {
+  width: 100%;
+}
+
+.botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--esp-2);
+}

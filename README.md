@@ -1,212 +1,196 @@
-# Marketplace de Repuestos Automotrices
+# RepuestosYa — Marketplace de repuestos automotrices
 
-Proyecto académico de **Ingeniería Web 3 — Proyecto 04**.
+[![CI](https://github.com/yilJesus009/ProyectoMicroServicio/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/yilJesus009/ProyectoMicroServicio/actions/workflows/ci.yml?query=branch%3Adevelop)
 
-Una plataforma que conecta a propietarios de vehículos y talleres que necesitan
-un repuesto con proveedores capaces de ofrecerlo. El usuario publica lo que
-busca, recibe distintas propuestas, compara condiciones y selecciona la
-alternativa que más le convenga para generar un pedido.
+Proyecto académico de **Ingeniería Web III, Proyecto 04**. Funciona como una
+subasta al revés: el comprador publica qué repuesto necesita, los
+proveedores envían ofertas, el comprador **acepta una sola**, paga (pago
+simulado) y sigue el pedido hasta la entrega.
 
----
+Entrega: **lunes 16 de noviembre de 2026**. Equipo: **Dylan y Jesús**.
 
 ## Flujo principal
 
 ```
-Publicar solicitud  →  Recibir ofertas  →  Aceptar UNA sola  →  Pedido  →  Seguimiento
+Registro/login → perfil de proveedor aprobado → publicar solicitud →
+recibir ofertas → aceptar UNA sola → pedido → pago simulado → seguimiento → entrega
 ```
 
----
+## Servicios
 
-## Arquitectura
+| Servicio | Carpeta | Framework | Puerto | Esquema BD |
+|---|---|---|---|---|
+| Gateway | `apps/gateway` | Express | 4000 (expuesto) | — |
+| Identidad | `apps/identidad` | Django + DRF | 5000 | `identidad` |
+| Negociación | `apps/negociacion` | Express | 4001 | `negociacion` |
+| Pedidos | `apps/pedidos` | Spring Boot | 4003 | `pedidos` |
+| Catálogo | `apps/catalogo` | NestJS | 4004 | `catalogo` |
+| Notificaciones | `apps/notificaciones` | Express | 4005 | `notificaciones` |
+| Frontend | `apps/frontend` | Angular | 4200 (expuesto) | — |
 
-Microservicios con **API Gateway**, **DDD**, **arquitectura limpia**, **CQRS**,
-**eventos** y **persistencia independiente** por servicio.
+Infraestructura: **un solo PostgreSQL** (`repuestosya`, un esquema por
+servicio) y **RabbitMQ**. Todo pasa por el Gateway; los puertos de los
+demás servicios son internos.
 
-```
-                              ┌──────────────────┐
-              Browser ──────► │    API Gateway   │  :4000
-             (Angular :4200)  │  valida JWT, iny.│
-                              │  X-User-Id/Roles │
-                              └────────┬─────────┘
-       ┌──────────┬──────────┬─────────┼─────────┬──────────────┐
-       ▼          ▼          ▼         ▼         ▼              ▼
-  ┌─────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌──────────┐ ┌────────────┐
-  │identity │ │ part-  │ │ offer  │ │ order  │ │ catalog  │ │notification│
-  │ Django  │ │request │ │        │ │        │ │ vehicle  │ │            │
-  │  :5000  │ │ :4001  │ │ :4002  │ │ :4003  │ │  :4004   │ │   :4005    │
-  └────┬────┘ └───┬────┘ └───┬────┘ └───┬────┘ └────┬─────┘ └─────┬──────┘
-       ▼          ▼          ▼          ▼           ▼             ▼
-    identity   part_req    offer      order      catalog     notification
-       _db        _db       _db        _db         _db           _db
-     (5433)     (5434)    (5435)     (5436)      (5437)        (5438)
-                                    ▲
-                                    │ consume OFFER_ACCEPTED
-                          ┌─────────┴─────────┐
-                          │     RabbitMQ      │  :5672 / :15672
-                          └───────────────────┘
-```
+## Puesta en marcha (Docker)
 
-### Stack
-
-| Componente | Tecnología |
-|---|---|
-| identity-service | Django + DRF + SimpleJWT |
-| Servicios de negocio | Express + Sequelize |
-| Comunicación asíncrona | RabbitMQ |
-| Persistencia | PostgreSQL (uno por servicio) |
-| Frontend | Angular |
-| Infraestructura | Docker Compose |
-
----
-
-## Requisitos previos
-
-- Docker y Docker Compose
-- Node.js 20+
-- Python 3.11+ y `pip`
-- Angular CLI
-
----
-
-## Puesta en marcha
-
-### 1. Clonar e instalar la configuración
+**Requisitos:** Docker Desktop, Node.js 20+ (solo para los scripts, no corre
+dentro de Docker) y `git`. En Windows, todos los comandos de esta sección
+funcionan igual en **PowerShell** o en **Git Bash**.
 
 ```bash
-git clone https://github.com/hendykg/ProyectoMicroServicio.git
+git clone https://github.com/yilJesus009/ProyectoMicroServicio.git
 cd ProyectoMicroServicio
 cp .env.example .env
+docker compose up --build
 ```
 
-### 2. Levantar la infraestructura
+Con el `.env.example` sin tocar, el admin queda con estas credenciales
+(cambialas en `.env` antes de un despliegue real):
 
-Esto arranca RabbitMQ y las 6 bases de datos PostgreSQL.
+```
+ADMIN_EMAIL=admin@repuestosya.com
+ADMIN_PASSWORD=cambia-esta-password-admin-inicial
+```
+
+Con los 9 contenedores `healthy` (`docker compose ps`), cargá los datos de
+demo y abrí la app:
 
 ```bash
-docker compose up -d
-docker compose ps
+node scripts/seed-demo.mjs
 ```
 
-- RabbitMQ (UI): http://localhost:15672 — `guest` / `guest`
+```
+Comprador:   comprador@demo.bo
+Proveedor 1: proveedor1@demo.bo
+Proveedor 2: proveedor2@demo.bo
+Contraseña (los tres): Demo12345!
+```
 
-### 3. Arrancar los microservicios
-
-Cada servicio en su propio terminal:
+- Frontend: http://localhost:4200 — entrá con cualquiera de esos usuarios.
+- Gateway: http://localhost:4000
+- RabbitMQ (UI, solo demo): usuario y contraseña `guest` — http://localhost:15672
 
 ```bash
-# Identity Service (Django) — puerto 5000
-cd apps/identity-service
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver 5000
-
-# Part Request Service — puerto 4001
-cd apps/part-request-service
-npm install
-npm run dev
-
-# API Gateway — puerto 4000
-cd apps/api-gateway
-npm install
-npm run dev
+docker compose logs -f <servicio>   # ver logs de un servicio
+node scripts/e2e-flujo.mjs          # recorre el flujo completo contra el Gateway
+node scripts/prueba-concurrencia-aceptar.mjs   # aceptar dos ofertas a la vez, repetible
 ```
 
-### 4. Frontend
+**Si algo falla** (un servicio no queda `healthy`, o los datos quedaron en un
+estado raro):
 
 ```bash
-cd apps/frontend
-npm install
-ng serve        # http://localhost:4200
+docker compose down -v      # apaga todo y BORRA los datos
+docker compose up --build   # vuelve a levantar desde cero
+node scripts/seed-demo.mjs  # vuelve a sembrar
 ```
 
----
+## Scripts de prueba
+
+Los tres scripts son Node 20 puro (sin dependencias) y hablan solo con el
+Gateway (`http://localhost:4000/api/v1`). Requieren Docker arriba; `e2e-flujo`
+y `seed-demo` además necesitan un `.env` real con `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+
+### `node scripts/e2e-flujo.mjs`
+
+Recorre los 13 pasos de `docs/flujo-principal.md` de punta a punta con
+usuarios nuevos (emails con marca de tiempo, por lo que se puede correr
+varias veces seguidas sin chocar). Imprime `✓`/`✗` por paso y, si algo
+falla, se detiene en ese paso con el detalle del error (código 1).
+
+Incluye los casos negativos clave: aceptar una segunda oferta (**409**),
+pagar un pedido ya pagado (**409**) y enviar `card_number` en el pago
+(**400**). También verifica que el destinatario correcto reciba el aviso
+esperado (`type` del aviso) en cada paso con evento asíncrono.
+
+### `node scripts/seed-demo.mjs`
+
+Deja listos para la demo (contraseña `Demo12345!` para los tres usuarios):
+
+- `comprador@demo.bo`, `proveedor1@demo.bo`, `proveedor2@demo.bo` —
+  proveedores ya aprobados, en Santa Cruz, con varias categorías.
+- Un vehículo del comprador.
+- **Tres solicitudes** distintas, para no tener que recorrer el flujo a
+  mano en cada pantalla:
+  1. Una **abierta** con dos ofertas, lista para aceptar.
+  2. Una **ya aceptada**, con su pedido en `PENDING_PAYMENT` (para probar
+     la pantalla de pago).
+  3. Una **ya aceptada y pagada**, con el pedido en `PREPARING` (para
+     probar seguimiento y pantallas del proveedor).
+
+Es reejecutable: si el usuario, el perfil o una solicitud en el estado
+correcto ya existen, los reutiliza en vez de duplicarlos. Al terminar
+imprime un resumen con los usuarios, la contraseña y los ids creados.
+
+### `node scripts/prueba-concurrencia-aceptar.mjs`
+
+Prueba la regla más importante del proyecto: crea un comprador y dos
+proveedores nuevos, les publica dos ofertas y lanza los dos
+`POST /offers/{id}/accept` **exactamente a la vez**, contra Postgres real
+(sin mocks). Repetible las veces que haga falta; cada corrida usa emails
+con marca de tiempo. Verifica que el resultado sea siempre un `200`, un
+`409` y una sola oferta `ACCEPTED`.
+
+## Health checks
+
+Cada servicio expone `GET /health` sin autenticación, solo para confirmar que
+el proceso responde (no consulta la base de datos):
+
+| Servicio | Ruta |
+|---|---|
+| Gateway | `http://localhost:4000/health` |
+| Identidad, Negociación, Pedidos, Catálogo, Notificaciones | `http://<servicio>:<puerto>/health` (interno, no expuesto) |
+
+El Gateway además agrega el estado de todos en
+`GET http://localhost:4000/api/v1/health`, también público, útil para
+confirmar de un vistazo que el sistema está completo. `docker-compose.yml`
+usa estas mismas rutas en el `healthcheck` de cada contenedor.
+
+## Pruebas por servicio
+
+```bash
+cd apps/catalogo && npm test     # Jest: dominio, casos de uso, controllers, DTO
+cd apps/gateway && npm test      # node --test: health, JWT, enrutamiento, CORS, 502
+cd apps/negociacion && npm test  # node --test
+cd apps/notificaciones && npm test  # node --test
+cd apps/pedidos && mvn test      # JUnit
+cd apps/identidad && python manage.py test  # Django TestCase
+```
+
+Ninguna necesita Docker levantado: todo lo externo (BD, RabbitMQ, otros
+servicios) se mockea.
+
+## CI
+
+`.github/workflows/ci.yml` corre en cada push y pull request hacia `develop`
+y `main`. Un job por servicio instala dependencias y corre sus pruebas (se
+omite si el servicio todavía no existe); Catálogo y Gateway además suben su
+reporte de cobertura como artifact del workflow. Un job `docker` levanta el
+stack completo (`docker compose up -d --build --wait`, falla si algún
+healthcheck no pasa) y corre `scripts/e2e-flujo.mjs` contra el Gateway antes
+de apagarlo con `docker compose down -v`.
 
 ## Documentación
 
-Toda la documentación vive en [`docs/`](docs/):
+Para agentes de IA: leer [`AGENTS.md`](AGENTS.md) primero (fuente de verdad
+del proyecto). El resto de la documentación vive en [`docs/`](docs/):
+arquitectura, modelo de datos, contratos de API, eventos, flujo principal,
+frontend y convenciones. El plan de trabajo del 6 al 16 de noviembre está en
+[`docs/plan/`](docs/plan/).
 
-| Documento | Contenido |
-|---|---|
-| [Convenciones](docs/convenciones.md) | Nombres, respuestas HTTP, commits, arquitectura |
-| [Arquitectura](docs/arquitectura.md) | Decisiones de diseño y patrones usados |
-| [Puertos](docs/puertos.md) | Asignación de puertos y bases de datos |
-| [Eventos](docs/eventos.md) | Nomenclatura y payload de los eventos |
-| [Contratos API](docs/contratos-api.md) | Endpoints y sus payloads |
-| [Flujo principal](docs/flujo-principal.md) | El ciclo completo del negocio |
-| [Distribución del equipo](docs/distribucion-equipo.md) | Quién hace qué |
+## Reglas que no se negocian
 
-Para agentes de IA: leer [`AGENTS.md`](AGENTS.md) primero.
+1. **Una sola oferta aceptada por solicitud** — garantizada en base de
+   datos, dominio y transacción (`SELECT ... FOR UPDATE`). Nunca solo en el
+   frontend.
+2. **Un servicio jamás consulta la base de otro.** Se comunica por HTTP o
+   eventos (RabbitMQ).
+3. **El pedido solo nace del evento `OFFER_ACCEPTED`.**
+4. **Todo pasa por el Gateway**; cada servicio además valida el JWT.
+5. **Nada de secretos en el código**; todo en `.env.example` primero.
 
----
-
-## Estructura del repositorio
-
-```
-├── apps/                       # Microservicios y frontend
-│   ├── api-gateway/
-│   ├── identity-service/       # Django
-│   ├── part-request-service/
-│   ├── offer-service/
-│   ├── order-service/
-│   ├── catalog-vehicle-service/
-│   ├── notification-service/
-│   └── frontend/               # Angular
-├── packages/
-│   └── shared/                 # Tipos y contratos compartidos
-├── docs/                       # Toda la documentación del proyecto
-├── .agents/skills/             # Skills de IA compartidas por el equipo
-├── .github/                    # Plantillas de PR, CODEOWNERS, CI
-├── docker-compose.yml          # RabbitMQ + 6 PostgreSQL
-├── .env.example                # Variables de entorno documentadas
-├── AGENTS.md                   # Reglas para agentes de IA
-└── CLAUDE.md                   # Complemento específico de Claude Code
-```
-
----
-
-## Flujo de trabajo en equipo
-
-Somos **4 integrantes** trabajando en un monorepo.
-
-```
-main          ← producción simulada. Protegida.
-  └── develop ← integración. Protegida. Solo vía PR.
-        ├── feature/identity-*
-        ├── feature/part-request-*
-        ├── feature/offer-*
-        ├── feature/order-*
-        ├── feature/catalog-*
-        ├── feature/notification
-        ├── feature/api-gateway
-        └── feature/frontend-*
-```
-
-```bash
-git switch develop
-git pull origin develop
-git switch -c feature/offer-create-offer
-# ... trabajar
-git commit -m "feat(offer): agregar validación de oferta única"
-git push -u origin feature/offer-create-offer
-```
-
-Los commits siguen [Conventional Commits](https://www.conventionalcommits.org/).
-
----
-
-## Regla crítica del negocio
-
-> **Una solicitud puede recibir múltiples ofertas, pero únicamente UNA debe
-> ser aceptada para generar el pedido.** Las ofertas no seleccionadas quedan
-> registradas como parte del historial de la solicitud.
-
-Esta regla se garantiza en **tres capas**: índice `UNIQUE` parcial en la base
-de datos, validación en el dominio y bloqueo de fila en la aplicación. **Nunca**
-se garantiza solo ocultando botones en el frontend.
-
-Ver [docs/flujo-principal.md](docs/flujo-principal.md).
-
----
+Detalle completo en [`AGENTS.md`](AGENTS.md).
 
 ## Licencia
 

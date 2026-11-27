@@ -1,0 +1,65 @@
+<section class="pantalla">
+  <header class="encabezado-pagina">
+    <h1 class="encabezado-pagina__titulo">Mis ofertas</h1>
+    <a mat-flat-button color="primary" routerLink="/proveedor/solicitudes">
+      Ver solicitudes abiertas
+    </a>
+  </header>
+
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+    <p class="estado-carga">Cargando ofertas…</p>
+  } @else if (error(); as mensaje) {
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ mensaje }}</span>
+    </p>
+  } @else if (lista().length === 0) {
+    <div class="panel vacio">
+      <p class="vacio__texto">Todavía no enviaste ofertas.</p>
+    </div>
+  } @else {
+    @if (aviso(); as mensaje) {
+      <p class="mensaje-servidor mensaje-servidor--exito" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>{{ mensaje }}</span>
+      </p>
+    }
+
+    <div class="tabla-envoltorio">
+      <table class="tabla-comparacion">
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Marca</th>
+            <th class="num">Precio</th>
+            <th>Fecha</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (oferta of lista(); track oferta.id) {
+            <tr [class.fila-no-elegida]="oferta.status === 'REJECTED' || oferta.status === 'WITHDRAWN'">
+              <td data-etiqueta="Proveedor">{{ oferta.supplier_name }}</td>
+              <td data-etiqueta="Marca">{{ oferta.brand }}</td>
+              <td data-etiqueta="Precio" class="num">
+                {{ oferta.price | moneda: oferta.currency }}
+              </td>
+              <td data-etiqueta="Fecha" class="num">{{ oferta.created_at | date: 'dd/MM/yyyy' }}</td>
+              <td data-etiqueta="Estado" class="celda-accion">
+                <div class="celda-accion__contenido">
+                  <span class="estado" [class]="'estado--' + (TONO_ESTADO[oferta.status] ?? 'neutro')">
+                    {{ ETIQUETA_ESTADO[oferta.status] ?? oferta.status }}
+                  </span>
+                  @if (oferta.status === 'SUBMITTED' && !retirando()) {
+                    <button mat-button type="button" (click)="retirar(oferta)">Retirar oferta</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

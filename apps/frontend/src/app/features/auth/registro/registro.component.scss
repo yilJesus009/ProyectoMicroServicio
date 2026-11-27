@@ -1,0 +1,13 @@
+@use '../_acceso' as *;
+
+.tarjeta {
+  width: 100%;
+  max-width: 30rem;
+}
+
+.roles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-2);
+}

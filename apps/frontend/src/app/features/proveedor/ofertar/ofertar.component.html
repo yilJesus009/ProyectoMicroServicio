@@ -1,0 +1,101 @@
+<section class="pantalla pagina-formulario">
+  <div class="volver">
+    <a mat-button routerLink="/proveedor/solicitudes">
+      <mat-icon aria-hidden="true">arrow_back</mat-icon>
+      Solicitudes abiertas
+    </a>
+  </div>
+
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+    <p class="estado-carga">Cargando solicitud…</p>
+  } @else if (error() && !solicitud()) {
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
+  }
+
+  @if (solicitud(); as solicitud) {
+    <div class="panel resumen">
+      <h2 class="texto-lg">{{ solicitud.description }}</h2>
+      <p class="texto-sm texto-suave">
+        {{ solicitud.vehicle_label || 'Vehículo no especificado' }}, {{ solicitud.city }}
+      </p>
+    </div>
+
+    <h2 class="texto-xl">Tu oferta</h2>
+
+    @if (error(); as mensaje) {
+      <p class="mensaje-servidor" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>{{ mensaje }}</span>
+      </p>
+    }
+
+    <form class="formulario" [formGroup]="formulario" (ngSubmit)="enviar()">
+      <div class="fila-dos">
+        <mat-form-field appearance="outline">
+          <mat-label>Precio (Bs)</mat-label>
+          <input matInput type="number" formControlName="price" min="0.01" step="0.01" />
+          @if (formulario.controls.price.invalid && formulario.controls.price.touched) {
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa un precio mayor a 0</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Marca</mat-label>
+          <input matInput formControlName="brand" placeholder="KYB, Brembo…" />
+          @if (formulario.controls.brand.invalid && formulario.controls.brand.touched) {
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa la marca</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="fila-dos">
+        <mat-form-field appearance="outline">
+          <mat-label>Condición</mat-label>
+          <mat-select formControlName="condition">
+            <mat-option value="NEW">Nuevo</mat-option>
+            <mat-option value="USED">Usado</mat-option>
+            <mat-option value="REFURBISHED">Reacondicionado</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Disponibilidad</mat-label>
+          <mat-select formControlName="availability">
+            <mat-option value="IN_STOCK">En stock</mat-option>
+            <mat-option value="ON_ORDER">Por encargo</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <mat-radio-group formControlName="delivery_type" class="entrega">
+        <span class="etiqueta texto-sm">Entrega:</span>
+        <mat-radio-button value="DELIVERY">Entrega a domicilio</mat-radio-button>
+        <mat-radio-button value="PICKUP">Retiro en tienda</mat-radio-button>
+      </mat-radio-group>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Días estimados</mat-label>
+        <input matInput type="number" formControlName="estimated_days" min="0" />
+        @if (formulario.controls.estimated_days.invalid && formulario.controls.estimated_days.touched) {
+          <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa los días (0 o más)</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Notas (opcional)</mat-label>
+        <textarea matInput formControlName="notes" rows="3"></textarea>
+      </mat-form-field>
+
+      <div class="acciones">
+        <a mat-button routerLink="/proveedor/solicitudes">Cancelar</a>
+        <button mat-flat-button color="primary" type="submit" [disabled]="enviando()">
+          {{ enviando() ? 'Enviando…' : 'Enviar oferta' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

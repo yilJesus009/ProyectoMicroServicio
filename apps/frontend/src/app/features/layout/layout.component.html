@@ -1,0 +1,63 @@
+<div class="layout">
+  <mat-toolbar class="barra-superior">
+    @if (!esEscritorio()) {
+      <button
+        mat-icon-button
+        type="button"
+        class="boton-menu"
+        aria-label="Abrir menú"
+        (click)="alternar()"
+      >
+        <mat-icon>menu</mat-icon>
+      </button>
+    }
+
+    <a class="marca-barra" routerLink="/">
+      <img src="/brand/logo-blanco.svg" alt="RepuestosYa" class="logo-barra" />
+    </a>
+
+    <span class="espacio"></span>
+
+    <app-campanita />
+
+    @if (usuario(); as persona) {
+      <span class="sesion">{{ persona.nombre }}, {{ nombreRol() }}</span>
+    }
+
+    <button mat-button type="button" class="boton-salir" (click)="salir()">Salir</button>
+  </mat-toolbar>
+
+  <mat-sidenav-container class="cuerpo">
+    <mat-sidenav
+      class="barra-lateral"
+      [mode]="modoMenu()"
+      [opened]="abierto()"
+      [fixedInViewport]="false"
+    >
+      <nav class="lista-menu">
+        @for (item of menu(); track item.ruta) {
+          <a
+            class="item-menu"
+            [routerLink]="item.ruta"
+            routerLinkActive="item-menu--activo"
+            [routerLinkActiveOptions]="{ exact: true }"
+            (click)="cerrarSiMovil()"
+          >
+            @if (item.icono.tipo === 'propio') {
+              <span class="icono icono--{{ item.icono.nombre }}" aria-hidden="true"></span>
+            } @else {
+              <mat-icon aria-hidden="true">{{ item.icono.nombre }}</mat-icon>
+            }
+            <span class="item-menu__etiqueta">{{ item.etiqueta }}</span>
+          </a>
+        }
+      </nav>
+    </mat-sidenav>
+
+    <mat-sidenav-content>
+      <main class="contenido">
+        <router-outlet />
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

@@ -15,13 +15,12 @@
 
 <!-- Marcar los servicios afectados -->
 
-- [ ] identity-service
-- [ ] part-request-service
-- [ ] offer-service
-- [ ] order-service
-- [ ] catalog-vehicle-service
-- [ ] notification-service
-- [ ] api-gateway
+- [ ] identidad
+- [ ] negociacion
+- [ ] pedidos
+- [ ] catalogo
+- [ ] notificaciones
+- [ ] gateway
 - [ ] frontend
 - [ ] infra / docs
 
@@ -36,12 +35,12 @@
 
 ## Regla crítica de negocio
 
-<!-- Obligatorio si toca offer-service -->
+<!-- Obligatorio si toca negociacion (ofertas) -->
 
 - [ ] No aplica.
-- [ ] Toca `offer-service` y la regla de una sola oferta aceptada sigue
-      intacta: índice `UNIQUE` parcial, transacción con `SELECT ... FOR UPDATE`,
-      y `OfferAlreadyAcceptedException` en el dominio.
+- [ ] Toca la aceptación de ofertas en `negociacion` y la regla de una sola
+      oferta aceptada sigue intacta: índice `UNIQUE` parcial, transacción con
+      `SELECT ... FOR UPDATE` y verificación en el dominio.
 
 ## Cómo probarlo
 
@@ -66,7 +65,7 @@
 - [ ] Nada de secretos en el código; `.env.example` actualizado si aplica.
 - [ ] Ningún servicio consulta la base de otro.
 - [ ] Ninguna llamada directa a un microservicio desde el frontend.
-- [ ] Los commits siguen Conventional Commits.
+- [ ] Los commits son cortos: `tipo(área): palabras clave`.
 
 ## Limitaciones y notas
 

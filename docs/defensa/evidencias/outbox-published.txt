@@ -1,0 +1,9 @@
+     routing_key      |         published_at          
+----------------------+-------------------------------
+ ORDER_STATUS_CHANGED | 2026-11-24 05:09:08.976628+00
+ ORDER_STATUS_CHANGED | 2026-11-24 05:09:08.959699+00
+ ORDER_STATUS_CHANGED | 2026-11-24 05:09:07.433335+00
+ ORDER_STATUS_CHANGED | 2026-11-24 05:09:07.41784+00
+ ORDER_CREATED        | 2026-11-24 05:09:05.894501+00
+(5 rows)
+

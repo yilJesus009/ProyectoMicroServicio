@@ -1,0 +1,125 @@
+.campanita {
+  position: relative;
+}
+
+.campanita-boton {
+  position: relative;
+  color: #ffffff;
+}
+
+// Pastilla blanca con número en rojo (DISEÑO.md sección 8).
+.conteo {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 1.1rem;
+  padding: 0 var(--esp-1);
+  border-radius: var(--radio-pastilla);
+  background: #ffffff;
+  color: var(--color-rojo);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  line-height: 1.1rem;
+  text-align: center;
+}
+
+.panel {
+  position: absolute;
+  top: 3rem;
+  right: 0;
+  z-index: 20;
+  width: 22rem;
+  max-width: calc(100vw - var(--esp-5));
+  background: var(--color-superficie);
+  border-radius: var(--radio-panel);
+  box-shadow: var(--sombra-flotante);
+  padding: var(--esp-2);
+}
+
+.panel-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  color: var(--color-tinta);
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.aviso-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  width: 100%;
+  text-align: left;
+  padding: var(--esp-2) var(--esp-3);
+  border: none;
+  border-radius: var(--radio-control);
+  background: var(--color-superficie);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-superficie-2);
+  }
+
+  &__punto {
+    flex-shrink: 0;
+    margin-top: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radio-pastilla);
+    background: transparent;
+  }
+
+  &--no-leido &__punto {
+    background: var(--color-rojo);
+  }
+
+  &__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &__titulo {
+    font-size: var(--texto-sm);
+    color: var(--color-tinta);
+  }
+
+  &__mensaje {
+    font-size: var(--texto-xs);
+    color: var(--color-tinta-suave);
+  }
+
+  &__fecha {
+    flex-shrink: 0;
+    font-size: var(--texto-xs);
+    color: var(--color-tinta-suave);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.cargando,
+.vacio {
+  color: var(--color-tinta-suave);
+  font-size: var(--texto-sm);
+  margin: var(--esp-2);
+}
+
+.error {
+  color: var(--color-peligro);
+  margin: var(--esp-2);
+  font-size: var(--texto-sm);
+}

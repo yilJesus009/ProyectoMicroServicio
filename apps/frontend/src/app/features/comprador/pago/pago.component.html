@@ -1,0 +1,154 @@
+<section class="pantalla">
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+    <p class="estado-carga">Cargando pedido…</p>
+  } @else if (error() && !pedido()) {
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
+  } @else if (pedido(); as pedido) {
+    <div class="volver">
+      <a mat-button routerLink="/comprador/pedidos">
+        <mat-icon aria-hidden="true">arrow_back</mat-icon>
+        Mis pedidos
+      </a>
+    </div>
+
+    <div class="disposicion">
+      <div class="panel resumen">
+        <h1 class="texto-lg">{{ pedido.part_description }}</h1>
+        <p class="texto-sm texto-suave">
+          {{ pedido.supplier_name }}, {{ pedido.vehicle_label || 'Vehículo no especificado' }}
+        </p>
+        <p class="precio num">{{ pedido.price | moneda: pedido.currency }}</p>
+        <span class="estado estado--atencion" role="note">Simulación: no se realiza ningún cobro</span>
+      </div>
+
+      <div class="columna-pago">
+        @if (aviso(); as mensaje) {
+          <div class="panel confirmado" role="status">
+            <p class="texto-sm">
+              <mat-icon aria-hidden="true">check_circle</mat-icon>
+              {{ mensaje }}
+            </p>
+            <a mat-flat-button color="primary" [routerLink]="['/comprador/pedidos', pedido.id]">
+              Ver seguimiento del pedido
+            </a>
+          </div>
+        }
+
+        @if (error(); as mensaje) {
+          <p class="mensaje-servidor" role="alert">
+            <mat-icon aria-hidden="true">error</mat-icon>
+            <span>{{ mensaje }}</span>
+          </p>
+        }
+
+        @if (!aviso() && pedido.status !== 'PENDING_PAYMENT') {
+          <p class="estado-carga">
+            Este pedido ya no está pendiente de pago ({{ ETIQUETA[pedido.status] ?? pedido.status }}).
+          </p>
+          <a mat-stroked-button color="primary" [routerLink]="['/comprador/pedidos', pedido.id]">
+            Ver seguimiento
+          </a>
+        } @else if (!aviso()) {
+          <div class="pestanas" role="tablist" aria-label="Método de pago simulado">
+            <button
+              type="button"
+              role="tab"
+              class="pestana"
+              [class.pestana--activa]="pestana() === 'QR'"
+              [attr.aria-selected]="pestana() === 'QR'"
+              (click)="pestana.set('QR')"
+            >
+              QR
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="pestana"
+              [class.pestana--activa]="pestana() === 'CARD'"
+              [attr.aria-selected]="pestana() === 'CARD'"
+              (click)="pestana.set('CARD')"
+            >
+              Tarjeta
+            </button>
+          </div>
+
+          @if (pestana() === 'QR') {
+            <section class="qr" role="tabpanel" aria-label="Pago con QR">
+              <p class="referencia texto-sm">
+                Referencia: <strong class="num">{{ referenciaQr() }}</strong>
+              </p>
+
+              @if (matrizQr(); as matriz) {
+                <div
+                  class="codigo"
+                  role="img"
+                  [attr.aria-label]="'Código QR con la referencia ' + referenciaQr()"
+                  [style.grid-template-columns]="columnasQr()"
+                >
+                  @for (fila of matriz; track $index) {
+                    @for (modulo of fila; track $index) {
+                      <span [class.oscuro]="modulo"></span>
+                    }
+                  }
+                </div>
+              }
+
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                [disabled]="pagando()"
+                (click)="pagar()"
+              >
+                {{ pagando() ? 'Confirmando…' : 'Ya pagué' }}
+              </button>
+            </section>
+          } @else {
+            <form class="tarjeta" [formGroup]="formulario" (ngSubmit)="pagar()" role="tabpanel">
+              <p class="demo texto-sm texto-suave">
+                Datos de demostración precargados. Se validan solo en tu navegador y
+                <strong>no se envían</strong>: al confirmar viaja únicamente el método de pago.
+              </p>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Número de tarjeta</mat-label>
+                <input matInput formControlName="numero" inputmode="numeric" autocomplete="off" />
+                @if (formulario.controls.numero.invalid && formulario.controls.numero.touched) {
+                  <mat-error><mat-icon aria-hidden="true">error</mat-icon>Formato: 0000 0000 0000 0000</mat-error>
+                }
+              </mat-form-field>
+
+              <div class="dos-columnas">
+                <mat-form-field appearance="outline">
+                  <mat-label>Vencimiento</mat-label>
+                  <input matInput formControlName="vencimiento" placeholder="MM/AA" autocomplete="off" />
+                  @if (formulario.controls.vencimiento.invalid && formulario.controls.vencimiento.touched) {
+                    <mat-error><mat-icon aria-hidden="true">error</mat-icon>Formato: MM/AA</mat-error>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>CVV</mat-label>
+                  <input matInput formControlName="cvv" inputmode="numeric" autocomplete="off" />
+                  @if (formulario.controls.cvv.invalid && formulario.controls.cvv.touched) {
+                    <mat-error><mat-icon aria-hidden="true">error</mat-icon>3 dígitos</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <div class="acciones">
+                <button mat-flat-button color="primary" type="submit" [disabled]="pagando()">
+                  {{ pagando() ? 'Confirmando…' : 'Confirmar pago' }}
+                </button>
+              </div>
+            </form>
+          }
+        }
+      </div>
+    </div>
+  }
+</section>

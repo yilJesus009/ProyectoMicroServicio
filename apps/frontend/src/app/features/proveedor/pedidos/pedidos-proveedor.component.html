@@ -1,0 +1,50 @@
+<section class="pantalla">
+  <header class="encabezado-pagina">
+    <div>
+      <h1 class="encabezado-pagina__titulo">Mis pedidos</h1>
+      @if (!cargando() && lista().length > 0) {
+        <p class="encabezado-pagina__apoyo">{{ contador() }}</p>
+      }
+    </div>
+    <a mat-stroked-button color="primary" routerLink="/proveedor/ofertas">Mis ofertas</a>
+  </header>
+
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+    <p class="estado-carga">Cargando pedidos…</p>
+  } @else if (error(); as mensaje) {
+    <p class="mensaje-servidor" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ mensaje }}</span>
+    </p>
+  } @else if (lista().length === 0) {
+    <div class="panel vacio">
+      <p class="vacio__texto">
+        Todavía no tienes pedidos. Aparecerán aquí cuando un comprador acepte una oferta.
+      </p>
+    </div>
+  } @else {
+    @if (aviso(); as mensaje) {
+      <p class="mensaje-servidor mensaje-servidor--exito" role="status">
+        <mat-icon aria-hidden="true">check_circle</mat-icon>
+        <span>{{ mensaje }}</span>
+      </p>
+    }
+    @if (error(); as mensaje) {
+      <p class="mensaje-servidor" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>{{ mensaje }}</span>
+      </p>
+    }
+
+    <div class="lista-filas">
+      @for (pedido of lista(); track pedido.id) {
+        <app-order-card
+          [pedido]="pedido"
+          [accion]="accionDe(pedido)"
+          (accionEmitida)="avanzar(pedido)"
+        />
+      }
+    </div>
+  }
+</section>

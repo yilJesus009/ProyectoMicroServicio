@@ -1,0 +1,142 @@
+.pantalla {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+.volver a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.estado-carga {
+  color: var(--color-tinta-suave);
+}
+
+.disposicion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.columna-pago {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+// Desde escritorio, resumen y método de pago lado a lado en vez de una
+// sola columna angosta (DISEÑO.md sección 8: aprovechar el ancho disponible).
+@media (min-width: 1024px) {
+  .disposicion {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: var(--esp-5);
+  }
+}
+
+.resumen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--esp-1);
+}
+
+.resumen h1 {
+  margin: 0;
+}
+
+.precio {
+  margin: var(--esp-2) 0;
+  font-size: var(--texto-xl);
+  font-weight: 700;
+}
+
+.pestanas {
+  display: flex;
+  gap: var(--esp-3);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.pestana {
+  border: none;
+  background: none;
+  padding: var(--esp-3) var(--esp-2);
+  font-size: var(--texto-sm);
+  font-weight: 500;
+  color: var(--color-tinta-suave);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.pestana--activa {
+  color: var(--color-rojo);
+  border-bottom-color: var(--color-rojo);
+}
+
+.qr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  align-items: flex-start;
+}
+
+.referencia {
+  margin: 0;
+  word-break: break-all;
+}
+
+.codigo {
+  display: grid;
+  gap: 0;
+  width: 220px;
+  height: 220px;
+  padding: 8px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-panel);
+}
+
+.codigo span {
+  background: var(--color-superficie);
+}
+
+.codigo span.oscuro {
+  background: var(--color-tinta);
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.demo {
+  margin: 0;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.confirmado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  align-items: flex-start;
+  border-color: var(--color-exito);
+}
+
+.confirmado p {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin: 0;
+  color: var(--color-exito);
+}
+

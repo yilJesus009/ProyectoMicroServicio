@@ -1,0 +1,109 @@
+<section class="vehiculos">
+  <header class="encabezado-pagina">
+    <div>
+      <h1 class="encabezado-pagina__titulo">Mis vehículos</h1>
+      @if (!cargando() && lista().length > 0) {
+        <p class="encabezado-pagina__apoyo">{{ contador() }}</p>
+      }
+    </div>
+  </header>
+
+  <div class="panel formulario-panel">
+    <h2 class="texto-lg">Registrar vehículo</h2>
+    <p class="texto-sm texto-suave">Para publicar solicitudes más rápido</p>
+
+    <form class="formulario" [formGroup]="form" (ngSubmit)="crear()">
+      <div class="fila-alta">
+        <mat-form-field appearance="outline">
+          <mat-label>Marca</mat-label>
+          <input matInput formControlName="brand" placeholder="Toyota" />
+          @if (form.controls.brand.invalid && form.controls.brand.touched) {
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa la marca</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Modelo</mat-label>
+          <input matInput formControlName="model" placeholder="Corolla" />
+          @if (form.controls.model.invalid && form.controls.model.touched) {
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Ingresa el modelo</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Año</mat-label>
+          <input matInput type="number" formControlName="year" placeholder="2018" />
+          @if (form.controls.year.invalid && form.controls.year.touched) {
+            <mat-error><mat-icon aria-hidden="true">error</mat-icon>Año entre 1950 y {{ anioMaximo }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Placa (opcional)</mat-label>
+          <input matInput formControlName="plate" placeholder="ABC123" />
+        </mat-form-field>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="accion"
+          [disabled]="accionando()"
+        >
+          {{ accionando() ? 'Guardando…' : 'Registrar vehículo' }}
+        </button>
+      </div>
+
+      @if (error()) {
+        <p class="mensaje-servidor" role="alert">
+          <mat-icon aria-hidden="true">error</mat-icon>
+          <span>{{ error() }}</span>
+        </p>
+      }
+      @if (aviso()) {
+        <p class="mensaje-servidor mensaje-servidor--exito" role="status">
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+          <span>{{ aviso() }}</span>
+        </p>
+      }
+    </form>
+  </div>
+
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+    <p class="estado-carga">Cargando vehículos…</p>
+  }
+
+  @if (lista().length > 0) {
+    <div class="lista-filas">
+      @for (vehiculo of lista(); track vehiculo.id) {
+        <article class="fila">
+          <div class="fila__icono">
+            <span class="icono icono--mis-vehiculos" aria-hidden="true"></span>
+          </div>
+          <div class="fila__contenido">
+            <h3 class="fila__titulo">{{ vehiculo.brand }} {{ vehiculo.model }} {{ vehiculo.year }}</h3>
+            <div class="fila__meta">
+              <span>{{ vehiculo.plate || 'Sin placa' }}</span>
+            </div>
+          </div>
+          <div class="fila__accion">
+            <button
+              mat-stroked-button
+              color="warn"
+              type="button"
+              [disabled]="accionando()"
+              (click)="borrar(vehiculo)"
+            >
+              Eliminar
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  } @else if (!cargando()) {
+    <div class="panel vacio">
+      <p class="vacio__texto">Aún no registras vehículos.</p>
+    </div>
+  }
+</section>

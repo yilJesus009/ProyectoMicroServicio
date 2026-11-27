@@ -1,0 +1,148 @@
+.pantalla {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.volver a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.comparador {
+  border-top: 1px solid var(--color-borde);
+  padding-top: var(--esp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--esp-4);
+}
+
+.orden {
+  display: flex;
+  gap: var(--esp-3);
+}
+
+.estado-carga {
+  color: var(--color-tinta-suave);
+}
+
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.resumen__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.resumen__id {
+  margin-left: auto;
+}
+
+.resumen__cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--esp-4);
+}
+
+.resumen__texto h1 {
+  margin: 0;
+}
+
+.resumen__texto p {
+  margin: var(--esp-1) 0 0;
+}
+
+.resumen__foto {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.resumen__foto img {
+  display: block;
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radio-panel);
+  border: 1px solid var(--color-borde);
+  object-fit: cover;
+  background: var(--color-superficie-2);
+}
+
+.cerrada {
+  margin-top: var(--esp-2);
+}
+
+.confirmacion {
+  border: 1px solid var(--color-rojo);
+  border-radius: var(--radio-panel);
+  background: var(--color-superficie);
+  padding: var(--esp-4);
+}
+
+.confirmacion h3 {
+  margin: 0 0 var(--esp-2);
+}
+
+.confirmacion p {
+  margin: var(--esp-1) 0;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--esp-2);
+  margin-top: var(--esp-3);
+}
+
+.tabla-envoltorio {
+  overflow-x: auto;
+}
+
+// El flex va en un <div> adentro del <td>, no en el <td> mismo: poner
+// display:flex directo en una celda la saca del modelo de layout de
+// tabla (deja de ser "table-cell") y pierde la altura y el borde
+// inferior alineados con el resto de la fila.
+.celda-precio__contenido {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--esp-1);
+}
+
+.celda-accion__contenido {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--esp-2);
+}
+
+// Sección 9: fila aceptada en verde muy tenue (hex propio de esta pantalla,
+// distinto del token general de éxito).
+.fila-aceptada {
+  background: #f1faf4;
+}
+
+.fila-no-elegida td {
+  color: var(--color-tinta-suave);
+}
+
+@media (max-width: 720px) {
+  .celda-accion__contenido {
+    align-items: flex-start;
+  }
+}

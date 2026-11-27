@@ -1,0 +1,19 @@
+.pantalla {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.estado-carga {
+  color: var(--color-tinta-suave);
+}
+
+.fila-enlace {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.fila-enlace:hover {
+  background-color: var(--color-superficie-2);
+}

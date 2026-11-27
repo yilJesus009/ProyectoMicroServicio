@@ -1,0 +1,15 @@
+# Artefactos y basura: no hacen falta para compilar
+node_modules
+dist
+.angular
+coverage
+*.log
+
+# Documentación y configuración de editor
+*.md
+.vscode
+.git
+
+# Pruebas: no se corren dentro de la imagen
+**/*.spec.ts
+tsconfig.spec.json

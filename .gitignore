@@ -21,6 +21,7 @@ __pycache__/
 **/dist/
 **/build/
 **/out/
+**/target/
 **/.angular/
 **/coverage/
 **/.nyc_output/
@@ -41,6 +42,11 @@ Thumbs.db
 !.vscode/extensions.json
 *.swp
 *.swo
+
+# --- Agentes de IA ---
+# Config/estado local de Claude Code; nunca debe subirse (puede contener
+# transcripciones o configuración de sesión, no reglas del proyecto).
+.claude/
 
 # --- Seguridad ---
 # Duplicados de seguridad por si alguien renombra un .env

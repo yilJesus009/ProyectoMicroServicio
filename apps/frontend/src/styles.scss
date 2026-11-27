@@ -1,0 +1,105 @@
+// Tema Angular Material (Material 3) y estilos globales de RepuestosYa.
+// Ver DISEÑO.md en la raíz del repo para la referencia completa.
+@use '@angular/material' as mat;
+@use '@fontsource/rubik/400.css' as *;
+@use '@fontsource/rubik/500.css' as *;
+@use '@fontsource/rubik/600.css' as *;
+@use '@fontsource/rubik/700.css' as *;
+@use '@fontsource/rubik/800.css' as *;
+@use '@fontsource/rubik/800-italic.css' as *;
+@use '@fontsource/material-icons-round/400.css' as *;
+@use 'styles/tokens';
+@use 'styles/base';
+@use 'styles/globales';
+
+html {
+  // Paleta roja de marca (sección 7 de DISEÑO.md): se genera a partir del
+  // rojo base de Material y luego se sobrescriben las variables del sistema
+  // con los tokens exactos de la marca, porque el tono que genera Material
+  // no coincide con el `#EA044E` de PedidosYa.
+  @include mat.theme((
+    color: (
+      primary: mat.$red-palette,
+      tertiary: mat.$red-palette,
+    ),
+    typography: Rubik,
+    density: 0,
+  ));
+
+  --mat-sys-primary: var(--color-rojo);
+  --mat-sys-on-primary: #FFFFFF;
+  --mat-sys-primary-container: var(--color-rojo-tenue);
+  --mat-sys-on-primary-container: var(--color-rojo-texto);
+  --mat-sys-secondary: var(--color-rojo-oscuro);
+  --mat-sys-on-secondary: #FFFFFF;
+  --mat-sys-secondary-container: var(--color-rojo-tenue);
+  --mat-sys-on-secondary-container: var(--color-rojo-texto);
+  --mat-sys-tertiary: var(--color-rojo);
+  --mat-sys-on-tertiary: #FFFFFF;
+
+  --mat-sys-error: var(--color-peligro);
+  --mat-sys-on-error: #FFFFFF;
+  --mat-sys-error-container: var(--color-peligro-tenue);
+  --mat-sys-on-error-container: var(--color-peligro);
+
+  --mat-sys-surface: var(--color-superficie);
+  --mat-sys-on-surface: var(--color-tinta);
+  --mat-sys-surface-container: var(--color-superficie-2);
+  --mat-sys-surface-container-low: var(--color-superficie);
+  --mat-sys-surface-container-high: var(--color-superficie-2);
+  --mat-sys-surface-variant: var(--color-superficie-2);
+  --mat-sys-on-surface-variant: var(--color-tinta-suave);
+  --mat-sys-background: var(--color-fondo);
+  --mat-sys-on-background: var(--color-tinta);
+
+  --mat-sys-outline: var(--color-borde-fuerte);
+  --mat-sys-outline-variant: var(--color-borde);
+
+  // mat-toolbar no hereda el color del tema por su cuenta (su fondo por
+  // defecto es --mat-sys-surface, blanco): se fija aparte para la barra
+  // superior roja de 56px (sección 8).
+  --mat-toolbar-container-background-color: var(--color-rojo);
+  --mat-toolbar-container-text-color: #FFFFFF;
+  --mat-toolbar-standard-height: var(--alto-barra-superior);
+  --mat-toolbar-mobile-height: var(--alto-barra-superior);
+
+  // El panel de mat-sidenav hereda border-radius de corner-large (paneles),
+  // pero la barra lateral de DISEÑO.md es recta, con un borde de 1px nada
+  // más (sección 8).
+  --mat-sidenav-container-background-color: var(--color-superficie);
+  --mat-sidenav-container-shape: 0px;
+  // Material trae su propio ancho por defecto (--mat-sidenav-container-width,
+  // 360px) que no lee --ancho-barra-lateral: sin esto gana por sobre
+  // `.barra-lateral { width: ... }` (misma especificidad, una sola clase,
+  // y la hoja de Material carga después) y la barra lateral queda a 360px
+  // en vez de los 240px de la sección 8.
+  --mat-sidenav-container-width: var(--ancho-barra-lateral);
+
+  // Radios de controles y paneles (sección 6 y 7: sin !important).
+  --mat-sys-corner-extra-small: var(--radio-control);
+  --mat-sys-corner-small: var(--radio-control);
+  --mat-sys-corner-medium: var(--radio-control);
+  --mat-sys-corner-large: var(--radio-panel);
+  --mat-sys-corner-full: var(--radio-pastilla);
+
+  // Los botones de Material caen a `corner-full` (pastilla) si no se fija su
+  // propio token; DISEÑO.md pide 8px en botones, así que se fija aparte.
+  --mat-button-filled-container-shape: var(--radio-control);
+  --mat-button-protected-container-shape: var(--radio-control);
+  --mat-button-outlined-container-shape: var(--radio-control);
+  --mat-button-text-container-shape: var(--radio-control);
+  --mat-button-tonal-container-shape: var(--radio-control);
+  --mat-button-filled-container-height: var(--alto-control);
+  --mat-button-protected-container-height: var(--alto-control);
+  --mat-button-outlined-container-height: var(--alto-control);
+  --mat-button-text-container-height: var(--alto-control);
+  --mat-button-tonal-container-height: var(--alto-control);
+}
+
+body {
+  // La aplicación es solo de tema claro (sección 4: nada de modo oscuro).
+  color-scheme: light;
+  background-color: var(--mat-sys-background);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+}

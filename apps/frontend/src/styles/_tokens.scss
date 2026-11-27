@@ -1,0 +1,73 @@
+:root {
+  /* Marca */
+  --color-rojo: #EA044E;
+  --color-rojo-oscuro: #C2033F;
+  --color-rojo-tenue: #FDE8EF;
+  --color-rojo-texto: #B0033C;
+
+  /* Neutros */
+  --color-fondo: #F5F5F7;
+  --color-superficie: #FFFFFF;
+  --color-superficie-2: #FAFAFB;
+  --color-borde: #E2E2E8;
+  --color-borde-fuerte: #8E8E9B;
+  --color-tinta: #1E1E26;
+  --color-tinta-suave: #5F5F6E;
+
+  /* Estados */
+  --color-exito: #1E6B40;
+  --color-exito-tenue: #E3F4EA;
+  --color-atencion: #F5A623;
+  --color-atencion-texto: #7A4F00;
+  --color-atencion-tenue: #FFF1D6;
+  --color-info: #1D5A9E;
+  --color-info-tenue: #E6F0FB;
+  --color-neutro: #5F5F6E;
+  --color-neutro-tenue: #EEEEF2;
+  --color-peligro: #B0033C;
+  --color-peligro-tenue: #FDE8EF;
+
+  /* Tipografía */
+  --fuente: 'Rubik', system-ui, sans-serif;
+  --texto-xs: 0.8125rem;
+  --texto-sm: 0.875rem;
+  --texto-base: 1rem;
+  --texto-lg: 1.25rem;
+  --texto-xl: 1.5625rem;
+  --texto-2xl: 1.9375rem;
+  --texto-display: 2.4375rem;
+  --interlineado-titulo: 1.15;
+  --interlineado-texto: 1.5;
+
+  /* Espacio */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 24px;
+  --esp-6: 32px;
+  --esp-7: 48px;
+  --esp-8: 64px;
+
+  /* Forma */
+  --radio-control: 8px;
+  --radio-panel: 12px;
+  --radio-pastilla: 999px;
+  --sombra-flotante: 0 8px 24px rgba(30, 30, 38, 0.16);
+  --anillo-foco: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--color-tinta);
+
+  /* Estructura */
+  --alto-barra-superior: 56px;
+  --ancho-barra-lateral: 240px;
+  --ancho-contenido: 1440px;
+  --alto-control: 44px;
+
+  /* Movimiento */
+  --duracion: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duracion: 0ms;
+  }
+}

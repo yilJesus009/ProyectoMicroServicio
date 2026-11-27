@@ -201,9 +201,9 @@ No hace falta una librería. Separa los casos de uso:
 
 | Servicio | `commands/` | `queries/` |
 |---|---|---|
-| part-request | `CreatePartRequest`, `ChangePartRequestStatus` | `GetPartRequestById`, `SearchPartRequests` |
-| offer | `SubmitOffer`, **`AcceptOffer`**, `RejectOffer` | `GetOffersByRequest`, `GetOffersByProvider` |
-| order | `CreateOrder`, `ChangeOrderStatus`, `CancelOrder` | `GetOrderById`, `GetOrdersByBuyer` |
+| negociacion (solicitudes) | `CreatePartRequest`, `ChangePartRequestStatus` | `GetPartRequestById`, `SearchPartRequests` |
+| negociacion (ofertas) | `SubmitOffer`, **`AcceptOffer`**, `RejectOffer` | `GetOffersByRequest`, `GetOffersByProvider` |
+| pedidos | `CreateOrder`, `ChangeOrderStatus` | `GetOrderById`, `GetOrdersByBuyer` |
 
 **Cuándo separar:** si una operación escribe y otra solo lee con distinto
 perfil de carga, sepáralas. Si ambas son trivialmente iguales, no forces la
@@ -215,12 +215,12 @@ pertinente".
 | Patrón | Dónde | Cómo justificarlo |
 |---|---|---|
 | **Adapter / Hexagonal** | `infrastructure/persistence/` | El dominio no depende de Sequelize; cambiar la BD no toca el dominio |
-| **Strategy** | `offer-service` | La regla de aceptación puede variar según `delivery_type` |
+| **Strategy** | `pedidos` | El siguiente estado varía según `delivery_type` (DELIVERY/PICKUP) |
 | **Observer / Pub-Sub** | RabbitMQ | Desacople entre productor y consumidores |
-| **Unit of Work** | `AcceptOfferCommandHandler` | Transacción atómica: aceptar + rechazar las demás |
-| **Null Object** | `catalog-service` | Vehículo opcional sin `if (vehicle)` por todos lados |
-| **Factory** | `order-service` | Construcción del pedido según tipo de entrega |
-| **Decorator** | `api-gateway` | Capas de auth, logging y correlation-id encadenadas |
+| **Unit of Work** | `AcceptOfferCommandHandler` (negociacion) | Transacción atómica: aceptar + rechazar las demás |
+| **Null Object** | `catalogo` | Vehículo opcional sin `if (vehicle)` por todos lados |
+| **Factory** | `pedidos` | Construcción del pedido desde el evento `OFFER_ACCEPTED` |
+| **Decorator** | `gateway` | Capas de auth, logging y correlation-id encadenadas |
 
 Si aplicas un patrón, **déjalo escrito en el PR**: el proyecto pide patrones
 "aplicados y justificados".
@@ -228,8 +228,8 @@ Si aplicas un patrón, **déjalo escrito en el PR**: el proyecto pide patrones
 ## Límites entre servicios
 
 - **Prohibido** importar entidades de otro microservicio.
-- Si `order-service` necesita datos de la solicitud, los pide por HTTP a
-  `part-request-service` o consume su evento.
+- Si `pedidos` necesita datos de la solicitud u oferta, los recibe en el
+  payload del evento `OFFER_ACCEPTED` (no consulta HTTP para eso).
 - Los tipos compartidos van en `packages/shared/`, solo contratos y tipos,
   **nunca** lógica de negocio compartida. Ahí es donde un monorepo se vuelve
   un monolito disfrazado.

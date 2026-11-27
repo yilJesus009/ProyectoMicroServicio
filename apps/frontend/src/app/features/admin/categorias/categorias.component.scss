@@ -1,0 +1,52 @@
+.categorias {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.estado-carga {
+  color: var(--color-tinta-suave);
+}
+
+.alta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.formulario--linea {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  padding: var(--esp-2) 0;
+}
+
+.formulario--linea mat-form-field {
+  flex: 1 1 10rem;
+}
+
+.botones {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.tabla-envoltorio {
+  overflow-x: auto;
+}
+
+// El flex va en un <div> adentro del <td>, no en el <td> mismo: poner
+// display:flex directo en una celda la saca del modelo de layout de
+// tabla (deja de ser "table-cell") y pierde la altura y el borde
+// inferior alineados con el resto de la fila.
+.celda-accion__contenido {
+  display: flex;
+  gap: var(--esp-2);
+}

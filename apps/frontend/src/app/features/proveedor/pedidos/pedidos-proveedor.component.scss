@@ -1,0 +1,10 @@
+.pantalla {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.estado-carga {
+  color: var(--color-tinta-suave);
+}
+

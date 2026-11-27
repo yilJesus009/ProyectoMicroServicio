@@ -1,0 +1,78 @@
+<section class="abiertas">
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+    <p class="cargando">Cargando solicitudes…</p>
+  } @else if (!aprobado) {
+    <div class="panel aviso-perfil">
+      <h2 class="texto-xl">Tu perfil todavía no está aprobado</h2>
+      <p class="texto-sm texto-suave">
+        Cuando el administrador lo apruebe verás aquí las solicitudes abiertas para ofertar.
+      </p>
+      @if (perfil(); as p) {
+        <app-estado-perfil [estado]="p.status" [motivo]="p.rejection_reason" />
+      }
+      <a mat-flat-button color="primary" routerLink="/proveedor/perfil">Ir a mi perfil</a>
+    </div>
+  } @else {
+    <header class="encabezado-pagina">
+      <div>
+        <h1 class="encabezado-pagina__titulo">Solicitudes abiertas</h1>
+        <p class="encabezado-pagina__apoyo">Compradores que todavía esperan ofertas.</p>
+      </div>
+    </header>
+
+    <form class="filtros" [formGroup]="filtros" (ngSubmit)="buscar()">
+      <mat-form-field appearance="outline" class="filtro">
+        <mat-label>Ciudad</mat-label>
+        <input matInput formControlName="ciudad" placeholder="Santa Cruz" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filtro">
+        <mat-label>Categoría</mat-label>
+        <mat-select formControlName="categoria">
+          <mat-option [value]="''">Todas</mat-option>
+          @for (categoria of categorias(); track categoria.id) {
+            <mat-option [value]="categoria.id">{{ categoria.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" type="submit" class="buscar">Filtrar</button>
+    </form>
+
+    @if (error()) {
+      <p class="mensaje-servidor" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>{{ error() }}</span>
+      </p>
+    }
+
+    @if (lista().length > 0) {
+      <div class="lista-filas">
+        @for (solicitud of lista(); track solicitud.id) {
+          <app-tarjeta-solicitud [solicitud]="solicitud">
+            @if (misOfertasIds().has(solicitud.id)) {
+              <div accion class="ya-ofertaste">
+                <span class="estado estado--info">Ya ofertaste</span>
+                <a mat-button color="primary" routerLink="/proveedor/ofertas">Ver mi oferta</a>
+              </div>
+            } @else {
+              <a
+                mat-stroked-button
+                color="primary"
+                accion
+                [routerLink]="['/proveedor/solicitudes', solicitud.id, 'ofertar']"
+              >
+                Enviar oferta
+              </a>
+            }
+          </app-tarjeta-solicitud>
+        }
+      </div>
+    } @else {
+      <div class="panel vacio">
+        <p class="vacio__texto">No hay solicitudes abiertas con esos filtros.</p>
+      </div>
+    }
+  }
+</section>
