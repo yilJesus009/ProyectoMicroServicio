@@ -1,0 +1,172 @@
+openapi: 3.0.3
+info:
+  title: Negociación — RepuestosYa
+  version: '1.0'
+  description: |
+    Solicitudes de repuestos y ofertas (docs/contratos-api.md). Sin UI
+    propia: este servicio no expone puerto al host (AGENTS.md 4.4); la
+    única UI de Swagger es la del Gateway (/docs), que agrega esta spec
+    por la red interna de Docker.
+
+    Todas las respuestas usan el sobre `{ status, msg, data }`.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Solicitudes
+  - name: Ofertas
+paths:
+  /part-requests:
+    post:
+      tags: [Solicitudes]
+      summary: Publicar una solicitud de repuesto
+      description: 👤 COMPRADOR. Multipart; `photo` es opcional (jpg/png/webp, máx. 5 MB).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [category_id, vehicle_brand, vehicle_model, vehicle_year, description, city]
+              properties:
+                category_id: { type: integer }
+                vehicle_brand: { type: string }
+                vehicle_model: { type: string }
+                vehicle_year: { type: integer }
+                description: { type: string }
+                city: { type: string }
+                urgency: { type: string, enum: [BAJA, MEDIA, ALTA], default: MEDIA }
+                photo: { type: string, format: binary }
+      responses:
+        '201':
+          description: Creada, estado PUBLISHED.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+  /part-requests/mine:
+    get:
+      tags: [Solicitudes]
+      summary: Mis solicitudes
+      description: 👤 COMPRADOR.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+  /part-requests/open:
+    get:
+      tags: [Solicitudes]
+      summary: Solicitudes abiertas a ofertar
+      description: 🏪✅ PROVEEDOR aprobado. Devuelve las que están en PUBLISHED o RECEIVING_OFFERS.
+      parameters:
+        - { name: city, in: query, schema: { type: string } }
+        - { name: category_id, in: query, schema: { type: integer } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+  /part-requests/{id}:
+    get:
+      tags: [Solicitudes]
+      summary: Detalle de una solicitud
+      description: 🔑 Solo el dueño o un proveedor aprobado.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+  /part-requests/{id}/photo:
+    get:
+      tags: [Solicitudes]
+      summary: Fotografía de la solicitud
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Imagen binaria }
+  /part-requests/{id}/cancel:
+    patch:
+      tags: [Solicitudes]
+      summary: Cancelar una solicitud propia
+      description: 👤 dueño. Solo si está PUBLISHED o RECEIVING_OFFERS.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Pasa a CANCELLED, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+        '422': { description: La solicitud ya no admite cancelación }
+  /part-requests/{id}/offers:
+    get:
+      tags: [Ofertas]
+      summary: 'Comparador: todas las ofertas de la solicitud'
+      description: 👤 dueño de la solicitud.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: sort, in: query, schema: { type: string, enum: [price, days] } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+    post:
+      tags: [Ofertas]
+      summary: Enviar una oferta
+      description: 🏪✅ PROVEEDOR aprobado.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [price, brand, condition, availability, delivery_type, estimated_days]
+              properties:
+                price: { type: number, format: float }
+                brand: { type: string }
+                condition: { type: string, enum: [NEW, USED, REFURBISHED] }
+                availability: { type: string, enum: [IN_STOCK, ON_ORDER] }
+                delivery_type: { type: string, enum: [PICKUP, DELIVERY] }
+                estimated_days: { type: integer, minimum: 0 }
+                notes: { type: string, nullable: true }
+      responses:
+        '201': { description: Creada, estado SUBMITTED, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+        '403': { description: El proveedor no está aprobado }
+        '409': { description: Ya tiene una oferta activa en esa solicitud }
+        '422': { description: La solicitud no acepta ofertas }
+  /offers/mine:
+    get:
+      tags: [Ofertas]
+      summary: Mis ofertas con su estado
+      description: 🏪 PROVEEDOR.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+  /offers/{id}/withdraw:
+    patch:
+      tags: [Ofertas]
+      summary: Retirar una oferta propia
+      description: 🏪 dueño. Solo si está SUBMITTED y la solicitud sigue abierta.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Pasa a WITHDRAWN, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+  /offers/{id}/accept:
+    post:
+      tags: [Ofertas]
+      summary: Aceptar una oferta
+      description: |
+        👤 dueño de la solicitud. Operación crítica (docs/contratos-api.md):
+        en una transacción, bloquea la solicitud, marca esta oferta ACCEPTED
+        y las demás REJECTED, y la solicitud OFFER_ACCEPTED. El pedido nace
+        del evento OFFER_ACCEPTED en Pedidos, no de este endpoint.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: '{ offer, part_request }'
+          content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } }
+        '409': { description: Ya hay otra oferta ACCEPTED en la solicitud }
+        '422': { description: La solicitud no está en PUBLISHED o RECEIVING_OFFERS }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        status: { type: integer }
+        msg: { type: string }
+        data: {}
