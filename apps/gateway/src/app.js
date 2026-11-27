@@ -7,6 +7,7 @@ const {
 } = require('./middleware/correlation-id.middleware');
 const { errorMiddleware } = require('./middleware/error.middleware');
 const { createApiRouter } = require('./routes');
+const { createDocsRouter } = require('./routes/docs');
 
 // Origen permitido para CORS: SOLO el frontend (docs/arquitectura.md).
 // Se puede sobreescribir con FRONTEND_ORIGIN; el valor por defecto es la URL
@@ -45,6 +46,11 @@ function createApp({
   });
 
   app.use('/api/v1', createApiRouter({ serviceUrls, jwtSecret }));
+
+  // Único /docs expuesto al host: agrega la spec de todos los servicios
+  // por la red interna (AGENTS.md 4.4). Público, sin JWT, igual que
+  // /health; no toca el router de /api/v1.
+  app.use('/docs', createDocsRouter({ serviceUrls }));
 
   app.use((req, res) => {
     res.status(404).json({
