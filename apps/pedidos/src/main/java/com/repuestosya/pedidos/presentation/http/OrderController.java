@@ -16,6 +16,9 @@ import com.repuestosya.pedidos.infrastructure.config.JwtAuthFilter;
 import com.repuestosya.pedidos.presentation.http.dto.ChangeStatusRequest;
 import com.repuestosya.pedidos.presentation.http.dto.OrderResponse;
 import com.repuestosya.pedidos.presentation.http.dto.PaymentRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,6 +31,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Controller delgado (AGENTS.md §5): valida → llama el caso de uso → responde. */
+@Tag(name = "Pedidos")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/api/v1/orders")
 public class OrderController {
@@ -57,6 +62,7 @@ public class OrderController {
         this.payOrder = payOrder;
     }
 
+    @Operation(summary = "Mis pedidos como comprador")
     @GetMapping("/mine")
     public ApiResponse<List<OrderResponse>> mine(
             @RequestAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE) Number userId,
@@ -66,6 +72,7 @@ public class OrderController {
         return ApiResponse.ok(data, "Pedidos encontrados");
     }
 
+    @Operation(summary = "Mis pedidos como proveedor")
     @GetMapping("/supplier")
     public ApiResponse<List<OrderResponse>> supplier(
             @RequestAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE) Number userId,
@@ -76,6 +83,7 @@ public class OrderController {
         return ApiResponse.ok(data, "Pedidos encontrados");
     }
 
+    @Operation(summary = "Detalle de un pedido")
     @GetMapping("/{id}")
     public ApiResponse<OrderResponse> byId(
             @PathVariable Long id, @RequestAttribute(JwtAuthFilter.USER_ID_ATTRIBUTE) Number userId) {
@@ -83,6 +91,7 @@ public class OrderController {
         return ApiResponse.ok(OrderResponse.from(order), "Pedido encontrado");
     }
 
+    @Operation(summary = "Busca el pedido de una oferta (404 mientras no se haya creado)")
     @GetMapping("/by-offer/{offerId}")
     public ApiResponse<OrderResponse> byOfferId(
             @PathVariable Long offerId,
@@ -93,6 +102,7 @@ public class OrderController {
         return ApiResponse.ok(OrderResponse.from(order), "Pedido encontrado");
     }
 
+    @Operation(summary = "Registra el pago simulado y pasa el pedido a PREPARING")
     @PostMapping("/{id}/payment")
     public ApiResponse<OrderResponse> pay(
             @PathVariable Long id,
@@ -106,6 +116,7 @@ public class OrderController {
         return ApiResponse.ok(OrderResponse.from(order), "Pago registrado");
     }
 
+    @Operation(summary = "Avanza el estado del pedido")
     @PatchMapping("/{id}/status")
     public ApiResponse<OrderResponse> changeStatus(
             @PathVariable Long id,
@@ -119,6 +130,7 @@ public class OrderController {
         return ApiResponse.ok(OrderResponse.from(order), "Estado actualizado");
     }
 
+    @Operation(summary = "El comprador confirma la recepción: pasa a COMPLETED")
     @PostMapping("/{id}/confirm-receipt")
     public ApiResponse<OrderResponse> confirmReceipt(
             @PathVariable Long id,

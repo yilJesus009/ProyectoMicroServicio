@@ -46,6 +46,14 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void noFiltraLaSpecOpenApi() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getRequestURI()).thenReturn("/v3/api-docs");
+
+        assertThat(newFilter().shouldNotFilter(request)).isTrue();
+    }
+
+    @Test
     void siFiltraOtrasRutas() {
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getRequestURI()).thenReturn("/api/v1/orders/mine");

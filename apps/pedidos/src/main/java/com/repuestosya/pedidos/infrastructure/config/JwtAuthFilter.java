@@ -19,7 +19,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * Valida la FIRMA del JWT con JWT_SECRET (AGENTS.md 4.5): este servicio no
  * confia solo en lo que ya valido el Gateway. Filtro propio en vez de Spring
  * Security completo: todavia no hay endpoints protegidos que lo necesiten
- * (llegan en la fase 3), pero /health debe seguir siendo publico.
+ * (llegan en la fase 3), pero /health debe seguir siendo publico. La spec
+ * OpenAPI (/v3/api-docs) tambien queda publica, igual que /health: la sirve
+ * springdoc solo en la red interna de Docker, sin UI propia (el Gateway la
+ * agrega para su /docs).
  */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -35,7 +38,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return "/health".equals(request.getRequestURI());
+        String uri = request.getRequestURI();
+        return "/health".equals(uri) || uri.startsWith("/v3/api-docs");
     }
 
     @Override
