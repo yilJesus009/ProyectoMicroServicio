@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     "accounts",
 ]
 
@@ -181,6 +182,17 @@ REST_FRAMEWORK = {
     ],
     "EXCEPTION_HANDLER": "core.exception_handler.api_exception_handler",
     "UNAUTHENTICATED_USER": None,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# --- drf-spectacular ----------------------------------------------------
+# Solo la spec (/api/v1/schema): sin UI propia, igual que los demás
+# servicios (docs/swagger.md) — el Gateway agrega la UI única en /docs.
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Identidad — RepuestosYa",
+    "DESCRIPTION": "Usuarios, roles, JWT y perfil comercial del proveedor.",
+    "VERSION": "1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 # --- SimpleJWT ---------------------------------------------------------------
