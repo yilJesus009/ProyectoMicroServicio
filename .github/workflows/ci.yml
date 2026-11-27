@@ -342,6 +342,13 @@ jobs:
         if: always()
         run: docker compose ps
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Flujo end-to-end (docs/flujo-principal.md) contra el Gateway
+        run: node scripts/e2e-flujo.mjs
+
       - name: Logs de los servicios (si algo fallo)
         if: failure()
         run: docker compose logs
