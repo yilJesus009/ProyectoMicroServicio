@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: Notificaciones — RepuestosYa
+  version: '1.0'
+  description: |
+    Avisos dentro de la aplicación, generados a partir de los eventos
+    (docs/contratos-api.md). Sin UI propia: este servicio no expone puerto
+    al host (AGENTS.md 4.4); la única UI de Swagger es la del Gateway
+    (/docs), que agrega esta spec por la red interna de Docker.
+
+    Todas las respuestas usan el sobre `{ status, msg, data }`.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Notificaciones
+paths:
+  /notifications/mine:
+    get:
+      tags: [Notificaciones]
+      summary: Avisos del usuario
+      description: 🔑 Incluye los dirigidos a su rol.
+      parameters:
+        - { name: unread, in: query, schema: { type: boolean } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+  /notifications/unread-count:
+    get:
+      tags: [Notificaciones]
+      summary: Número de avisos sin leer (para la campanita)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+  /notifications/read-all:
+    patch:
+      tags: [Notificaciones]
+      summary: Marcar todos los avisos como leídos
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+  /notifications/{id}/read:
+    patch:
+      tags: [Notificaciones]
+      summary: Marcar un aviso como leído
+      description: 🔑 dueño.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Envelope' } } } }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        status: { type: integer }
+        msg: { type: string }
+        data: {}
+    Notification:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { type: string, example: OFFER_SUBMITTED }
+        title: { type: string }
+        message: { type: string }
+        link: { type: string, nullable: true }
+        read_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }

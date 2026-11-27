@@ -2,6 +2,7 @@ package com.repuestosya.pedidos.presentation.http.dto;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.repuestosya.pedidos.domain.errors.ValidationException;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Body de POST /orders/{id}/payment. Clase, no record: {@code @JsonAnySetter}
@@ -14,6 +15,7 @@ import com.repuestosya.pedidos.domain.errors.ValidationException;
  */
 public class PaymentRequest {
 
+    @Schema(example = "QR", allowableValues = {"QR", "CARD"})
     private String method;
 
     public String getMethod() {

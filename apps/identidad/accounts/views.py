@@ -2,6 +2,7 @@
 Vistas DELGADAS (AGENTS.md §5): validan el DTO, llaman a un servicio y
 devuelven el envelope. Sin lógica de negocio aquí.
 """
+from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
@@ -23,6 +24,7 @@ class RegisterView(APIView):
     authentication_classes = []  # público: sin JWT (no interceptar el header)
     permission_classes = [AllowAny]
 
+    @extend_schema(tags=["Autenticación"], summary="Registro de usuario")
     def post(self, request):
         serializer = serializers.RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -48,6 +50,7 @@ class LoginView(APIView):
     authentication_classes = []  # público: sin JWT
     permission_classes = [AllowAny]
 
+    @extend_schema(tags=["Autenticación"], summary="Inicio de sesión")
     def post(self, request):
         serializer = serializers.LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -75,6 +78,7 @@ class MeView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(tags=["Autenticación"], summary="Usuario del token")
     def get(self, request):
         return success(
             serializers.UserSerializer(request.user).data,
@@ -96,6 +100,7 @@ class VerifyView(APIView):
     # respondería 401 con envelope antes de llegar aquí.
     permission_classes = [AllowAny]
 
+    @extend_schema(tags=["Autenticación"], summary="Valida un token (lo consume el Gateway)")
     def post(self, request):
         import jwt
         from django.conf import settings
@@ -135,6 +140,7 @@ class SupplierMeView(APIView):
 
     permission_classes = [IsAuthenticated, IsSupplier]
 
+    @extend_schema(tags=["Proveedores"], summary="Perfil comercial propio")
     def get(self, request):
         profile = supplier_service.get_profile(request.user)
         return success(
@@ -142,6 +148,7 @@ class SupplierMeView(APIView):
             msg="Perfil comercial",
         )
 
+    @extend_schema(tags=["Proveedores"], summary="Crear o actualizar el perfil comercial propio")
     def put(self, request):
         serializer = serializers.SupplierProfileWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -162,6 +169,7 @@ class AdminSuppliersView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdminRole]
 
+    @extend_schema(tags=["Proveedores (admin)"], summary="Perfiles de proveedor por estado")
     def get(self, request):
         estado = request.query_params.get("status")
         if estado is not None and estado not in SupplierProfileStatus.values:
@@ -179,6 +187,7 @@ class AdminSupplierApproveView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdminRole]
 
+    @extend_schema(tags=["Proveedores (admin)"], summary="Aprobar un perfil de proveedor")
     def post(self, request, profile_id):
         profile = SupplierProfile.objects.filter(pk=profile_id).first()
         if profile is None:
@@ -200,6 +209,7 @@ class AdminSupplierRejectView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdminRole]
 
+    @extend_schema(tags=["Proveedores (admin)"], summary="Rechazar un perfil de proveedor")
     def post(self, request, profile_id):
         serializer = serializers.SupplierRejectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

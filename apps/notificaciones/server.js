@@ -13,7 +13,9 @@
 require('dotenv').config();
 
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
+const yaml = require('js-yaml');
 
 // .env del monorepo primero; un .env local del servicio (si existe) lo pisa.
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
@@ -86,6 +88,13 @@ async function main() {
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'UP' });
+  });
+
+  // Spec OpenAPI: público, sin UI propia (igual que /health; ver
+  // docs/swagger.md) — el Gateway la agrega para su /docs.
+  const openApiDocument = yaml.load(fs.readFileSync(path.resolve(__dirname, 'openapi.yaml'), 'utf-8'));
+  app.get('/docs.json', (_req, res) => {
+    res.json(openApiDocument);
   });
 
   app.use('/api/v1/notifications', createNotificationsRoutes(controller));
