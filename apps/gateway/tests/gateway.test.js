@@ -20,6 +20,13 @@ function getUrl(server) {
   return `http://127.0.0.1:${server.address().port}`;
 }
 
+async function closedPortUrl() {
+  const server = await listen(http.createServer());
+  const url = getUrl(server);
+  await new Promise((resolve) => server.close(resolve));
+  return url;
+}
+
 async function createGateway(t, upstreamHandler) {
   const upstream = express();
   upstream.use(upstreamHandler);
@@ -226,4 +233,34 @@ test('GET /api/v1/health marca DOWN a un servicio que falla', async (t) => {
   assert.equal(data.identidad, 'UP');
   assert.equal(data.pedidos, 'DOWN');
   assert.equal(data.catalogo, 'UP');
+});
+
+test('una ruta reenviada a un servicio caído devuelve 502 con el sobre del proyecto', async (t) => {
+  const deadTarget = await closedPortUrl();
+
+  const gatewayServer = await listen(
+    createApp({
+      serviceUrls: {
+        identidad: deadTarget,
+        negociacion: deadTarget,
+        pedidos: deadTarget,
+        catalogo: deadTarget,
+        notificaciones: deadTarget,
+      },
+      jwtSecret: JWT_SECRET,
+      frontendOrigin: FRONTEND_ORIGIN,
+    })
+  );
+  t.after(() => new Promise((resolve) => gatewayServer.close(resolve)));
+
+  const response = await fetch(`${getUrl(gatewayServer)}/api/v1/orders`, {
+    headers: { Authorization: `Bearer ${tokenFor()}` },
+  });
+
+  assert.equal(response.status, 502);
+  assert.deepEqual(await response.json(), {
+    status: 502,
+    msg: 'Servicio temporalmente no disponible',
+    data: null,
+  });
 });
