@@ -322,3 +322,30 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         working-directory: apps/frontend
         run: npx ng test --watch=false --browsers=ChromeHeadless
+
+  # ---------------------------------------------------------------------------
+  # Stack completo con Docker Compose
+  # ---------------------------------------------------------------------------
+  docker:
+    name: Docker Compose (stack completo)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generar .env desde .env.example
+        run: cp .env.example .env
+
+      - name: Levantar el stack (falla si algun healthcheck no pasa)
+        run: docker compose up -d --build --wait
+
+      - name: Estado de los contenedores
+        if: always()
+        run: docker compose ps
+
+      - name: Logs de los servicios (si algo fallo)
+        if: failure()
+        run: docker compose logs
+
+      - name: Apagar el stack y borrar los volumenes
+        if: always()
+        run: docker compose down -v
