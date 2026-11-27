@@ -294,6 +294,163 @@ async function ensureExtraSuppliersAndBuyers({ admin }) {
   return { proveedor3, comprador2, vehiculo2, categoryIds };
 }
 
+async function findPartRequestByDescription(comprador, description) {
+  const mine = await api('GET', '/part-requests/mine', { token: comprador.token });
+  assert(mine.status === 200, `GET /part-requests/mine esperaba 200, llegó ${mine.status}`);
+  return mine.body.data.find((pr) => pr.description === description) ?? null;
+}
+
+async function createPartRequestFor(comprador, vehicle, categoryId, description, city, urgency) {
+  const form = new FormData();
+  form.set('category_id', String(categoryId));
+  form.set('vehicle_brand', vehicle.brand);
+  form.set('vehicle_model', vehicle.model);
+  form.set('vehicle_year', String(vehicle.year));
+  form.set('description', description);
+  form.set('city', city);
+  form.set('urgency', urgency);
+  form.set('photo', new Blob([TEST_PHOTO], { type: 'image/png' }), 'foto.png');
+
+  const res = await api('POST', '/part-requests', { token: comprador.token, form });
+  assert(res.status === 201, `POST /part-requests esperaba 201, llegó ${res.status}: ${JSON.stringify(res.body)}`);
+  return res.body.data;
+}
+
+async function ensurePartRequestFor(comprador, vehicle, categoryId, description, city, urgency) {
+  const existing = await findPartRequestByDescription(comprador, description);
+  if (existing) return existing;
+  return createPartRequestFor(comprador, vehicle, categoryId, description, city, urgency);
+}
+
+async function listOffers(partRequestId, comprador) {
+  const res = await api('GET', `/part-requests/${partRequestId}/offers`, { token: comprador.token });
+  assert(res.status === 200, `GET .../offers esperaba 200, llegó ${res.status}`);
+  return res.body.data;
+}
+
+async function submitOfferAs(partRequestId, supplier, price, deliveryType) {
+  const res = await api('POST', `/part-requests/${partRequestId}/offers`, {
+    token: supplier.token,
+    json: {
+      price,
+      brand: 'KYB',
+      condition: 'NEW',
+      availability: 'IN_STOCK',
+      delivery_type: deliveryType,
+      estimated_days: 2,
+    },
+  });
+  assert(res.status === 201, `POST .../offers esperaba 201, llegó ${res.status}: ${JSON.stringify(res.body)}`);
+  return res.body.data;
+}
+
+/** Deja en la solicitud una oferta por cada proveedor de `suppliers` que aún no tenga una. */
+async function ensureOffersFrom(partRequest, comprador, suppliers, basePrice, deliveryType = 'DELIVERY') {
+  const offers = await listOffers(partRequest.id, comprador);
+  const result = [];
+  for (const [index, supplier] of suppliers.entries()) {
+    let offer = offers.find((o) => o.supplier_id === supplier.userId);
+    if (!offer) offer = await submitOfferAs(partRequest.id, supplier, basePrice + index * 80, deliveryType);
+    result.push(offer);
+  }
+  return result;
+}
+
+async function acceptFirstOffer(partRequest, comprador, offers) {
+  const existing = await getAcceptedOfferAndOrder(partRequest.id, comprador);
+  if (existing.accepted) return existing.accepted;
+
+  const res = await api('POST', `/offers/${offers[0].id}/accept`, { token: comprador.token });
+  assert(res.status === 200, `accept esperaba 200, llegó ${res.status}: ${JSON.stringify(res.body)}`);
+  return res.body.data.offer;
+}
+
+/**
+ * Lleva una solicitud con una oferta ya aceptada hasta el estado objetivo del
+ * pedido, avanzando solo lo que falte (idempotente entre corridas).
+ */
+async function advanceOrderTo(partRequest, comprador, supplier, targetStatus) {
+  let { accepted, order } = await getAcceptedOfferAndOrder(partRequest.id, comprador);
+  assert(accepted, `la solicitud ${partRequest.id} debía tener una oferta aceptada`);
+  if (!order) order = await waitForOrder(accepted.id, comprador);
+
+  const steps = ['PENDING_PAYMENT', 'PREPARING', order.delivery_type === 'PICKUP' ? 'READY_FOR_PICKUP' : 'IN_TRANSIT', 'DELIVERED'];
+  const currentIndex = steps.indexOf(order.status);
+  const targetIndex = steps.indexOf(targetStatus);
+  assert(currentIndex >= 0 && targetIndex >= 0, `estado de pedido inesperado: actual ${order.status}, objetivo ${targetStatus}`);
+
+  for (let i = currentIndex; i < targetIndex; i += 1) {
+    const nextStatus = steps[i + 1];
+    if (nextStatus === 'PREPARING') {
+      const paid = await api('POST', `/orders/${order.id}/payment`, { token: comprador.token, json: { method: 'QR' } });
+      assert(paid.status === 200, `pago esperaba 200, llegó ${paid.status}: ${JSON.stringify(paid.body)}`);
+      order = paid.body.data;
+    } else {
+      const advanced = await api('PATCH', `/orders/${order.id}/status`, { token: supplier.token, json: { status: nextStatus } });
+      assert(advanced.status === 200, `avanzar a ${nextStatus} esperaba 200, llegó ${advanced.status}: ${JSON.stringify(advanced.body)}`);
+      order = advanced.body.data;
+    }
+  }
+  return { offer: accepted, order };
+}
+
+/** Solicitudes de ejemplo: sin ofertas, con 3 ofertas, lista para retiro y entregada. */
+async function ensureExtraScenarios({ proveedor1, proveedor2, proveedor3, comprador2, vehiculo2, categoryIds }) {
+  console.log('Solicitud sin ofertas (demo)...');
+  const sinOfertas = await ensurePartRequestFor(
+    comprador2,
+    vehiculo2,
+    categoryIds.motor,
+    'Bomba de agua del motor (demo sin ofertas)',
+    'Cochabamba',
+    'BAJA'
+  );
+
+  console.log('Solicitud con 3 ofertas (demo)...');
+  const tresOfertas = await ensurePartRequestFor(
+    comprador2,
+    vehiculo2,
+    categoryIds.suspension,
+    'Amortiguadores delanteros (demo 3 ofertas)',
+    'Cochabamba',
+    'ALTA'
+  );
+  await ensureOffersFrom(tresOfertas, comprador2, [proveedor1, proveedor2, proveedor3], 600);
+
+  console.log('Solicitud lista para retiro con pago confirmado (demo)...');
+  const listoRetiro = await ensurePartRequestFor(
+    comprador2,
+    vehiculo2,
+    categoryIds.electrico,
+    'Alternador 90A (demo listo para retiro)',
+    'Cochabamba',
+    'ALTA'
+  );
+  const ofertasListoRetiro = await ensureOffersFrom(listoRetiro, comprador2, [proveedor3], 850, 'PICKUP');
+  await acceptFirstOffer(listoRetiro, comprador2, ofertasListoRetiro);
+  const resultadoListoRetiro = await advanceOrderTo(listoRetiro, comprador2, proveedor3, 'READY_FOR_PICKUP');
+
+  console.log('Solicitud entregada (demo)...');
+  const entregada = await ensurePartRequestFor(
+    comprador2,
+    vehiculo2,
+    categoryIds.carroceria,
+    'Espejo retrovisor derecho (demo entregada)',
+    'Cochabamba',
+    'MEDIA'
+  );
+  const ofertasEntregada = await ensureOffersFrom(entregada, comprador2, [proveedor1], 320, 'DELIVERY');
+  await acceptFirstOffer(entregada, comprador2, ofertasEntregada);
+  const resultadoEntregada = await advanceOrderTo(entregada, comprador2, proveedor1, 'DELIVERED');
+
+  return {
+    sinOfertas,
+    tresOfertas,
+    listoRetiro: { partRequest: listoRetiro, order: resultadoListoRetiro.order },
+    entregada: { partRequest: entregada, order: resultadoEntregada.order },
+  };
+}
+
 async function main() {
   assert(ADMIN_EMAIL && ADMIN_PASSWORD, 'faltan ADMIN_EMAIL / ADMIN_PASSWORD en el .env');
 
@@ -328,7 +485,17 @@ async function main() {
   console.log('Asegurando solicitud con pedido pagado (PREPARING)...');
   const preparing = await ensureDemoScenario('preparing', ctx);
 
-  const { proveedor3, comprador2 } = await ensureExtraSuppliersAndBuyers({ admin });
+  const { proveedor3, comprador2, vehiculo2, categoryIds: extraCategoryIds } = await ensureExtraSuppliersAndBuyers({
+    admin,
+  });
+  const extra = await ensureExtraScenarios({
+    proveedor1,
+    proveedor2,
+    proveedor3,
+    comprador2,
+    vehiculo2,
+    categoryIds: extraCategoryIds,
+  });
 
   console.log('\n================ Usuarios de demo ================');
   console.table([
@@ -348,6 +515,14 @@ async function main() {
   );
   console.log(
     `Solicitud aceptada, pedido pagado (PREPARING): solicitud ${preparing.partRequest.id} — pedido ${preparing.order.id} — referencia ${preparing.order.payment?.reference}`
+  );
+  console.log(`Solicitud sin ofertas: id ${extra.sinOfertas.id}`);
+  console.log(`Solicitud con 3 ofertas: id ${extra.tresOfertas.id}`);
+  console.log(
+    `Solicitud lista para retiro, pago confirmado: solicitud ${extra.listoRetiro.partRequest.id} — pedido ${extra.listoRetiro.order.id} (${extra.listoRetiro.order.status})`
+  );
+  console.log(
+    `Solicitud entregada: solicitud ${extra.entregada.partRequest.id} — pedido ${extra.entregada.order.id} (${extra.entregada.order.status})`
   );
   console.log('======================================================');
 }
